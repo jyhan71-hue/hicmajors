@@ -1,0 +1,1196 @@
+<? var _SD = JSON.parse(getSettingsData()); ?>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>한양YK인터칼리지 현장 운영 스테이션</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <style>
+    :root{--navy:#1B263B;--navy-light:#2E4057;--bg:#F4F7F9;--green:#276749;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    button,input{font-family:'Pretendard',sans-serif;}
+    body{font-family:'Pretendard',sans-serif;background:var(--bg);min-height:100vh;
+         display:flex;flex-direction:column;align-items:center;padding:16px 16px 40px;}
+
+    .card{width:100%;max-width:500px;background:#fff;border-radius:16px;
+          border-top:6px solid var(--navy);box-shadow:0 4px 24px rgba(0,0,0,.09);overflow:hidden;}
+    .card-head{padding:14px 20px 10px;text-align:center;border-bottom:1px solid #EAECEF;}
+    .card-head img{height:34px;width:auto;max-width:110px;object-fit:contain;
+                   margin-bottom:4px;display:block;margin-left:auto;margin-right:auto;}
+    .card-head h2{color:var(--navy);font-weight:800;font-size:.93rem;}
+    .card-head p{color:#9AA5B4;font-size:.71rem;}
+    .event-bar{background:#EBF4FF;border-left:4px solid var(--navy);
+               padding:7px 14px;font-size:.73rem;color:#1B3A6B;}
+
+    /* 모드 배너 */
+    .mode-banner{display:flex;align-items:center;justify-content:space-between;
+                 padding:8px 14px;font-size:.78rem;font-weight:700;}
+    .mode-banner.staff{background:#1B263B;color:#fff;}
+    .mode-banner.student{background:#276749;color:#fff;}
+    .mode-banner .mode-label{display:flex;align-items:center;gap:6px;}
+    .btn-mode-action{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);
+                     color:#fff;border-radius:6px;padding:3px 10px;font-size:.71rem;
+                     cursor:pointer;margin-left:6px;}
+    .btn-mode-action:hover{background:rgba(255,255,255,.25);}
+
+    .card-body{padding:18px 20px;}
+    .screen{display:none;}
+    .screen.active{display:block;}
+    .screen-title{font-size:.95rem;font-weight:800;color:var(--navy);margin-bottom:3px;}
+    .screen-desc{font-size:.77rem;color:#9AA5B4;margin-bottom:14px;line-height:1.5;}
+
+    /* 모드 선택 */
+    .mode-select-grid{display:flex;gap:12px;margin-top:4px;}
+    .mode-select-btn{flex:1;padding:22px 10px;border-radius:14px;border:2px solid #DDE3EA;
+                     background:#fff;cursor:pointer;text-align:center;transition:all .2s;}
+    .mode-select-btn:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.1);}
+    .mode-select-btn .ico{font-size:2rem;display:block;margin-bottom:8px;}
+    .mode-select-btn .lbl{font-size:.92rem;font-weight:800;display:block;}
+    .mode-select-btn .sub{font-size:.73rem;color:#9AA5B4;display:block;margin-top:4px;}
+    .mode-select-btn.ci{border-color:var(--navy);background:#EEF2F7;}
+    .mode-select-btn.ci .lbl{color:var(--navy);}
+    .mode-select-btn.gi{border-color:var(--green);background:#E6FFED;}
+    .mode-select-btn.gi .lbl{color:var(--green);}
+
+    /* 폼 공통 */
+    .form-label{font-weight:700;color:var(--navy);font-size:.81rem;margin-bottom:4px;display:block;}
+    .form-control{width:100%;border:1.5px solid #DDE3EA;border-radius:8px;
+                  padding:10px 12px;font-size:.9rem;transition:border-color .2s;}
+    .form-control:focus{outline:none;border-color:var(--navy);
+                        box-shadow:0 0 0 3px rgba(27,38,59,.08);}
+    .mb-3{margin-bottom:12px;}
+    .hint{font-size:.72rem;color:#9AA5B4;margin-top:3px;}
+
+    /* 체크인: 상태 패널 */
+    .status-panel{background:#F0F4F8;border-radius:12px;padding:14px 16px;margin-bottom:16px;}
+    .status-panel .sp-title{font-size:.74rem;font-weight:700;color:#9AA5B4;
+                             text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+    .current-sess{background:#fff;border-radius:10px;padding:11px 14px;margin-bottom:10px;
+                  border:1.5px solid #DDE3EA;}
+    .current-sess.active-sess{border-color:var(--navy);background:#EEF2F7;}
+    .current-sess.no-sess{border-color:#DDE3EA;opacity:.7;}
+    .cs-label{font-size:.72rem;font-weight:700;color:#9AA5B4;margin-bottom:4px;}
+    .cs-name{font-size:.97rem;font-weight:800;color:var(--navy);}
+    .cs-time{font-size:.76rem;color:#7A8899;margin-top:2px;}
+    .cs-badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.71rem;
+              font-weight:700;margin-left:8px;}
+    .cs-badge.ongoing{background:#E6FFED;color:#276749;}
+    .cs-badge.next{background:#FFF8E1;color:#92610A;}
+    .walkin-status{display:flex;align-items:center;justify-content:space-between;
+                   background:#fff;border-radius:10px;padding:11px 14px;border:1.5px solid #DDE3EA;}
+    .walkin-status.full{border-color:#FEB2B2;background:#FFF5F5;}
+    .ws-label{font-size:.76rem;color:#7A8899;}
+    .ws-count{font-size:1.3rem;font-weight:800;color:var(--navy);}
+    .ws-count.warn{color:#C53030;}
+    .ws-sub{font-size:.7rem;color:#9AA5B4;margin-top:1px;}
+    .ws-bar-wrap{flex:1;margin:0 12px;}
+    .ws-bar-bg{background:#E2E8F0;border-radius:99px;height:8px;overflow:hidden;}
+    .ws-bar-fill{height:100%;border-radius:99px;transition:width .4s;background:#276749;}
+    .ws-bar-fill.warn{background:#E53E3E;}
+    .ws-refresh{background:none;border:none;color:#9AA5B4;font-size:.75rem;cursor:pointer;
+                padding:0;font-family:'Pretendard',sans-serif;}
+    .ws-refresh:hover{color:var(--navy);}
+    .walkin-full-banner{background:#FFF5F5;border:1.5px solid #FEB2B2;border-radius:8px;
+                        padding:9px 13px;text-align:center;font-size:.8rem;font-weight:700;
+                        color:#C53030;margin-top:8px;display:none;}
+
+    /* 체크인: 유형 버튼 */
+    .type-btns{display:flex;gap:10px;}
+    .type-btn{flex:1;padding:18px 8px;border-radius:12px;border:2px solid #DDE3EA;
+              background:#fff;cursor:pointer;text-align:center;transition:all .15s;}
+    .type-btn:hover{border-color:var(--navy);}
+    .type-btn.disabled-btn{opacity:.45;cursor:not-allowed;background:#F8F9FA;}
+    .type-btn .ico{font-size:1.6rem;display:block;margin-bottom:6px;}
+    .type-btn .lbl{font-size:.88rem;font-weight:700;color:var(--navy);display:block;}
+    .type-btn .sub{font-size:.71rem;color:#9AA5B4;display:block;margin-top:3px;}
+
+    /* 체크인: 결과 카드 */
+    .result-card{border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:.85rem;}
+    .result-card.found{background:#E6FFED;border:1.5px solid #9AE6B4;}
+    .result-card.already{background:#EBF4FF;border:1.5px solid #90CDF4;}
+    .result-card.notfound{background:#FFF5F5;border:1.5px solid #FEB2B2;}
+    .result-card .rc-name{font-weight:800;color:var(--navy);font-size:.97rem;margin-bottom:5px;}
+    .result-card .rc-row{display:flex;gap:6px;font-size:.79rem;color:#5A6778;margin-top:3px;}
+    .result-card .rc-label{color:#9AA5B4;width:40px;flex-shrink:0;}
+    .sess-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px;}
+    .sess-badge{display:inline-block;padding:2px 9px;border-radius:99px;
+                font-size:.71rem;font-weight:700;background:#EBF4FF;color:#2B6CB0;}
+
+    /* 체크인: 설명회 선택 */
+    .sess-select-grid{display:flex;flex-direction:column;gap:6px;}
+    .sess-select-item{display:flex;align-items:center;gap:10px;border:1.5px solid #DDE3EA;
+                      border-radius:8px;padding:9px 13px;transition:all .15s;}
+    .sess-select-item.available{cursor:pointer;}
+    .sess-select-item.available:hover{border-color:var(--navy);background:#F8FAFC;}
+    .sess-select-item.checked{background:#EEF2F7;border-color:var(--navy);}
+    .sess-select-item.closed{background:#F8F9FA;opacity:.5;cursor:not-allowed;}
+    .sess-select-item input[type=checkbox]{width:17px;height:17px;accent-color:var(--navy);
+                                           cursor:pointer;flex-shrink:0;}
+    .sess-select-item.closed input[type=checkbox]{cursor:not-allowed;}
+    .sess-item-info{flex:1;}
+    .sess-item-name{font-weight:700;color:var(--navy);font-size:.86rem;}
+    .sess-item-time{font-size:.73rem;color:#9AA5B4;margin-top:1px;}
+    .sess-closed-badge{font-size:.7rem;font-weight:700;color:#C53030;
+                       background:#FFF5F5;border-radius:99px;padding:1px 8px;flex-shrink:0;}
+
+    /* 체크인: 개인정보 */
+    .privacy-box{background:#F8FAFC;border-radius:8px;padding:10px 13px;font-size:.74rem;
+                 color:#5A6778;line-height:1.7;margin-bottom:8px;border:1px solid #EAECEF;}
+    .privacy-check-row{display:flex;align-items:center;gap:8px;font-size:.82rem;
+                        color:var(--navy);font-weight:600;cursor:pointer;}
+    .privacy-check-row input{width:16px;height:16px;accent-color:var(--navy);
+                              cursor:pointer;flex-shrink:0;}
+
+    /* 기념품: 학생 카드 */
+    .student-card{background:#F0F4F8;border-radius:10px;padding:12px 14px;margin-bottom:12px;}
+    .student-card .sname{font-weight:800;color:var(--navy);font-size:1rem;margin-bottom:3px;}
+    .student-card .srow{display:flex;gap:8px;font-size:.78rem;color:#5A6778;margin-top:3px;}
+    .student-card .slabel{color:#9AA5B4;width:44px;flex-shrink:0;}
+
+    /* 기념품: 조건 체크 */
+    .cond-item{display:flex;align-items:center;gap:9px;border-radius:8px;
+               padding:9px 12px;font-size:.82rem;font-weight:600;margin-bottom:7px;}
+    .cond-item.pass{background:#E6FFED;color:#276749;}
+    .cond-item.fail{background:#FFF5F5;color:#C53030;}
+    .cond-item.info{background:#EBF4FF;color:#2B6CB0;}
+
+    /* 기념품: 부스 체크박스 */
+    .booth-section{margin-bottom:14px;}
+    .booth-section .bs-title{font-weight:700;color:var(--navy);font-size:.84rem;
+                              margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;}
+    .booth-section .bs-count{font-size:.76rem;color:#9AA5B4;font-weight:400;}
+    .booth-grid{display:flex;flex-direction:column;gap:6px;}
+    .booth-chk-item{display:flex;align-items:center;gap:10px;border:1.5px solid #DDE3EA;
+                    border-radius:8px;padding:9px 13px;cursor:pointer;transition:all .15s;}
+    .booth-chk-item:hover{border-color:var(--navy);background:#F8FAFC;}
+    .booth-chk-item.checked{background:#E6FFED;border-color:#9AE6B4;}
+    .booth-chk-item input[type=checkbox]{width:18px;height:18px;accent-color:var(--navy);
+                                         cursor:pointer;flex-shrink:0;}
+    .booth-chk-item label{font-size:.86rem;font-weight:600;color:var(--navy);cursor:pointer;flex:1;margin:0;}
+    .booth-chk-item.checked label{color:#276749;}
+
+    /* 기념품: 가산점 */
+    .bonus-section{background:#EBF4FF;border-radius:10px;padding:12px 14px;
+                   margin-bottom:12px;border:1.5px solid #BEE3F8;}
+    .bonus-section .btitle{font-weight:800;color:var(--navy);font-size:.85rem;margin-bottom:6px;}
+    .bonus-section .bdesc{font-size:.75rem;color:#2B6CB0;margin-bottom:10px;line-height:1.6;}
+
+    /* 기념품: 미충족 */
+    .not-eligible{background:#FFF8E1;border:1.5px solid #F6AD55;border-radius:10px;
+                  padding:12px 14px;font-size:.82rem;color:#7B5200;margin-bottom:12px;text-align:center;}
+
+    /* 서명 패드 */
+    .sig-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+    #sig-wrapper{position:relative;border:1.5px solid #DDE3EA;border-radius:8px;
+                 height:160px;background:#FBFCFD;}
+    #sig-canvas{position:absolute;left:0;top:0;width:100%;height:100%;
+                touch-action:none;cursor:crosshair;border-radius:8px;}
+    .sig-clear{font-size:.75rem;color:#9AA5B4;cursor:pointer;background:none;border:none;}
+    .sig-clear:hover{color:var(--navy);}
+
+    /* 배지 */
+    .badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.71rem;font-weight:700;}
+    .badge-ic{background:#EBF4FF;color:#2B6CB0;}
+    .badge-other{background:#F0F4F8;color:#5A6778;}
+    .badge-pre{background:#EBF4FF;color:#2B6CB0;}
+    .badge-walk{background:#FFF8E1;color:#92610A;}
+
+    /* 완료 화면 */
+    .done-box{text-align:center;padding:20px 14px;}
+    .done-box .ico{font-size:2.8rem;margin-bottom:8px;}
+    .done-box h3{font-weight:800;font-size:1.1rem;margin-bottom:5px;}
+    .done-box h3.ok{color:var(--green);}
+    .done-box h3.warn{color:#92610A;}
+    .done-box p{color:#7A8899;font-size:.82rem;margin-bottom:14px;}
+    .countdown{font-size:1.4rem;font-weight:800;color:var(--navy);margin-bottom:3px;}
+    .countdown-sub{font-size:.76rem;color:#9AA5B4;margin-bottom:14px;}
+    .verify-box{background:#F0F4F8;border-radius:10px;padding:12px 16px;
+                text-align:center;margin-bottom:14px;}
+    .verify-code{font-size:1.4rem;font-weight:800;color:var(--navy);
+                 letter-spacing:.15em;margin-bottom:4px;}
+    .verify-desc{font-size:.72rem;color:#9AA5B4;}
+
+    /* 버튼 공통 */
+    .btn-main{background:var(--navy);color:#fff;border:none;padding:13px;font-weight:700;
+              font-size:.93rem;border-radius:10px;width:100%;cursor:pointer;transition:background .2s;}
+    .btn-main:hover{background:var(--navy-light);}
+    .btn-main:disabled{background:#B0BAC9;cursor:not-allowed;}
+    .btn-main.green{background:var(--green);}
+    .btn-main.green:hover{background:#1e5237;}
+    .btn-back{background:none;border:1.5px solid #DDE3EA;color:#7A8899;border-radius:10px;
+              padding:10px;width:100%;cursor:pointer;font-size:.88rem;font-weight:600;margin-top:7px;}
+    .btn-back:hover{border-color:var(--navy);color:var(--navy);}
+    .divider{border-top:1px solid #EAECEF;margin:14px 0;}
+
+    .spinner{width:26px;height:26px;border:3px solid #DDE3EA;border-top-color:var(--navy);
+             border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 8px;}
+    .loading-inline{text-align:center;padding:16px;color:#9AA5B4;font-size:.82rem;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="card-head">
+    <img src="https://drive.google.com/thumbnail?id=1gAd8LC2fRzr7reuiJV2FHSQCbqbz5DoR&sz=w200"
+         alt="로고" onerror="this.style.display='none'">
+    <h2>한양YK인터칼리지 현장 운영 스테이션</h2>
+    <p>운영진 전용 · <?!= _SD.eventDate ?></p>
+  </div>
+  <div class="event-bar">📅 <?!= _SD.eventDate ?>&nbsp;|&nbsp;📍 <?!= _SD.eventPlace ?></div>
+
+  <div id="modeBanner" style="display:none;"></div>
+
+  <div class="card-body">
+
+    <!-- ══ 로그인 ══ -->
+    <div class="screen active" id="scr-login">
+      <div class="screen-title">운영진 로그인</div>
+      <div class="screen-desc">행정팀 비밀번호를 입력하세요</div>
+      <div class="mb-3">
+        <label class="form-label">비밀번호</label>
+        <input type="password" class="form-control" id="loginPw" placeholder="비밀번호 입력"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();doLogin();}">
+        <div id="loginErr" style="font-size:.77rem;color:#C53030;margin-top:5px;display:none;"></div>
+      </div>
+      <button class="btn-main" id="btnLogin" onclick="doLogin()">로그인</button>
+    </div>
+
+    <!-- ══ 모드 선택 ══ -->
+    <div class="screen" id="scr-mode">
+      <div class="screen-title">운영 모드 선택</div>
+      <div class="screen-desc">이 스테이션에서 사용할 기능을 선택하세요</div>
+      <div class="mode-select-grid">
+        <div class="mode-select-btn ci" onclick="selectMode('ci')">
+          <span class="ico">✅</span>
+          <span class="lbl">현장 체크인</span>
+          <span class="sub">사전예약 / 당일방문</span>
+        </div>
+        <div class="mode-select-btn gi" onclick="selectMode('gi')">
+          <span class="ico">🎁</span>
+          <span class="lbl">기념품 수령</span>
+          <span class="sub">스탬프 확인 + 서명</span>
+        </div>
+      </div>
+      <button class="btn-back" style="margin-top:14px;" onclick="doLogout()">⏏ 로그아웃</button>
+    </div>
+
+    <!-- ════════════════════════════ -->
+    <!-- 체크인 화면                  -->
+    <!-- ════════════════════════════ -->
+
+    <!-- CI-1: 유형 선택 -->
+    <div class="screen" id="scr-ci-type">
+      <div class="status-panel">
+        <div class="sp-title">현재 진행 현황</div>
+        <div class="current-sess" id="ci-sessStatusBox">
+          <div class="cs-label">현재 세션</div>
+          <div class="cs-name" id="ci-sessName">불러오는 중...</div>
+          <div class="cs-time" id="ci-sessTime"></div>
+        </div>
+        <!-- 현재 세션 체크인 인원 -->
+        <div id="ci-sessCountBox" style="display:none;background:#fff;border-radius:10px;padding:9px 14px;margin-bottom:8px;border:1.5px solid #DDE3EA;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:.75rem;color:#7A8899;" id="ci-sessCountLabel">현재 세션 입장</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--navy);" id="ci-sessCountNum">—</div>
+        </div>
+        <!-- 당일방문 슬롯 현황 -->
+        <div class="walkin-status" id="ci-walkStatusBox">
+          <div>
+            <div class="ws-label">당일방문 잔여</div>
+            <div class="ws-count" id="ci-walkRemaining">—</div>
+            <div class="ws-sub" id="ci-walkSub"></div>
+          </div>
+          <div class="ws-bar-wrap">
+            <div class="ws-bar-bg">
+              <div class="ws-bar-fill" id="ci-walkBar" style="width:100%;"></div>
+            </div>
+          </div>
+          <button class="ws-refresh" onclick="ciLoadStatus()" title="새로고침">🔄</button>
+        </div>
+        <div class="walkin-full-banner" id="ci-walkFullBanner">🚫 당일방문 체크인이 마감되었습니다</div>
+        <div style="text-align:right;margin-top:6px;">
+          <button id="btnWalkBlockCheckin" onclick="openWalkBlockModal()"
+            style="font-size:.72rem;padding:4px 10px;border-radius:5px;border:1.5px solid #B0BAC9;
+                   background:#fff;color:#7A8899;cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;">
+            현장예약 마감
+          </button>
+        </div>
+      </div>
+      <div class="screen-title">참석 유형 선택</div>
+      <div class="screen-desc">참석 형태를 선택하세요</div>
+      <div class="type-btns">
+        <div class="type-btn" id="typePreBtn" onclick="ciSelectType('pre')">
+          <span class="ico">📋</span>
+          <span class="lbl">사전 예약자</span>
+          <span class="sub">학번 조회 후 체크인</span>
+        </div>
+        <div class="type-btn" id="typeWalkBtn" onclick="ciSelectType('walk')">
+          <span class="ico">🚶</span>
+          <span class="lbl">당일 방문자</span>
+          <span class="sub" id="ci-walkBtnSub">정보 입력 후 체크인</span>
+        </div>
+      </div>
+      <button class="btn-back" style="margin-top:14px;" onclick="goScreen('scr-mode')">← 모드 선택으로</button>
+    </div>
+
+    <!-- CI-2: 사전예약자 -->
+    <div class="screen" id="scr-ci-pre">
+      <div class="screen-title">사전 예약자 체크인</div>
+      <div class="screen-desc">학번을 입력하면 예약 내역이 표시됩니다</div>
+      <div class="mb-3">
+        <label class="form-label">학번 (10자리)</label>
+        <input type="text" class="form-control" id="preSid"
+          inputmode="numeric" maxlength="10" placeholder="2024000000"
+          oninput="this.value=this.value.replace(/[^\d]/g,''); onPreSidInput(this.value);">
+        <p class="hint">10자리 입력 시 자동으로 조회됩니다</p>
+      </div>
+      <div id="preResultArea"></div>
+      <button class="btn-back" onclick="goScreen('scr-ci-type')">← 유형 선택으로</button>
+    </div>
+
+    <!-- CI-3: 당일방문자 -->
+    <div class="screen" id="scr-ci-walk">
+      <div class="screen-title">당일 방문자 체크인</div>
+      <div class="screen-desc">정보를 입력하고 체크인 처리합니다</div>
+      <div class="mb-3">
+        <label class="form-label">학번 (10자리) <span style="color:#E53E3E;">*</span></label>
+        <input type="text" class="form-control" id="walkSid"
+          inputmode="numeric" maxlength="10" placeholder="2024000000"
+          oninput="this.value=this.value.replace(/[^\d]/g,'');">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">성명 <span style="color:#E53E3E;">*</span></label>
+        <input type="text" class="form-control" id="walkName" placeholder="홍길동">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">학과 <span style="color:#E53E3E;">*</span></label>
+        <div style="margin-bottom:6px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;font-weight:600;color:#1B263B;">
+            <input type="checkbox" id="walkIsIC" onchange="onWalkICCheck(this)"
+              style="width:16px;height:16px;accent-color:var(--navy);cursor:pointer;">
+            한양인터칼리지학부 재학생입니다
+          </label>
+        </div>
+        <input type="text" class="form-control" id="walkDept" placeholder="소속 학과">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">한양 이메일 ID <span style="color:#E53E3E;">*</span></label>
+        <div style="display:flex;align-items:center;">
+          <input type="text" class="form-control" id="walkEmail" placeholder="학번 또는 이메일ID"
+            style="border-radius:8px 0 0 8px;border-right:none;"
+            oninput="this.value=this.value.replace(/@.*/,'');">
+          <span style="background:#F0F4F8;border:1.5px solid #DDE3EA;border-left:none;border-radius:0 8px 8px 0;
+                       padding:10px 12px;font-size:.85rem;color:#7A8899;white-space:nowrap;">@hanyang.ac.kr</span>
+        </div>
+        <p class="hint">참여확인서 발급 및 만족도조사에 사용됩니다</p>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">휴대폰 번호 <span style="color:#E53E3E;">*</span></label>
+        <input type="text" class="form-control" id="walkPhone"
+          inputmode="numeric" maxlength="13" placeholder="010-0000-0000"
+          oninput="autoHyphen(this);">
+        <p class="hint">숫자만 입력하면 자동으로 하이픈이 추가됩니다</p>
+      </div>
+      <div class="mb-3">
+        <div class="privacy-box">
+          <strong>개인정보 수집·이용 동의</strong><br>
+          수집 항목: 성명, 학번, 학과, 휴대폰 번호, 이메일, 참여 설명회<br>
+          수집 목적: 행사 참석 확인 및 기념품 증정, 만족도 조사<br>
+          보유 기간: 행사 종료 후 1개월<br>
+          위 사항에 동의하지 않을 경우 체크인이 불가합니다.
+        </div>
+        <label class="privacy-check-row">
+          <input type="checkbox" id="walkPrivacy">
+          개인정보 수집·이용에 동의합니다.
+        </label>
+      </div>
+      <button class="btn-main green" id="btnWalkCheckin" onclick="doWalkCheckin()">✅ 체크인 처리</button>
+      <button class="btn-back" onclick="goScreen('scr-ci-type')">← 유형 선택으로</button>
+    </div>
+
+    <!-- CI-4: 체크인 완료 -->
+    <div class="screen" id="scr-ci-done">
+      <div class="done-box">
+        <div class="ico" id="ci-doneIco">✅</div>
+        <h3 id="ci-doneTitle" class="ok">체크인 완료!</h3>
+        <p id="ci-doneMsg"></p>
+        <div class="countdown" id="ci-countdown"></div>
+        <div class="countdown-sub">초 후 자동으로 초기화됩니다</div>
+        <button class="btn-main" onclick="ciResetToType()">다음 학생</button>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════ -->
+    <!-- 기념품 화면                  -->
+    <!-- ════════════════════════════ -->
+
+    <!-- GI-1: 학번 입력 -->
+    <div class="screen" id="scr-gi-main">
+      <div class="screen-title">학번 입력</div>
+      <div class="screen-desc">기념품을 수령할 학생의 학번을 입력하세요</div>
+      <div class="mb-3">
+        <label class="form-label">학번 (10자리)</label>
+        <input type="text" class="form-control" id="gi-searchSid"
+          inputmode="numeric" maxlength="10" placeholder="2024000000"
+          oninput="this.value=this.value.replace(/[^\d]/g,'');"
+          onkeydown="if(event.key==='Enter'&&this.value.length===10){event.preventDefault();giLookupStudent();}">
+      </div>
+      <button class="btn-main" id="gi-btnLookup" onclick="giLookupStudent()">조회하기</button>
+      <button class="btn-back" style="margin-top:8px;" onclick="goScreen('scr-mode')">← 모드 선택으로</button>
+    </div>
+
+    <!-- GI-2: 조건 확인 + 부스 체크 -->
+    <div class="screen" id="scr-gi-verify">
+      <div id="gi-studentCard" class="student-card"></div>
+      <div id="gi-checkinCond"></div>
+      <div id="gi-alreadyBox" style="display:none;" class="cond-item pass">
+        🎁 이미 기념품을 수령하셨습니다.
+      </div>
+      <div id="gi-noCheckinBox" style="display:none;" class="not-eligible">
+        ⚠️ 설명회 체크인 기록이 없습니다.<br>
+        <span style="font-size:.76rem;">체크인 단말에서 먼저 체크인을 완료해주세요.</span>
+      </div>
+      <div id="gi-boothSection" style="display:none;">
+        <div class="booth-section">
+          <div class="bs-title">
+            📋 부스 스탬프 확인
+            <span class="bs-count" id="gi-boothCountLabel">0 / 6개 선택</span>
+          </div>
+          <p class="hint" style="margin-bottom:8px;">스탬프북을 확인 후 방문한 부스를 체크하세요 (3개 이상 필요)</p>
+          <div class="booth-grid" id="gi-boothGrid"></div>
+        </div>
+
+        <div id="gi-stampWarnBox" style="display:none;" class="not-eligible">
+          ⚠️ <span id="gi-stampWarnMsg"></span>
+        </div>
+        <div id="gi-signRequestSection" style="display:none;">
+          <div class="divider"></div>
+          <p style="font-size:.79rem;color:#5A6778;margin-bottom:10px;text-align:center;">
+            부스 확인 완료. 아래 버튼을 눌러 학생에게 태블릿을 전달하세요.
+          </p>
+          <button class="btn-main green" onclick="giGoToStudentSign()">✍️ 학생 서명 화면으로</button>
+        </div>
+      </div>
+      <button class="btn-back" onclick="giGoBack()">← 다른 학생 조회</button>
+    </div>
+
+    <!-- GI-3: 학생 서명 -->
+    <div class="screen" id="scr-gi-sign">
+      <div id="gi-signStudentInfo"
+        style="background:#F8FAFC;border-radius:10px;padding:12px 14px;margin-bottom:12px;
+               font-size:.85rem;line-height:1.9;"></div>
+      <div class="mb-3">
+        <div class="sig-label-row">
+          <label class="form-label" style="margin:0;">
+            서명 <span style="color:#E53E3E;font-size:.78rem;">* 기념품 수령 확인</span>
+          </label>
+          <button class="sig-clear" onclick="clearSig()">✕ 지우기</button>
+        </div>
+        <div id="sig-wrapper"><canvas id="sig-canvas"></canvas></div>
+        <p class="hint">서명 후 직원에게 태블릿을 돌려주세요</p>
+      </div>
+      <button class="btn-main green" id="btnSubmitSign" onclick="giSubmitGift()">✅ 서명 완료</button>
+    </div>
+
+    <!-- GI-4: 기념품 완료 -->
+    <div class="screen" id="scr-gi-done">
+      <div class="done-box">
+        <div class="ico">🎁</div>
+        <h3 style="color:var(--green);">기념품 지급 완료!</h3>
+        <p id="gi-doneMsg"></p>
+        <div class="verify-box">
+          <div class="verify-code" id="gi-verifyCodeDisplay"></div>
+          <div class="verify-desc">참여확인서 검증 코드 · 이메일로 개별 발송 예정</div>
+        </div>
+        <button class="btn-main" onclick="giGoBack()">다음 학생</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 다음 세션 진행 모달 -->
+<div id="advanceSessModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+     z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:24px;width:88%;max-width:340px;
+              box-shadow:0 8px 32px rgba(0,0,0,.2);">
+    <div style="font-weight:800;color:var(--navy);font-size:1rem;margin-bottom:10px;">세션 선택</div>
+    <div id="advanceSessGrid" style="margin-bottom:12px;"></div>
+    <input type="password" id="advanceSessPw" placeholder="관리자 비밀번호 (자동입력 없음)"
+      autocomplete="off"
+      style="width:100%;border:1.5px solid #DDE3EA;border-radius:8px;padding:9px 12px;
+             font-size:.88rem;font-family:'Pretendard',sans-serif;margin-bottom:10px;box-sizing:border-box;"
+      onkeydown="if(event.key==='Enter') confirmAdvanceSession();">
+    <div id="advanceSessMsg" style="font-size:.78rem;color:#C53030;min-height:18px;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="confirmAdvanceSession()"
+        style="flex:1;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px;
+               font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Pretendard',sans-serif;">변경</button>
+      <button onclick="closeAdvanceSessModal()"
+        style="flex:1;background:#F0F4F8;color:#5A6778;border:none;border-radius:8px;padding:10px;
+               font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Pretendard',sans-serif;">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- 현장예약 마감 모달 -->
+<div id="walkBlockModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+     z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:24px;width:88%;max-width:340px;
+              box-shadow:0 8px 32px rgba(0,0,0,.2);">
+    <div style="font-weight:800;color:var(--navy);font-size:1rem;margin-bottom:6px;"
+         id="walkBlockModalTitle">현장예약 마감</div>
+    <div style="font-size:.82rem;color:#5A6778;margin-bottom:14px;"
+         id="walkBlockModalDesc">관리자 비밀번호를 입력하면 당일방문 체크인이 마감됩니다.</div>
+    <input type="password" id="walkBlockPw" placeholder="관리자 비밀번호"
+      style="width:100%;border:1.5px solid #DDE3EA;border-radius:8px;padding:9px 12px;
+             font-size:.88rem;font-family:'Pretendard',sans-serif;margin-bottom:10px;box-sizing:border-box;"
+      onkeydown="if(event.key==='Enter') confirmWalkBlock();">
+    <div id="walkBlockMsg" style="font-size:.78rem;color:#C53030;min-height:18px;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="confirmWalkBlock()"
+        style="flex:1;background:#C53030;color:#fff;border:none;border-radius:8px;padding:10px;
+               font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Pretendard',sans-serif;">확인</button>
+      <button onclick="closeWalkBlockModal()"
+        style="flex:1;background:#F0F4F8;color:#5A6778;border:none;border-radius:8px;padding:10px;
+               font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Pretendard',sans-serif;">취소</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<script>
+// ══════════════════════════════════════════════
+// 공통 유틸
+// ══════════════════════════════════════════════
+var INTERCOLLEGE_DEPT = '한양인터칼리지학부';
+
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function setModeBanner(state) {
+  var b = document.getElementById('modeBanner');
+  if (!state) { b.style.display='none'; return; }
+  b.style.display='flex';
+  if (state === 'ci') {
+    b.className='mode-banner staff';
+    b.innerHTML='<div class="mode-label">✅ 체크인 모드'+
+        '<span id="banner-counts" style="font-size:.68rem;font-weight:400;opacity:.75;margin-left:8px;"></span>'+
+      '</div>'+
+      '<div>'+
+        '<button class="btn-mode-action" onclick="openAdvanceSessionModal()" style="background:rgba(255,165,0,.25);border-color:rgba(255,165,0,.6);">다음 세션 →</button>'+
+        '<button class="btn-mode-action" onclick="goScreen(\'scr-mode\')">모드 변경</button>'+
+        '<button class="btn-mode-action" onclick="doLogout()">로그아웃</button>'+
+      '</div>';
+  } else if (state === 'gi') {
+    b.className='mode-banner staff';
+    b.innerHTML='<div class="mode-label">🎁 기념품 수령 모드</div>'+
+      '<div>'+
+        '<button class="btn-mode-action" onclick="goScreen(\'scr-mode\')">모드 변경</button>'+
+        '<button class="btn-mode-action" onclick="doLogout()">로그아웃</button>'+
+      '</div>';
+  } else if (state === 'student') {
+    b.className='mode-banner student';
+    b.innerHTML='<div class="mode-label">🎓 학생 서명 모드</div>';
+  }
+}
+
+function esc(str) {
+  if (str==null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function fmtTime(str) {
+  if (!str) return '';
+  try {
+    var d=new Date(str); if(isNaN(d)) return str;
+    return (d.getMonth()+1)+'/'+d.getDate()+' '+
+      d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  } catch(e){ return str; }
+}
+
+function autoHyphen(input) {
+  var v=input.value.replace(/[^\d]/g,'');
+  if (v.length>=2&&v.slice(0,2)!=='01') v='01'+v.slice(2);
+  if      (v.length<=3) input.value=v;
+  else if (v.length<=7) input.value=v.slice(0,3)+'-'+v.slice(3);
+  else                  input.value=v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7,11);
+}
+
+// ══════════════════════════════════════════════
+// 로그인 / 로그아웃
+// ══════════════════════════════════════════════
+function doLogin() {
+  var pw=document.getElementById('loginPw').value.trim();
+  if (!pw) { showLoginErr('비밀번호를 입력해주세요.'); return; }
+  hideLoginErr();
+  var btn=document.getElementById('btnLogin');
+  btn.disabled=true; btn.textContent='확인 중...';
+  google.script.run
+    .withSuccessHandler(function() {
+      btn.disabled=false; btn.textContent='로그인';
+      document.getElementById('loginPw').value='';
+      window._adminPw=pw;
+      setModeBanner(null);
+      goScreen('scr-mode');
+    })
+    .withFailureHandler(function(err) {
+      btn.disabled=false; btn.textContent='로그인';
+      showLoginErr(err.message);
+    })
+    .adminLogin(pw);
+}
+
+function doLogout() {
+  if (!confirm('로그아웃하시겠습니까?')) return;
+  window._adminPw='';
+  _giCurrentStatus=null; _checkedBooths=[];
+  setModeBanner(null);
+  goScreen('scr-login');
+}
+
+function showLoginErr(m){ var e=document.getElementById('loginErr'); e.textContent=m; e.style.display='block'; }
+function hideLoginErr(){ document.getElementById('loginErr').style.display='none'; }
+
+// ══════════════════════════════════════════════
+// 모드 선택
+// ══════════════════════════════════════════════
+function selectMode(mode) {
+  if (mode==='ci') {
+    setModeBanner('ci');
+    goScreen('scr-ci-type');
+    ciLoadStatus();
+  } else {
+    setModeBanner('gi');
+    goScreen('scr-gi-main');
+    setTimeout(function(){ document.getElementById('gi-searchSid').focus(); }, 200);
+  }
+}
+
+// ══════════════════════════════════════════════
+// 체크인
+// ══════════════════════════════════════════════
+var SESSION_LIST = <?!= getSettingsData() ?>.sessions;
+var _walkIsFull=false, _ciCountdownTimer=null, _preDebounce=null;
+var _currentSessionIdx=0; // 서버에서 동기화됨
+
+// 세션 인덱스 기반 종료 여부
+function isSessionClosed(idx){ return idx < _currentSessionIdx; }
+
+function getCurrentSession() {
+  if (_currentSessionIdx >= SESSION_LIST.length) return {session:null, phase:'done'};
+  return {session:SESSION_LIST[_currentSessionIdx], phase:'open'};
+}
+
+function isCheckinAllowed() {
+  return _currentSessionIdx < SESSION_LIST.length;
+}
+
+function ciRenderSessStatus() {
+  var cur=getCurrentSession();
+  var box=document.getElementById('ci-sessStatusBox');
+  var nameEl=document.getElementById('ci-sessName');
+  var timeEl=document.getElementById('ci-sessTime');
+  if (cur.phase==='done') {
+    box.className='current-sess no-sess';
+    nameEl.innerHTML='모든 설명회가 종료되었습니다';
+    timeEl.textContent=''; ciUpdateTypeButtons(cur); return;
+  }
+  box.className='current-sess active-sess';
+  var sessNum=(_currentSessionIdx+1)+'/'+SESSION_LIST.length;
+  nameEl.innerHTML=esc(cur.session.name)+'<span class="cs-badge ongoing">진행 중 ('+sessNum+')</span>';
+  timeEl.textContent=cur.session.start+' ~ '+cur.session.end+'  · 스태프 확인 후 입장 가능';
+  ciUpdateTypeButtons(cur);
+}
+
+function ciUpdateTypeButtons(cur) {
+  var allowed=isCheckinAllowed();
+  var preBtn=document.getElementById('typePreBtn');
+  var walkBtn=document.getElementById('typeWalkBtn');
+  var walkSub=document.getElementById('ci-walkBtnSub');
+  if (!allowed) {
+    preBtn.classList.add('disabled-btn'); preBtn.querySelector('.sub').textContent='체크인 불가';
+    walkBtn.classList.add('disabled-btn'); if(walkSub) walkSub.textContent='체크인 불가';
+  } else {
+    preBtn.classList.remove('disabled-btn'); preBtn.querySelector('.sub').textContent='학번 조회 후 체크인';
+    if (!_walkIsFull) walkBtn.classList.remove('disabled-btn');
+  }
+}
+
+function ciRenderWalkStatus(data) {
+  _walkIsFull=data.isFull;
+  var pct=Math.round(data.walkCount/data.walkCapacity*100);
+  document.getElementById('ci-walkRemaining').textContent=data.isFull?'마감':data.walkCount+'명';
+  document.getElementById('ci-walkRemaining').className='ws-count'+(data.isFull?' warn':'');
+  document.getElementById('ci-walkSub').textContent=data.isBlocked?'수동 마감 처리됨':'현장 입장 인원';
+  document.getElementById('ci-walkBar').style.width=pct+'%';
+  document.getElementById('ci-walkBar').className='ws-bar-fill'+(data.isFull?' warn':'');
+  document.getElementById('ci-walkStatusBox').className='walkin-status'+(data.isFull?' full':'');
+  document.getElementById('ci-walkFullBanner').style.display=data.isFull?'block':'none';
+  var walkBtn=document.getElementById('typeWalkBtn');
+  var walkSub=document.getElementById('ci-walkBtnSub');
+  if (data.isFull) { walkBtn.classList.add('disabled-btn'); walkSub.textContent='마감되었습니다'; }
+  else { walkBtn.classList.remove('disabled-btn'); walkSub.textContent='현장 입장'; }
+  _currentSessionIdx=typeof data.currentSessionIdx==='number'?data.currentSessionIdx:0;
+  // 현재 세션 체크인 인원 표시
+  var scBox=document.getElementById('ci-sessCountBox');
+  var scLabel=document.getElementById('ci-sessCountLabel');
+  var scNum=document.getElementById('ci-sessCountNum');
+  if (scBox&&scLabel&&scNum&&_currentSessionIdx<SESSION_LIST.length) {
+    var curSessName=SESSION_LIST[_currentSessionIdx].name;
+    var cnt=(data.sessionCounts&&data.sessionCounts[curSessName])||0;
+    scLabel.textContent=curSessName+' 입장 인원';
+    scNum.textContent=cnt+'명';
+    scBox.style.display='flex';
+  } else if (scBox) { scBox.style.display='none'; }
+  // 모드 배너 인원 수 업데이트 (학생 비공개)
+  var bc=document.getElementById('banner-counts');
+  if (bc) bc.textContent='전체 '+(data.totalCount||0)+'명 (사전 '+(data.preCount||0)+' · 당일 '+(data.walkCount||0)+')';
+  var bb=document.getElementById('btnWalkBlockCheckin');
+  if (bb) {
+    bb.dataset.blocked=data.isBlocked?'true':'false';
+    if (data.isBlocked) { bb.textContent='✅ 현장예약 재개'; bb.style.borderColor='#276749'; bb.style.color='#276749'; }
+    else { bb.textContent='현장예약 마감'; bb.style.borderColor='#B0BAC9'; bb.style.color='#7A8899'; }
+  }
+}
+
+function ciLoadStatus() {
+  google.script.run
+    .withSuccessHandler(function(data){ ciRenderWalkStatus(data); ciRenderSessStatus(); })
+    .withFailureHandler(function(){ ciRenderSessStatus(); })
+    .getCheckinPageData();
+}
+
+// 세션 선택 모달
+function openAdvanceSessionModal() {
+  var grid=document.getElementById('advanceSessGrid');
+  var html='';
+  SESSION_LIST.forEach(function(s,i){
+    var isCur=i===_currentSessionIdx, isPast=i<_currentSessionIdx;
+    var rowStyle='display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;margin-bottom:4px;';
+    if(isCur) rowStyle+='background:#EEF2F7;border:1.5px solid var(--navy);';
+    else if(isPast) rowStyle+='background:#F8F9FA;border:1.5px solid #DDE3EA;';
+    else rowStyle+='background:#fff;border:1.5px solid #DDE3EA;';
+    var badge=isCur?'<span style="font-size:.7rem;font-weight:700;background:#1B263B;color:#fff;border-radius:99px;padding:1px 8px;margin-left:4px;">현재</span>'
+      :isPast?'<span style="font-size:.7rem;color:#9AA5B4;margin-left:4px;">종료됨</span>':'';
+    html+='<label style="'+rowStyle+'">'+
+      '<input type="radio" name="sess-pick" value="'+i+'"'+(isCur?' checked':'')+
+        ' style="width:16px;height:16px;accent-color:var(--navy);cursor:pointer;flex-shrink:0;">'+
+      '<span style="font-size:.86rem;font-weight:'+(isCur?'700':'600')+';color:'+(isPast?'#9AA5B4':'var(--navy)')+';">'+(i+1)+'. '+esc(s.name)+badge+'</span>'+
+    '</label>';
+  });
+  // 행사 종료 옵션
+  var isAllDone=_currentSessionIdx>=SESSION_LIST.length;
+  html+='<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;margin-bottom:4px;'+
+    (isAllDone?'background:#FFF5F5;border:1.5px solid #FEB2B2;':'background:#fff;border:1.5px solid #DDE3EA;')+'">'+
+    '<input type="radio" name="sess-pick" value="'+SESSION_LIST.length+'"'+(isAllDone?' checked':'')+
+      ' style="width:16px;height:16px;accent-color:#C53030;cursor:pointer;flex-shrink:0;">'+
+    '<span style="font-size:.86rem;font-weight:600;color:#C53030;">🔒 행사 종료 (체크인 마감)</span>'+
+  '</label>';
+  grid.innerHTML=html;
+  document.getElementById('advanceSessPw').value=''; // 절대 자동입력 금지
+  document.getElementById('advanceSessMsg').textContent='';
+  document.getElementById('advanceSessModal').style.display='flex';
+  setTimeout(function(){ document.getElementById('advanceSessPw').focus(); },150);
+}
+function closeAdvanceSessModal(){ document.getElementById('advanceSessModal').style.display='none'; }
+function confirmAdvanceSession() {
+  var pw=document.getElementById('advanceSessPw').value.trim();
+  if (!pw){ document.getElementById('advanceSessMsg').textContent='비밀번호를 입력하세요.'; return; }
+  var sel=document.querySelector('input[name="sess-pick"]:checked');
+  if (!sel){ document.getElementById('advanceSessMsg').textContent='세션을 선택하세요.'; return; }
+  var targetIdx=parseInt(sel.value);
+  var msg=document.getElementById('advanceSessMsg');
+  msg.style.color='#9AA5B4'; msg.textContent='처리 중...';
+  google.script.run
+    .withSuccessHandler(function(newIdx){
+      _currentSessionIdx=newIdx;
+      closeAdvanceSessModal();
+      ciRenderSessStatus();
+      ciUpdateTypeButtons(getCurrentSession());
+      if (newIdx>=SESSION_LIST.length) alert('행사가 종료되었습니다. 체크인이 마감됩니다.');
+      else alert('세션이 변경되었습니다: '+SESSION_LIST[newIdx].name);
+    })
+    .withFailureHandler(function(err){ msg.style.color='#C53030'; msg.textContent=err.message; })
+    .setSessionIdx(pw, targetIdx);
+}
+
+// 현장예약 마감 모달
+var _walkBlockIsBlocked=false;
+function openWalkBlockModal() {
+  _walkBlockIsBlocked=document.getElementById('btnWalkBlockCheckin').dataset.blocked==='true';
+  document.getElementById('walkBlockModalTitle').textContent=_walkBlockIsBlocked?'현장예약 재개':'현장예약 마감';
+  document.getElementById('walkBlockModalDesc').textContent=_walkBlockIsBlocked
+    ?'관리자 비밀번호를 입력하면 당일방문 체크인이 재개됩니다.'
+    :'관리자 비밀번호를 입력하면 당일방문 체크인이 마감됩니다.';
+  document.getElementById('walkBlockPw').value=window._adminPw||'';
+  document.getElementById('walkBlockMsg').textContent='';
+  document.getElementById('walkBlockModal').style.display='flex';
+}
+function closeWalkBlockModal(){ document.getElementById('walkBlockModal').style.display='none'; }
+function confirmWalkBlock() {
+  var pw=document.getElementById('walkBlockPw').value.trim();
+  if (!pw){ document.getElementById('walkBlockMsg').textContent='비밀번호를 입력하세요.'; return; }
+  var msg=document.getElementById('walkBlockMsg');
+  msg.style.color='#9AA5B4'; msg.textContent='처리 중...';
+  google.script.run
+    .withSuccessHandler(function(res){ closeWalkBlockModal(); alert(res); ciLoadStatus(); })
+    .withFailureHandler(function(err){ msg.style.color='#C53030'; msg.textContent=err.message; })
+    .setWalkInBlock(pw, !_walkBlockIsBlocked);
+}
+
+// 유형 선택
+function ciSelectType(type) {
+  if (!isCheckinAllowed()){ alert('모든 설명회가 종료되어 체크인이 불가합니다.'); return; }
+  if (type==='walk') {
+    if (_walkIsFull){ alert('당일방문 체크인이 마감되었습니다.'); return; }
+    clearWalkForm();
+    goScreen('scr-ci-walk');
+    setTimeout(function(){ document.getElementById('walkSid').focus(); },200);
+  } else {
+    document.getElementById('preSid').value='';
+    document.getElementById('preResultArea').innerHTML='';
+    goScreen('scr-ci-pre');
+    setTimeout(function(){ document.getElementById('preSid').focus(); },200);
+  }
+}
+
+function renderWalkSessGrid() {
+  var grid=document.getElementById('walkSessGrid');
+  grid.innerHTML=SESSION_LIST.map(function(s,idx){
+    var closed=isSessionClosed(idx);
+    var id='wsess-'+s.name.replace(/[^a-zA-Z0-9가-힣]/g,'');
+    return '<div class="sess-select-item '+(closed?'closed':'available')+'" id="witem-'+id+'" '+
+             (closed?'':'onclick="toggleWalkSess(\''+esc(s.name)+'\')"')+'>' +
+      '<input type="checkbox" id="'+id+'" value="'+esc(s.name)+'"'+(closed?' disabled':'')+
+             ' onclick="event.stopPropagation();">'+
+      '<div class="sess-item-info">'+
+        '<div class="sess-item-name">'+esc(s.name)+'</div>'+
+        '<div class="sess-item-time">'+s.start+' ~ '+s.end+'</div>'+
+      '</div>'+
+      (closed?'<span class="sess-closed-badge">종료</span>':'')+
+    '</div>';
+  }).join('');
+}
+
+function toggleWalkSess(name) {
+  var id='wsess-'+name.replace(/[^a-zA-Z0-9가-힣]/g,'');
+  var chk=document.getElementById(id), item=document.getElementById('witem-'+id);
+  if (!chk||chk.disabled) return;
+  chk.checked=!chk.checked; item.classList.toggle('checked',chk.checked);
+}
+
+// 사전예약자 — 단일 round-trip으로 체크인 여부 + 예약 내역 동시 조회
+function onPreSidInput(sid) {
+  var area=document.getElementById('preResultArea');
+  if (_preDebounce) clearTimeout(_preDebounce);
+  if (sid.length<10){ area.innerHTML=''; return; }
+  area.innerHTML='<div class="loading-inline"><div class="spinner"></div>조회 중...</div>';
+  _preDebounce=setTimeout(function(){
+    google.script.run
+      .withSuccessHandler(function(d){ ciRenderPreResult(sid, d.checkIn, d.preData, area); })
+      .withFailureHandler(function(){ ciRenderPreResult(sid, null, null, area); })
+      .getPreCheckinData(sid);
+  },400);
+}
+
+function ciRenderPreResult(sid, checkIn, preData, area) {
+  if (checkIn) {
+    area.innerHTML='<div class="result-card already">'+
+      '<div class="rc-name">⚠️ '+esc(checkIn.name)+'님 — 이미 체크인됨</div>'+
+      '<div class="rc-row"><span class="rc-label">학번</span>'+esc(sid)+'</div>'+
+      '<div class="rc-row"><span class="rc-label">학과</span>'+esc(checkIn.dept)+'</div>'+
+      '<div class="rc-row"><span class="rc-label">시각</span>'+fmtTime(checkIn.checkedAt)+'</div>'+
+    '</div>'; return;
+  }
+  if (preData) {
+    var sessHtml=(preData.sessions||[]).map(function(s){ return '<span class="sess-badge">'+esc(s)+'</span>'; }).join('');
+    var isIC=preData.dept===INTERCOLLEGE_DEPT;
+    area.innerHTML='<div class="result-card found">'+
+      '<div class="rc-name">📋 '+esc(preData.name)+'님</div>'+
+      '<div class="rc-row"><span class="rc-label">학과</span>'+esc(preData.dept)+'</div>'+
+      '<div class="rc-row"><span class="rc-label">연락처</span>'+esc(preData.phone||'—')+'</div>'+
+      (isIC?'<div class="rc-row"><span class="rc-label">이메일</span>'+esc(preData.email||'—')+'</div>':'')+
+      '<div class="sess-badges">'+sessHtml+'</div>'+
+    '</div>'+
+    '<button class="btn-main green" style="margin-top:4px;" onclick="doPreCheckin(\''+esc(sid)+'\','+esc(JSON.stringify(preData))+')">✅ 체크인 처리</button>';
+    return;
+  }
+  area.innerHTML='<div class="result-card notfound">'+
+    '<div class="rc-name">❌ 사전 예약 없음</div>'+
+    '<div style="font-size:.8rem;color:#5A6778;margin-top:4px;">학번 <strong>'+esc(sid)+'</strong>의 사전예약 내역이 없습니다.<br>당일 방문자로 등록하려면 아래 버튼을 누르세요.</div>'+
+  '</div>'+
+  '<button class="btn-main" style="margin-top:4px;background:#7B5200;" onclick="openWalkWithSid(\''+esc(sid)+'\')">📝 당일 방문자로 전환</button>';
+}
+
+function doPreCheckin(lockedSid, lockedData) {
+  // lockedSid/lockedData: 화면에 표시된 시점에 캡처한 값.
+  // input을 다시 읽지 않으므로 스태프가 학번을 수정해도 화면의 학생으로 처리된다.
+  var sid = lockedSid || document.getElementById('preSid').value.trim();
+  if (!/^\d{10}$/.test(sid)){ alert('학번을 입력해주세요.'); return; }
+  var btn=document.querySelector('#preResultArea .btn-main');
+  if (btn){ btn.disabled=true; btn.textContent='처리 중...'; }
+  if (lockedData) {
+    google.script.run
+      .withSuccessHandler(function(res){ ciShowDone(lockedData.name, res.alreadyCheckedIn); ciLoadStatus(); })
+      .withFailureHandler(function(err){ alert(err.message); if(btn){btn.disabled=false;btn.textContent='✅ 체크인 처리';} })
+      .checkInStudent({studentId:sid,name:lockedData.name,dept:lockedData.dept,phone:lockedData.phone||'',email:lockedData.email||'',type:'pre',programs:lockedData.sessions||[]});
+  } else {
+    google.script.run
+      .withSuccessHandler(function(preData){
+        if (!preData){ alert('예약 내역을 찾을 수 없습니다.'); if(btn){btn.disabled=false;btn.textContent='✅ 체크인 처리';} return; }
+        google.script.run
+          .withSuccessHandler(function(res){ ciShowDone(preData.name, res.alreadyCheckedIn); ciLoadStatus(); })
+          .withFailureHandler(function(err){ alert(err.message); if(btn){btn.disabled=false;btn.textContent='✅ 체크인 처리';} })
+          .checkInStudent({studentId:sid,name:preData.name,dept:preData.dept,phone:preData.phone||'',email:preData.email||'',type:'pre',programs:preData.sessions||[]});
+      })
+      .withFailureHandler(function(err){ alert(err.message); if(btn){btn.disabled=false;btn.textContent='✅ 체크인 처리';} })
+      .getPreRegisteredSessions(sid);
+  }
+}
+
+function openWalkWithSid(sid) {
+  if (_walkIsFull){ alert('당일방문 체크인이 마감되었습니다.'); return; }
+  clearWalkForm();
+  document.getElementById('walkSid').value=sid;
+  goScreen('scr-ci-walk');
+  setTimeout(function(){ document.getElementById('walkName').focus(); },200);
+}
+
+// 당일방문
+function onWalkICCheck(chk) {
+  var deptEl=document.getElementById('walkDept');
+  if (chk.checked) {
+    deptEl.value=INTERCOLLEGE_DEPT; deptEl.readOnly=true;
+    deptEl.style.background='#F0F4F8'; deptEl.style.color='#5A6778';
+  } else {
+    deptEl.value=''; deptEl.readOnly=false;
+    deptEl.style.background=''; deptEl.style.color='';
+    deptEl.focus();
+  }
+}
+
+function doWalkCheckin() {
+  var sid=document.getElementById('walkSid').value.trim();
+  var name=document.getElementById('walkName').value.trim();
+  var dept=document.getElementById('walkDept').value.trim();
+  var phone=document.getElementById('walkPhone').value.trim();
+  var eid=document.getElementById('walkEmail').value.trim();
+  if (!/^\d{10}$/.test(sid)){ alert('학번은 숫자 10자리여야 합니다.'); return; }
+  if (!name){ alert('성명을 입력해주세요.'); return; }
+  if (!dept){ alert('학과를 입력해주세요.'); return; }
+  if (!eid){ alert('한양 이메일 ID를 입력해주세요.'); return; }
+  if (!phone){ alert('휴대폰 번호를 입력해주세요.'); return; }
+  if (!document.getElementById('walkPrivacy').checked){ alert('개인정보 수집·이용에 동의해주세요.'); return; }
+  var btn=document.getElementById('btnWalkCheckin');
+  btn.disabled=true; btn.textContent='처리 중...';
+  google.script.run
+    .withSuccessHandler(function(res){ btn.disabled=false; btn.textContent='✅ 체크인 처리'; ciShowDone(name, res.alreadyCheckedIn); ciLoadStatus(); })
+    .withFailureHandler(function(err){ alert(err.message); btn.disabled=false; btn.textContent='✅ 체크인 처리'; ciLoadStatus(); })
+    .checkInStudent({studentId:sid,name:name,dept:dept,phone:phone,email:eid+'@hanyang.ac.kr',type:'walk',programs:[]});
+}
+
+// 체크인 완료 + 카운트다운
+function ciShowDone(name, wasAlready) {
+  document.getElementById('ci-doneIco').textContent=wasAlready?'⚠️':'✅';
+  var t=document.getElementById('ci-doneTitle');
+  t.textContent=wasAlready?'이미 체크인된 학생입니다':'체크인 완료!';
+  t.className=wasAlready?'warn':'ok';
+  document.getElementById('ci-doneMsg').textContent=wasAlready
+    ?name+'님은 이미 체크인 처리되어 있습니다.'
+    :name+'님의 현장 체크인이 완료되었습니다.';
+  goScreen('scr-ci-done'); ciStartCountdown(6);
+}
+
+function ciStartCountdown(sec) {
+  if (_ciCountdownTimer){ clearInterval(_ciCountdownTimer); _ciCountdownTimer=null; }
+  document.getElementById('ci-countdown').textContent=sec;
+  _ciCountdownTimer=setInterval(function(){
+    sec--; document.getElementById('ci-countdown').textContent=sec;
+    if (sec<=0){ clearInterval(_ciCountdownTimer); _ciCountdownTimer=null; ciResetToType(); }
+  },1000);
+}
+
+function ciResetToType() {
+  if (_ciCountdownTimer){ clearInterval(_ciCountdownTimer); _ciCountdownTimer=null; }
+  document.getElementById('preSid').value='';
+  document.getElementById('preResultArea').innerHTML='';
+  clearWalkForm(); goScreen('scr-ci-type');
+}
+
+function clearWalkForm() {
+  ['walkSid','walkName','walkDept','walkPhone','walkEmail'].forEach(function(id){ document.getElementById(id).value=''; });
+  var icChk=document.getElementById('walkIsIC'); if(icChk) icChk.checked=false;
+  var deptEl=document.getElementById('walkDept'); if(deptEl){ deptEl.readOnly=false; deptEl.style.background=''; deptEl.style.color=''; }
+  var priv=document.getElementById('walkPrivacy'); if(priv) priv.checked=false;
+}
+
+// ══════════════════════════════════════════════
+// 기념품
+// ══════════════════════════════════════════════
+var ALL_BOOTHS= <?!= getSettingsData() ?>.boothPrograms;
+var BOOTH_REQUIRED=3;
+var _giCurrentStatus=null, _checkedBooths=[];
+var sigPad=null, sigInited=false;
+
+function giLookupStudent() {
+  var sid=document.getElementById('gi-searchSid').value.trim();
+  if (!/^\d{10}$/.test(sid)){ alert('학번 10자리를 입력하세요.'); return; }
+  var btn=document.getElementById('gi-btnLookup');
+  btn.disabled=true; btn.textContent='조회 중...';
+  google.script.run
+    .withSuccessHandler(function(status){
+      btn.disabled=false; btn.textContent='조회하기';
+      _giCurrentStatus=status; _selectedSubject=''; _checkedBooths=[];
+      giRenderVerifyScreen(status); goScreen('scr-gi-verify');
+    })
+    .withFailureHandler(function(err){ btn.disabled=false; btn.textContent='조회하기'; alert('조회 실패: '+err.message); })
+    .getStudentFullStatus(sid);
+}
+
+function giRenderVerifyScreen(st) {
+  var icBadge=st.isIntercollege
+    ?'<span class="badge badge-ic" style="margin-left:6px;">인터칼리지</span>'
+    :'<span class="badge badge-other" style="margin-left:6px;">타과</span>';
+  var typeBadge=st.checkInType==='사전예약'
+    ?'<span class="badge badge-pre" style="margin-left:4px;">사전예약</span>'
+    :st.checkInType==='당일방문'?'<span class="badge badge-walk" style="margin-left:4px;">당일방문</span>':'';
+
+  document.getElementById('gi-studentCard').innerHTML=
+    '<div class="sname">'+esc(st.name||'(이름 없음)')+icBadge+'</div>'+
+    '<div class="srow"><span class="slabel">학번</span>'+esc(st.studentId)+'</div>'+
+    '<div class="srow"><span class="slabel">학과</span>'+esc(st.dept||'—')+'</div>'+
+    '<div class="srow"><span class="slabel">체크인</span>'+(st.checkedIn?'✅ '+fmtTime(st.checkInTime)+' '+typeBadge:'❌ 미체크인')+'</div>';
+
+  document.getElementById('gi-alreadyBox').style.display=st.alreadyReceived?'flex':'none';
+  document.getElementById('gi-noCheckinBox').style.display=(!st.alreadyReceived&&!st.checkedIn)?'block':'none';
+  document.getElementById('gi-boothSection').style.display=(!st.alreadyReceived&&st.checkedIn)?'block':'none';
+  document.getElementById('gi-checkinCond').innerHTML='';
+  if (st.alreadyReceived||!st.checkedIn) return;
+
+  document.getElementById('gi-checkinCond').innerHTML=
+    '<div class="cond-item pass">✅ 설명회 체크인 완료 · '+fmtTime(st.checkInTime)+' '+typeBadge+'</div>';
+  if (st.preRegSessions&&st.preRegSessions.length) {
+    document.getElementById('gi-checkinCond').innerHTML+=
+      '<div class="cond-item info">📋 사전예약 설명회: '+st.preRegSessions.join(' · ')+'</div>';
+  }
+  if (st.preRegBooths&&st.preRegBooths.length) {
+    document.getElementById('gi-checkinCond').innerHTML+=
+      '<div class="cond-item info" style="margin-bottom:12px;">🏷 사전예약 부스: '+st.preRegBooths.join(' · ')+'</div>';
+  }
+
+  _checkedBooths=[];
+  var _isIC=st.isIntercollege;
+  document.getElementById('gi-boothGrid').innerHTML=ALL_BOOTHS.map(function(b){
+    var id='bchk-'+b.replace(/[^a-zA-Z0-9가-힣]/g,'');
+    var isLDC=(b==='라이프디자인센터'), blocked=isLDC&&!_isIC;
+    var style=blocked?'opacity:.4;cursor:not-allowed;':'';
+    return '<div class="booth-chk-item" id="bitem-'+esc(id)+'" style="'+style+'"'+(blocked?'':' onclick="giToggleBooth(\''+esc(b)+'\')"')+'>' +
+      '<input type="checkbox" id="'+esc(id)+'" value="'+esc(b)+'"'+(blocked?' disabled':'')+' style="pointer-events:none;">' +
+      '<span style="font-size:.86rem;font-weight:600;color:'+(blocked?'#B0BAC9':'var(--navy)')+';flex:1;'+(blocked?'cursor:not-allowed;':'')+'">'+esc(b)+(blocked?' <span style="font-size:.7rem;color:#C53030;">(인터칼리지 전용)</span>':'')+'</span></div>';
+  }).join('');
+  giUpdateBoothCount();
+
+  giUpdateSignRequest();
+}
+
+function giToggleBooth(b) {
+  var idx=_checkedBooths.indexOf(b);
+  if(idx===-1) _checkedBooths.push(b); else _checkedBooths.splice(idx,1);
+  ALL_BOOTHS.forEach(function(booth){
+    var id='bchk-'+booth.replace(/[^a-zA-Z0-9가-힣]/g,'');
+    var chk=document.getElementById(id), item=document.getElementById('bitem-'+id);
+    var checked=_checkedBooths.indexOf(booth)!==-1;
+    if(chk) chk.checked=checked; if(item) item.classList.toggle('checked',checked);
+  });
+  giUpdateBoothCount(); giUpdateSignRequest();
+}
+
+function giUpdateBoothCount(){
+  document.getElementById('gi-boothCountLabel').textContent=_checkedBooths.length+' / 6개 선택';
+}
+
+
+function giUpdateSignRequest(){
+  var ok=_checkedBooths.length>=BOOTH_REQUIRED;
+  document.getElementById('gi-stampWarnBox').style.display=ok?'none':'block';
+  document.getElementById('gi-signRequestSection').style.display=ok?'block':'none';
+  if(!ok) document.getElementById('gi-stampWarnMsg').textContent=
+    '부스 스탬프가 '+BOOTH_REQUIRED+'개 이상이어야 합니다. (현재 '+_checkedBooths.length+'개)';
+}
+
+function giGoToStudentSign(){
+  if(!_giCurrentStatus) return;
+  if(_checkedBooths.length < BOOTH_REQUIRED){
+    alert('부스 스탬프가 '+BOOTH_REQUIRED+'개 이상이어야 합니다. (현재 '+_checkedBooths.length+'개)');
+    return;
+  }
+  var st=_giCurrentStatus;
+  var icBadge=st.isIntercollege?'<span class="badge badge-ic">인터칼리지</span>':'';
+  document.getElementById('gi-signStudentInfo').innerHTML=
+    '<div style="font-weight:800;font-size:.97rem;color:var(--navy);margin-bottom:6px;">'+esc(st.name)+'님 '+icBadge+'</div>'+
+    '<div style="font-size:.8rem;color:#5A6778;line-height:1.8;">'+
+      '방문 부스: <strong style="color:var(--navy);">'+_checkedBooths.length+'개</strong> 확인 완료<br>'+
+      (_checkedBooths.length?'<span style="font-size:.74rem;color:#9AA5B4;">'+esc(_checkedBooths.join(', '))+'</span><br>':'')+
+      '<span style="color:#C53030;font-size:.76rem;">아래에 서명하시면 기념품이 지급됩니다.</span>'+
+    '</div>';
+  setModeBanner('student'); goScreen('scr-gi-sign');
+  if (!sigInited) {
+    setTimeout(function(){
+      var canvas=document.getElementById('sig-canvas'), wrapper=document.getElementById('sig-wrapper');
+      var ratio=Math.max(window.devicePixelRatio||1,1), w=wrapper.offsetWidth, h=wrapper.offsetHeight;
+      canvas.width=w*ratio; canvas.height=h*ratio;
+      canvas.style.width=w+'px'; canvas.style.height=h+'px';
+      canvas.getContext('2d').scale(ratio,ratio);
+      sigPad=new SignaturePad(canvas,{penColor:'#1B263B',minWidth:1.5,maxWidth:3});
+      sigInited=true;
+    },100);
+  } else { sigPad.clear(); }
+}
+
+function clearSig(){ if(sigPad) sigPad.clear(); }
+
+function giSubmitGift(){
+  if(!sigPad||sigPad.isEmpty()){ alert('서명을 해주세요.'); return; }
+  if(_checkedBooths.length < BOOTH_REQUIRED){ alert('부스 스탬프가 '+BOOTH_REQUIRED+'개 이상이어야 합니다.'); return; }
+  var btn=document.getElementById('btnSubmitSign');
+  btn.disabled=true; btn.textContent='저장 중...';
+  google.script.run
+    .withSuccessHandler(function(res){
+      btn.disabled=false; btn.textContent='✅ 서명 완료';
+      document.getElementById('gi-doneMsg').textContent=(_giCurrentStatus?_giCurrentStatus.name:'')+'님 기념품 지급이 완료되었습니다.';
+      document.getElementById('gi-verifyCodeDisplay').textContent=res.verifyCode||'';
+      setModeBanner('gi'); goScreen('scr-gi-done');
+    })
+    .withFailureHandler(function(err){ alert('처리 실패: '+err.message); btn.disabled=false; btn.textContent='✅ 서명 완료'; })
+    .saveGiftReceiptV2({
+      studentId:_giCurrentStatus.studentId, name:_giCurrentStatus.name,
+      dept:_giCurrentStatus.dept, booths:_checkedBooths,
+      stampCount:_checkedBooths.length, bonusSubject:'',
+      signature:sigPad.toDataURL()
+    });
+}
+
+function giGoBack(){
+  _giCurrentStatus=null; _checkedBooths=[];
+  if(sigPad) sigPad.clear();
+  document.getElementById('gi-searchSid').value='';
+  setModeBanner('gi'); goScreen('scr-gi-main');
+  setTimeout(function(){ document.getElementById('gi-searchSid').focus(); },200);
+}
+
+// ══════════════════════════════════════════════
+// 초기화
+// ══════════════════════════════════════════════
+window.onload = function() {
+  setInterval(function(){
+    var active=document.querySelector('.screen.active');
+    if (active&&active.id==='scr-ci-type') ciLoadStatus();
+  }, 30000);
+};
+</script>
+</body>
+</html>
