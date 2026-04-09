@@ -342,6 +342,7 @@ let _mainSearchSid = '', _mainSearchResult = null;
 let _pendingEditSid = '', _pendingEditData = null;
 let _editSid = '', _editCurrentData = null;
 let editBoothCount = 0;
+let _isSubmitting = false;
 
 // ─── 유틸 ────────────────────────────────────────────────────────
 function toMin(t) {
@@ -934,6 +935,19 @@ async function changeReservation(data) {
 
   const email=data.email+'@hanyang.ac.kr';
   const ts=firebase.firestore.FieldValue.serverTimestamp();
+
+  // 삭제 후 재검증: 같은 학번의 활성 부스예약 재조회하여 중복/겹침 방지
+  if(data.newBooths&&data.newBooths.length){
+    const reCheckSnap=await db.collection('boothReservations').where('studentId','==',sid).get();
+    const activeBooth=[];
+    reCheckSnap.forEach(d=>{const r=d.data(),st=r.status||'';if(st!==''&&st!=='취소'&&st!=='상담취소')activeBooth.push({program:r.program,time:r.time});});
+    for(const b of data.newBooths){
+      const prog=b.program,timeVal=b.time;
+      if(activeBooth.some(a=>a.program===prog))throw new Error('['+prog+'] 이미 예약하신 부스입니다.');
+      if(activeBooth.some(a=>timesOverlap(timeVal,15,a.time,15)))throw new Error('['+prog+'] 선택한 시간이 기존 예약과 겹칩니다.');
+    }
+  }
+
   for(const b of (data.newBooths||[])){
     let memo=b.memo||'';
     if(b.ldcTest) memo+='\n[진로적성검사: 진로적성검사 응시 희망]';
@@ -1136,6 +1150,8 @@ window.loadEditSlots = async function(sel){
 };
 
 window.submitChange = async function(){
+  if(_isSubmitting) return;
+  _isSubmitting=true;
   const sid=_editSid,data=_editCurrentData;
   const editName=document.getElementById('editName').value.trim()||data.name;
   const editDept=document.getElementById('editDept').value.trim()||data.dept;
@@ -1143,7 +1159,7 @@ window.submitChange = async function(){
   const editEmail=document.getElementById('editEmail').value.trim()||data.email;
   const newSessions=Array.from(document.querySelectorAll('.edit-sess-chk:checked')).map(c=>c.value);
   const sessWarnEl=document.getElementById('editSessWarn');
-  if(!newSessions.length){if(sessWarnEl){sessWarnEl.textContent='설명회를 1개 이상 선택해야 합니다.';sessWarnEl.style.display='block';}return;}
+  if(!newSessions.length){if(sessWarnEl){sessWarnEl.textContent='설명회를 1개 이상 선택해야 합니다.';sessWarnEl.style.display='block';}_isSubmitting=false;return;}
   if(sessWarnEl)sessWarnEl.style.display='none';
   const newBooths=[];let boothValid=true;
   document.querySelectorAll('#editBoothBlocks .prog-block').forEach(block=>{
@@ -1153,8 +1169,8 @@ window.submitChange = async function(){
     if(!prog||!time){boothValid=false;return;}
     newBooths.push({program:prog,time,memo,docId});
   });
-  if(!boothValid){alert('모든 부스의 프로그램과 시간을 선택해 주세요.');return;}
-  if(!confirm('변경 내용을 저장하시겠습니까?\n기존 예약이 취소되고 새로 예약됩니다.'))return;
+  if(!boothValid){alert('모든 부스의 프로그램과 시간을 선택해 주세요.');_isSubmitting=false;return;}
+  if(!confirm('변경 내용을 저장하시겠습니까?\n기존 예약이 취소되고 새로 예약됩니다.')){_isSubmitting=false;return;}
   const btn=document.querySelector('#inlineEditPanel .btn-main');
   btn.disabled=true;btn.textContent='저장 중...';
   try{
@@ -1167,9 +1183,11 @@ window.submitChange = async function(){
     });
     alert('변경이 완료되었습니다!');
     btn.disabled=false;btn.textContent='변경 저장';
+    _isSubmitting=false;
     clearMainSearch();closeEditPanel();resetPage();
   }catch(err){
     alert('오류: '+err.message);btn.disabled=false;btn.textContent='변경 저장';
+    _isSubmitting=false;
   }
 };
 
