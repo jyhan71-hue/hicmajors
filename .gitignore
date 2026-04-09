@@ -1,0 +1,12 @@
+# PDF 파일 제외 (용량 큰 바이너리)
+*.pdf
+
+# clasp 설정 (GAS 프로젝트 ID 포함)
+.clasp.json
+
+# Claude 메모리
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

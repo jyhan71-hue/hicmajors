@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>전체 시스템 운영 매뉴얼 — 2026 융합전공 소개행사</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+  @page { size: A4 portrait; margin: 18mm 16mm 18mm 16mm; }
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff; }
+    .page-break { page-break-before: always; }
+    .mockup-wrap, table, .box, .qa-item { break-inside: avoid; page-break-inside: avoid; }
+    h2 { break-after: avoid; page-break-after: avoid; }
+    h3 { break-after: avoid; page-break-after: avoid; }
+    h2 + p, h2 + ul, h2 + ol, h2 + .box, h2 + table { break-before: avoid; page-break-before: avoid; }
+    h3 + p, h3 + ul, h3 + ol { break-before: avoid; page-break-before: avoid; }
+    .footer { break-before: avoid; page-break-before: avoid; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard', 'Malgun Gothic', sans-serif; font-size: 10pt; color: #1a1a1a; line-height: 1.75; background: #eef2f6; padding: 24px; }
+  .sheet { background: #fff; max-width: 794px; margin: 0 auto 30px; padding: 24mm 17mm 22mm; box-shadow: 0 2px 20px rgba(0,0,0,.10); }
+
+  .doc-header { border-bottom: 3px solid #1B263B; padding-bottom: 10px; margin-bottom: 16px; }
+  .doc-org { font-size: 7.5pt; color: #7A8899; letter-spacing: .06em; margin-bottom: 3px; }
+  .doc-title { font-size: 15pt; font-weight: 800; color: #1B263B; }
+  .doc-sub { font-size: 9pt; color: #5A6778; margin-top: 3px; }
+
+  h2 { font-size: 11pt; font-weight: 800; color: #1B263B; border-left: 4px solid #1B263B; padding-left: 9px; margin: 20px 0 8px; }
+  h3 { font-size: 9.5pt; font-weight: 700; color: #2E4057; margin: 11px 0 4px; }
+  p { margin-bottom: 6px; font-size: 9.5pt; }
+  ul, ol { padding-left: 18px; margin-bottom: 8px; }
+  li { margin-bottom: 3px; font-size: 9.5pt; }
+
+  .box { border-radius: 6px; padding: 8px 12px; margin: 8px 0; font-size: 9pt; }
+  .box-blue  { background: #EBF4FF; border-left: 4px solid #2B6CB0; color: #1A365D; }
+  .box-yellow{ background: #FFFBEB; border-left: 4px solid #D69E2E; color: #7B5200; }
+  .box-red   { background: #FFF5F5; border-left: 4px solid #C53030; color: #742A2A; }
+  .box-green { background: #F0FFF4; border-left: 4px solid #38A169; color: #1C4532; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 8px 0 12px; }
+  thead tr { background: #1B263B; color: #fff; }
+  th { padding: 6px 10px; text-align: left; font-weight: 700; }
+  td { padding: 5px 10px; border-bottom: 1px solid #EAECEF; vertical-align: top; }
+  tbody tr:nth-child(even) td { background: #F8FAFC; }
+
+  .toc { background: #F8FAFC; border: 1px solid #DDE3EA; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 9pt; }
+  .toc-title { font-weight: 800; color: #1B263B; margin-bottom: 5px; font-size: 9.5pt; }
+  .toc ol { padding-left: 16px; margin: 0; }
+  .toc li { margin-bottom: 2px; color: #5A6778; }
+
+  .qa-item { margin-bottom: 9px; }
+  .qa-q { font-weight: 700; color: #1B263B; font-size: 9.5pt; margin-bottom: 2px; }
+  .qa-a { color: #5A6778; font-size: 9pt; padding-left: 12px; }
+
+  .print-btn { display: block; margin: 0 auto 20px; padding: 10px 32px; background: #1B263B; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Pretendard', sans-serif; }
+  .print-btn:hover { background: #2E4057; }
+  .footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #EAECEF; font-size: 8pt; color: #9AA5B4; text-align: center; }
+
+  /* ── 목업 공통 ── */
+  .mockup-wrap { margin: 12px 0 4px; border-radius: 10px; overflow: hidden; border: 1px solid #C8D3DE; box-shadow: 0 2px 8px rgba(0,0,0,.08); font-size: 8.5pt; }
+  .mockup-wrap * { font-family: 'Pretendard', sans-serif; }
+  .mockup-caption { font-size: 8pt; color: #7A8899; text-align: center; margin: 4px 0 12px; font-style: italic; }
+  .mockup-bar { background: #E8ECF0; padding: 5px 10px; display: flex; align-items: center; gap: 6px; }
+  .mockup-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .mockup-url { background: #fff; border-radius: 4px; padding: 2px 10px; font-size: 7.5pt; color: #7A8899; flex: 1; border: 1px solid #D0D5DC; }
+
+  /* 목업 헤더/탭/바디 */
+  .m-head { background: #1B263B; padding: 9px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .m-head-title { color: #fff; font-weight: 800; font-size: 9pt; }
+  .m-head-sub { color: rgba(255,255,255,.65); font-size: 7.5pt; }
+  .m-head-right { display: flex; gap: 5px; align-items: center; }
+  .m-btn { background: transparent; border: 1px solid rgba(255,255,255,.4); color: #fff; border-radius: 5px; padding: 3px 8px; font-size: 7pt; }
+  .m-btn-red { background: #fff; color: #C53030; border: 1.5px solid #C53030; border-radius: 5px; padding: 3px 8px; font-size: 7pt; font-weight: 700; }
+  .m-btn-white { background: #fff; color: #1B263B; border: none; border-radius: 5px; padding: 3px 8px; font-size: 7pt; font-weight: 700; }
+  .m-tabs { display: flex; border-bottom: 2px solid #EAECEF; background: #F8FAFC; padding: 0 12px; }
+  .m-tab { padding: 6px 12px; font-size: 7.5pt; font-weight: 600; color: #9AA5B4; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .m-tab.active { color: #1B263B; border-bottom-color: #1B263B; font-weight: 800; }
+  .m-body { background: #fff; padding: 10px 12px; }
+
+  /* 목업 통계 카드 */
+  .m-stat-section-label { font-size: 7pt; font-weight: 700; color: #9AA5B4; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
+  .m-stat-row { display: flex; gap: 6px; margin-bottom: 8px; }
+  .m-stat { flex: 1; background: #F8FAFC; border: 1px solid #EAECEF; border-radius: 7px; padding: 7px 8px; text-align: center; }
+  .m-stat.hl { background: #1B263B; }
+  .m-stat-num { font-size: 14pt; font-weight: 800; color: #1B263B; line-height: 1.2; }
+  .m-stat.hl .m-stat-num { color: #fff; }
+  .m-stat-lbl { font-size: 7pt; color: #7A8899; margin-top: 1px; }
+  .m-stat.hl .m-stat-lbl { color: rgba(255,255,255,.7); }
+
+  /* 목업 progress bar */
+  .prog-row { margin-bottom: 7px; }
+  .prog-name { font-size: 7.5pt; font-weight: 600; color: #1B263B; margin-bottom: 2px; }
+  .prog-bar-wrap { position: relative; height: 10px; background: #E2E8F0; border-radius: 99px; overflow: hidden; }
+  .prog-bar-pre { position: absolute; top:0; left:0; height: 100%; background: #4A90D9; border-radius: 99px; }
+  .prog-bar-walk { position: absolute; top:0; height: 100%; background: #68D391; border-radius: 99px; }
+  .prog-meta { font-size: 7pt; color: #9AA5B4; margin-top: 2px; }
+
+  /* 목업: 참석자 테이블 */
+  .m-table { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
+  .m-table thead tr { background: #1B263B; }
+  .m-table thead th { color: #fff; padding: 5px 7px; text-align: left; font-weight: 600; }
+  .m-table tbody td { padding: 5px 7px; border-bottom: 1px solid #EAECEF; }
+  .m-table tbody tr:nth-child(even) td { background: #F8FAFC; }
+
+  /* 목업: 스태프 체크인 */
+  .ci-box { background: #F8FAFC; border: 1px solid #EAECEF; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .ci-name { font-size: 10pt; font-weight: 800; color: #1B263B; }
+  .ci-info { font-size: 7.5pt; color: #5A6778; margin-top: 2px; line-height: 1.6; }
+  .ci-sessions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+  .ci-sess-badge { background: #EBF4FF; color: #2B6CB0; border-radius: 5px; padding: 2px 8px; font-size: 7pt; font-weight: 700; }
+  .ci-btn-row { display: flex; gap: 6px; margin-top: 8px; }
+  .ci-btn { flex: 1; padding: 7px; border-radius: 6px; text-align: center; font-size: 8pt; font-weight: 700; cursor: pointer; }
+  .ci-btn-green { background: #276749; color: #fff; border: none; }
+  .ci-btn-ghost { background: #fff; color: #5A6778; border: 1.5px solid #DDE3EA; }
+
+  /* 목업: 기념품 */
+  .booth-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: 8px 0; }
+  .booth-item { border: 1.5px solid #DDE3EA; border-radius: 6px; padding: 6px 8px; display: flex; align-items: center; gap: 6px; font-size: 7.5pt; font-weight: 600; color: #1B263B; cursor: pointer; }
+  .booth-item.checked { background: #E6FFED; border-color: #9AE6B4; color: #276749; }
+  .booth-check { width: 13px; height: 13px; border: 1.5px solid #DDE3EA; border-radius: 3px; flex-shrink: 0; background: #fff; }
+  .booth-item.checked .booth-check { background: #276749; border-color: #276749; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 8pt; }
+
+  /* 목업 세션 배지 (staff 헤더) */
+  .sess-indicator { background: rgba(255,255,255,.15); border-radius: 6px; padding: 4px 10px; font-size: 7.5pt; color: #fff; text-align: center; }
+  .sess-indicator .cur { font-weight: 800; font-size: 9pt; }
+
+  .m-input { width: 100%; border: 1.5px solid #DDE3EA; border-radius: 6px; padding: 5px 9px; font-size: 8pt; color: #5A6778; margin-bottom: 7px; font-family: 'Pretendard', sans-serif; }
+  .m-submit-full { width: 100%; background: #1B263B; color: #fff; border: none; border-radius: 6px; padding: 8px; font-size: 8.5pt; font-weight: 700; font-family: 'Pretendard', sans-serif; cursor: pointer; margin-top: 2px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* 목업: 슬롯 그리드 */
+  .m-slot-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 10px 12px; }
+  .m-slot { border-radius: 5px; padding: 5px 3px; text-align: center; font-size: 7pt; font-weight: 600; color: #fff; }
+  .slot-open    { background: #38A169; }
+  .slot-booked  { background: #3182CE; }
+  .slot-blocked { background: #C53030; }
+  .slot-time    { font-size: 6pt; opacity: .85; margin-top: 1px; }
+
+  /* 목업: 확인서 카드 */
+  .cert-card { background: #F8FAFC; border: 1px solid #EAECEF; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .cert-name { font-size: 10pt; font-weight: 800; color: #1B263B; margin-bottom: 3px; }
+  .cert-row  { font-size: 7.5pt; color: #5A6778; margin-bottom: 2px; }
+  .cert-badge-pre  { background:#EBF4FF; color:#2B6CB0; border-radius:4px; padding:1px 6px; font-size:6.5pt; font-weight:700; }
+  .cert-badge-walk { background:#FFF8E1; color:#92610A; border-radius:4px; padding:1px 6px; font-size:6.5pt; font-weight:700; }
+  .cert-btn-row { display: flex; gap: 6px; margin-top: 8px; }
+  .cert-btn { flex: 1; padding: 6px; border-radius: 6px; text-align: center; font-size: 7.5pt; font-weight: 700; cursor: pointer; }
+  .cert-btn-navy  { background: #1B263B; color: #fff; border: none; }
+  .cert-btn-ghost { background: #fff; color: #5A6778; border: 1.5px solid #DDE3EA; }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ PDF로 저장 / 인쇄</button>
+
+<div class="sheet">
+
+  <div class="doc-header">
+    <div class="doc-org">HANYANG YK INTERCOLLEGE · 2026 융합전공 소개행사</div>
+    <div class="doc-title">전체 시스템 운영 매뉴얼</div>
+    <div class="doc-sub">행정팀 및 운영 담당자 대상 · 2026. 5. 8.(금) 09:30 ~ 17:00</div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-title">목차</div>
+    <ol>
+      <li>시스템 개요 및 페이지 종류</li>
+      <li>스태프 체크인 페이지</li>
+      <li>세션 진행 관리</li>
+      <li>스태프 기념품 수령 페이지</li>
+      <li>예약 페이지 — 사전예약 / 이메일 / 데이터 저장 / 매년 재설정 방법</li>
+      <li>행정팀 관리자 페이지 — 대시보드</li>
+      <li>행정팀 관리자 페이지 — 설명회 체크인 / 부스 예약 / 참여확인서</li>
+      <li>자주 묻는 질문</li>
+    </ol>
+  </div>
+
+  <!-- ───────────────────────────────── -->
+  <h2>1. 시스템 개요 및 페이지 종류</h2>
+  <p>학생 <strong>사전예약 → 당일 체크인 → 기념품 수령</strong>까지 전 과정을 처리하는 Google 기반 웹 시스템입니다. 크롬 브라우저에서 URL로 접속해 사용합니다.</p>
+  <table>
+    <thead><tr><th>페이지</th><th>접속 방법</th><th>사용 대상</th><th>주요 기능</th></tr></thead>
+    <tbody>
+      <tr><td><strong>예약 페이지</strong></td><td>기본 URL<br><a href="https://tinyurl.com/hicmajors-booking" style="color:#2B6CB0;font-size:8pt;">https://tinyurl.com/hicmajors-booking</a></td><td>학생</td><td>부스 예약, 설명회 사전예약, 예약 변경·취소</td></tr>
+      <tr><td><strong>스태프 페이지</strong></td><td>URL + ?page=staff<br><a href="https://tinyurl.com/hicmajor-staff" style="color:#2B6CB0;font-size:8pt;">https://tinyurl.com/hicmajor-staff</a></td><td>스태프</td><td>현장 체크인, 기념품 수령 처리</td></tr>
+      <tr><td><strong>관리자 페이지</strong></td><td>URL + ?page=admin<br><a href="https://tinyurl.com/hicmajors-dashboard" style="color:#2B6CB0;font-size:8pt;">https://tinyurl.com/hicmajors-dashboard</a></td><td>행정팀·교수자</td><td>통계, 참석자 명단, 부스 관리, 확인서 발급</td></tr>
+    </tbody>
+  </table>
+  <div class="box box-yellow">⚠️ 비밀번호는 AdminUsers 시트에 등록된 계정 기준입니다. <strong>행정팀 로그인: 담당 프로그램 → 전체관리 선택</strong><br>🔑 비밀번호 : <strong>hic2025</strong></div>
+
+  <!-- ───────────────────────────────── -->
+  <h2 style="break-before:always;page-break-before:always;">2. 스태프 체크인 페이지</h2>
+  <p>스태프 계정으로 로그인 후 사용합니다. <strong>체크인 모드</strong>와 <strong>기념품 수령 모드</strong>가 있습니다.</p>
+
+  <div class="two-col" style="margin-top:8px;">
+    <div>
+      <p style="font-size:8.5pt;font-weight:700;color:#1B263B;margin-bottom:5px;">사전예약 학생 체크인</p>
+      <div class="mockup-wrap">
+        <div class="m-head">
+          <div><div class="m-head-title" style="font-size:8pt;">체크인 모드</div></div>
+          <div class="sess-indicator"><div class="cur">인지융합과학</div><div style="font-size:6.5pt;opacity:.7;">3번째 세션 진행중</div></div>
+        </div>
+        <div class="m-body">
+          <div class="m-input" style="margin-bottom:7px;">2024123456 🔍</div>
+          <div class="ci-box">
+            <div class="ci-name">홍길동 <span style="font-size:7.5pt;font-weight:400;color:#5A6778;">전기공학</span></div>
+            <div class="ci-info">📋 사전예약 설명회</div>
+            <div class="ci-sessions">
+              <div class="ci-sess-badge">인지융합과학</div>
+              <div class="ci-sess-badge">혁신공학경영</div>
+            </div>
+          </div>
+          <div class="ci-btn-row">
+            <button class="ci-btn ci-btn-green">✅ 체크인</button>
+            <button class="ci-btn ci-btn-ghost">← 뒤로</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p style="font-size:8.5pt;font-weight:700;color:#1B263B;margin-bottom:5px;">당일방문 학생 입장</p>
+      <div class="mockup-wrap">
+        <div class="m-head">
+          <div><div class="m-head-title" style="font-size:8pt;">체크인 모드</div></div>
+          <div class="sess-indicator"><div class="cur">인지융합과학</div></div>
+        </div>
+        <div class="m-body">
+          <div style="font-size:7.5pt;font-weight:700;color:#1B263B;margin-bottom:4px;">당일 현장입장</div>
+          <div class="m-input" style="margin-bottom:5px;">학번 입력</div>
+          <div class="m-input" style="margin-bottom:5px;">한양 이메일 (@hanyang.ac.kr)</div>
+          <button class="ci-btn ci-btn-green" style="width:100%;padding:7px;border-radius:6px;font-size:8pt;">🚀 현장입장 처리</button>
+          <div style="font-size:7pt;color:#9AA5B4;margin-top:6px;text-align:center;">현재 세션(인지융합과학)~종료까지 일괄 참석 처리</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-caption">▲ 체크인 화면 — 왼쪽: 사전예약 학생 / 오른쪽: 당일방문 학생</p>
+
+  <!-- ───────────────────────────────── -->
+  <h2>3. 세션 진행 관리 (스태프 페이지)</h2>
+  <p>설명회가 끝날 때마다 스태프가 직접 세션을 넘겨야 당일방문 체크인이 다음 세션 기준으로 처리됩니다. 스태프 페이지 우상단 <strong>다음 세션 →</strong> 버튼을 누르면 아래 모달이 열립니다.</p>
+
+  <div class="mockup-wrap" style="max-width:360px;margin:10px auto 4px;">
+    <div style="background:#1B263B;padding:10px 14px;">
+      <div style="color:#fff;font-size:8pt;font-weight:800;margin-bottom:8px;">세션 진행 관리</div>
+      <div style="background:rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;">
+        <div style="color:rgba(255,255,255,.7);font-size:7pt;margin-bottom:4px;">세션을 선택하고 비밀번호를 입력하세요</div>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px;">
+          <label style="display:flex;align-items:center;gap:6px;color:#fff;font-size:7.5pt;"><input type="radio" style="accent-color:#fff;"> 미래사회디자인</label>
+          <label style="display:flex;align-items:center;gap:6px;color:#fff;font-size:7.5pt;"><input type="radio" style="accent-color:#fff;"> 융합의과학/융합의공학</label>
+          <label style="display:flex;align-items:center;gap:6px;color:#4ADE80;font-size:7.5pt;font-weight:700;"><input type="radio" checked style="accent-color:#4ADE80;"> 인지융합과학 ← 현재</label>
+          <label style="display:flex;align-items:center;gap:6px;color:#fff;font-size:7.5pt;"><input type="radio" style="accent-color:#fff;"> 혁신공학경영</label>
+          <label style="display:flex;align-items:center;gap:6px;color:#fff;font-size:7.5pt;"><input type="radio" style="accent-color:#fff;"> 미래반도체공학</label>
+          <label style="display:flex;align-items:center;gap:6px;color:#fff;font-size:7.5pt;"><input type="radio" style="accent-color:#fff;"> 행사 종료</label>
+        </div>
+        <div style="border:1.5px solid rgba(255,255,255,.3);border-radius:6px;padding:5px 9px;color:rgba(255,255,255,.5);font-size:7.5pt;margin-bottom:6px;">비밀번호 입력</div>
+        <button style="width:100%;background:#fff;color:#1B263B;border:none;border-radius:6px;padding:6px;font-size:8pt;font-weight:800;font-family:'Pretendard',sans-serif;cursor:pointer;">확인</button>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-caption">▲ 세션 진행 관리 모달 — 원하는 세션을 선택하고 비밀번호 입력 후 확인. 잘못 넘긴 경우 이전 세션으로 되돌릴 수 있습니다.</p>
+
+  <table>
+    <thead><tr><th>단계</th><th>설명회</th><th>시간(예정)</th></tr></thead>
+    <tbody>
+      <tr><td>1단계</td><td>미래사회디자인</td><td>09:30 ~ 09:55</td></tr>
+      <tr><td>2단계</td><td>융합의과학/융합의공학</td><td>10:00 ~ 10:25</td></tr>
+      <tr><td>3단계</td><td>인지융합과학</td><td>10:30 ~ 10:55</td></tr>
+      <tr><td>4단계</td><td>혁신공학경영</td><td>11:00 ~ 11:25</td></tr>
+      <tr><td>5단계</td><td>미래반도체공학</td><td>11:30 ~ 11:55</td></tr>
+      <tr><td>종료</td><td>행사 종료 — 체크인 마감</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ───────────────────────────────── -->
+  <h2>4. 스태프 기념품 수령 페이지</h2>
+  <p>체크인 완료 학생이 부스 상담을 3개 이상 완료한 경우 기념품을 수령할 수 있습니다.</p>
+
+  <div class="mockup-wrap">
+    <div class="m-head">
+      <div class="m-head-title">기념품 수령 모드</div>
+    </div>
+    <div class="m-body">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <div class="m-input">학번 입력 후 조회</div>
+          <div class="ci-box" style="margin-bottom:8px;">
+            <div class="ci-name">김민준 <span style="font-size:7.5pt;color:#5A6778;">한양인터칼리지학부</span> <span style="background:#EBF4FF;color:#2B6CB0;border-radius:4px;padding:1px 5px;font-size:6.5pt;font-weight:700;">인터칼리지</span></div>
+            <div class="ci-info">✅ 체크인 완료 · 09:32 · 사전예약<br>📋 참여 설명회: 인지융합과학 · 혁신공학경영</div>
+          </div>
+          <div style="font-size:8pt;font-weight:700;color:#1B263B;margin-bottom:5px;">📋 부스 스탬프 확인 <span style="font-size:7pt;color:#276749;font-weight:700;">3 / 6개 선택</span></div>
+          <div class="booth-grid">
+            <div class="booth-item checked"><div class="booth-check">✓</div>인지융합과학</div>
+            <div class="booth-item checked"><div class="booth-check">✓</div>혁신공학경영</div>
+            <div class="booth-item checked"><div class="booth-check">✓</div>미래반도체공학</div>
+            <div class="booth-item"><div class="booth-check"></div>미래사회디자인</div>
+            <div class="booth-item"><div class="booth-check"></div>융합의과학</div>
+            <div class="booth-item" style="opacity:.4;"><div class="booth-check"></div><span>라이프디자인센터</span></div>
+          </div>
+        </div>
+        <div style="width:140px;display:flex;flex-direction:column;gap:6px;">
+          <div style="background:#EBF4FF;border-radius:8px;padding:8px;font-size:7.5pt;color:#1B263B;">
+            <div style="font-weight:700;margin-bottom:4px;">🎓 신청 과목</div>
+            <div style="background:#fff;border:1px solid #EAECEF;border-radius:5px;padding:4px 6px;margin-bottom:3px;font-size:7pt;">Life Project</div>
+            <div style="background:#1B263B;color:#fff;border-radius:5px;padding:4px 6px;margin-bottom:3px;font-size:7pt;">Unified Systems</div>
+            <div style="background:#fff;border:1px solid #EAECEF;border-radius:5px;padding:4px 6px;font-size:7pt;">Systems Thinking</div>
+          </div>
+          <button class="ci-btn ci-btn-green" style="padding:7px;border-radius:6px;font-size:7.5pt;border:none;cursor:pointer;">✍️ 학생 서명 화면으로</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-caption">▲ 기념품 수령 화면 — 스탬프북 확인 후 방문 부스 3개 이상 체크 → 서명 화면으로 진행</p>
+  <div class="box box-yellow">⚠️ 부스 3개 미만 체크 시 서명 화면으로 이동하지 않습니다. 라이프디자인센터는 인터칼리지 학생만 선택 가능.</div>
+
+  <!-- ───────────────────────────────── -->
+  <div class="page-break"></div>
+
+  <h2>5. 예약 페이지 — 사전예약 / 자동 발송 이메일 / 데이터 저장 위치</h2>
+  <p>학생들이 직접 접속하는 <strong>예약 페이지</strong>(<a href="https://tinyurl.com/hicmajors-booking" style="color:#2B6CB0;">https://tinyurl.com/hicmajors-booking</a>)에서 설명회 사전예약과 부스 상담 예약을 진행합니다. 예약·변경·취소는 학생이 직접 처리하며, 처리 시마다 이메일이 자동 발송됩니다.</p>
+
+  <div class="two-col">
+    <div>
+      <h3>자동 발송 이메일</h3>
+      <p style="font-size:8.5pt;color:#5A6778;margin-bottom:5px;">발신 주소: intercollege@hanyang.ac.kr</p>
+      <table style="margin-top:5px;">
+        <thead><tr><th>시점</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td>예약 완료</td><td>예약 내역 확인 메일</td></tr>
+          <tr><td>예약 변경</td><td>변경 내역 안내 메일</td></tr>
+          <tr><td>예약 취소</td><td>취소 확인 메일</td></tr>
+          <tr><td>5/7 09:00 (자동)</td><td>전체 예약자 리마인드</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3>스프레드시트 시트 구성</h3>
+      <p style="font-size:8.5pt;color:#5A6778;margin-bottom:5px;">모든 데이터는 구글 스프레드시트에 자동 저장됩니다.</p>
+      <table style="margin-top:5px;">
+        <thead><tr><th>시트명</th><th>저장 내용</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Settings</strong></td><td>행사 기본 정보 및 전체 설정 (아래 별도 설명)</td></tr>
+          <tr><td>AdminUsers</td><td>계정 및 비밀번호</td></tr>
+          <tr><td>SessionPreReg</td><td>설명회 사전예약</td></tr>
+          <tr><td>BoothReservations</td><td>부스 예약</td></tr>
+          <tr><td>CheckIns</td><td>체크인 기록</td></tr>
+          <tr><td>GiftReceipts</td><td>기념품 수령 서명</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3>Settings 시트 구조 — 행사 정보 및 프로그램 설정</h3>
+  <p>Settings 시트에 입력된 값이 예약·스태프·관리자 페이지 전체에 자동으로 반영됩니다. <strong>매년 이 시트만 수정하면 코드 변경 없이 재사용할 수 있습니다.</strong></p>
+  <table>
+    <thead><tr><th>A열 (항목)</th><th>B열 (값 / 프로그램명)</th><th>C열</th><th>D열</th></tr></thead>
+    <tbody>
+      <tr><td><code>예약오픈여부</code></td><td>OPEN 또는 CLOSED</td><td></td><td></td></tr>
+      <tr><td><code>행사명</code></td><td>행사 부제목 문자열</td><td></td><td></td></tr>
+      <tr><td><code>행사일시</code></td><td>날짜·시간 문자열</td><td></td><td></td></tr>
+      <tr><td><code>행사장소</code></td><td>장소 문자열</td><td></td><td></td></tr>
+      <tr><td><code>currentSessionIdx</code></td><td>0 (행사 전 초기화)</td><td></td><td></td></tr>
+      <tr><td><code>설명회세션</code></td><td>프로그램명 (순서대로 반복)</td><td>시작 HH:MM</td><td>종료 HH:MM</td></tr>
+      <tr><td><code>부스프로그램</code></td><td>프로그램명 (순서대로 반복)</td><td></td><td></td></tr>
+    </tbody>
+  </table>
+  <div class="box box-blue">ℹ️ <strong>설명회세션</strong> 행은 위에서부터 1단계·2단계… 순서로 처리됩니다. 행을 추가·삭제해 세션 수를 자유롭게 조정할 수 있습니다. <strong>currentSessionIdx</strong>는 행사 전날 반드시 <strong>0</strong>으로 초기화하세요.</div>
+
+  <h3>다음 행사를 위한 재설정 체크리스트</h3>
+  <ol>
+    <li><strong>Settings 시트</strong> — 행사명·일시·장소, 설명회세션 목록·시간, 부스프로그램 목록 수정. currentSessionIdx → 0 초기화.</li>
+    <li><strong>AdminUsers 시트</strong> — 스태프·교수자 계정 비밀번호 업데이트.</li>
+    <li><strong>리마인드 트리거</strong> — Apps Script 편집기에서 <code>setupRemindTrigger()</code> 실행하여 새 행사 일정으로 재등록.</li>
+    <li><strong>예약 오픈</strong> — Settings 시트의 예약오픈여부를 <code>OPEN</code>으로 변경.</li>
+  </ol>
+
+  <!-- ───────────────────────────────── -->
+  <h2>6. 행정팀 관리자 페이지 — 대시보드</h2>
+  <p>로그인 시 <strong>담당 프로그램: 전체관리</strong>를 선택합니다. 로그인 후 전체 참석 통계가 자동으로 표시됩니다. (처음 로딩 최대 15초)</p>
+
+  <div class="mockup-wrap">
+    <div class="mockup-bar">
+      <div class="mockup-dot" style="background:#FF6058;"></div>
+      <div class="mockup-dot" style="background:#FFBD2E;"></div>
+      <div class="mockup-dot" style="background:#28C840;"></div>
+      <div class="mockup-url">관리자 페이지 — 행정팀</div>
+    </div>
+    <div class="m-head">
+      <div>
+        <div class="m-head-title">📋 행정팀 관리 페이지</div>
+        <div class="m-head-sub">행정팀 님 (행정팀)</div>
+      </div>
+      <div class="m-head-right">
+        <div class="m-btn-red">🚫 현장예약 마감</div>
+        <div class="m-btn">📖 매뉴얼</div>
+        <div class="m-btn-white">⏏ 로그아웃</div>
+      </div>
+    </div>
+    <div class="m-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:8.5pt;font-weight:800;color:#1B263B;">📊 전체 참석 현황</div>
+        <div style="font-size:7.5pt;color:#9AA5B4;border:1px solid #EAECEF;padding:3px 9px;border-radius:5px;">🔄 새로고침</div>
+      </div>
+      <div class="m-stat-section-label">📋 설명회 참석 건수 (1인 다중 참여 포함)</div>
+      <div class="m-stat-row">
+        <div class="m-stat hl"><div class="m-stat-num">23</div><div class="m-stat-lbl">총 참석건수</div></div>
+        <div class="m-stat"><div class="m-stat-num" style="color:#2B6CB0;">11</div><div class="m-stat-lbl">사전예약 참석건수</div></div>
+        <div class="m-stat"><div class="m-stat-num" style="color:#276749;">12</div><div class="m-stat-lbl">당일 참석건수</div></div>
+      </div>
+      <div class="m-stat-section-label" style="margin-top:4px;">👤 설명회 참석 인원 (학번 중복 제거)</div>
+      <div class="m-stat-row">
+        <div class="m-stat hl"><div class="m-stat-num">18</div><div class="m-stat-lbl">총 참석인원</div></div>
+        <div class="m-stat"><div class="m-stat-num" style="color:#2B6CB0;">8</div><div class="m-stat-lbl">사전예약 참석인원</div></div>
+        <div class="m-stat"><div class="m-stat-num" style="color:#276749;">10</div><div class="m-stat-lbl">당일 참석인원</div></div>
+      </div>
+      <div style="height:1px;background:#EAECEF;margin:8px 0;"></div>
+      <div class="prog-row">
+        <div class="prog-name">미래사회디자인</div>
+        <div class="prog-bar-wrap">
+          <div class="prog-bar-pre" style="width:40%;"></div>
+          <div class="prog-bar-walk" style="width:20%;left:40%;"></div>
+        </div>
+        <div class="prog-meta">참석 3건 | 사전 2/5 (40%) | 당일 1건</div>
+      </div>
+      <div class="prog-row">
+        <div class="prog-name">인지융합과학</div>
+        <div class="prog-bar-wrap">
+          <div class="prog-bar-pre" style="width:60%;"></div>
+          <div class="prog-bar-walk" style="width:25%;left:60%;"></div>
+        </div>
+        <div class="prog-meta">참석 6건 | 사전 4/5 (80%) | 당일 2건</div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-caption">▲ 대시보드 — 참석 건수·인원이 두 줄로 분리되어 표시. 하단에 설명회별 막대 그래프</p>
+
+  <!-- ───────────────────────────────── -->
+  <h2>7. 행정팀 관리자 페이지 — 탭 기능</h2>
+
+  <h3>① 설명회 체크인 탭</h3>
+  <ol>
+    <li>확인할 <strong>설명회 이름</strong>을 클릭합니다.</li>
+    <li>참석자 목록·체크인 시각·사전/당일 구분이 표시됩니다.</li>
+    <li><strong>참석자 명단 PDF</strong> 버튼으로 출력합니다. (예산 증빙·보관용)</li>
+  </ol>
+
+  <div class="mockup-wrap">
+    <div class="m-tabs" style="background:#F8FAFC;padding:0 12px;border-bottom:2px solid #EAECEF;">
+      <div class="m-tab active">✍️ 설명회 체크인</div>
+      <div class="m-tab">📋 부스 예약</div>
+      <div class="m-tab">🎁 참여확인서</div>
+    </div>
+    <div class="m-body">
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">
+        <div style="background:#1B263B;color:#fff;border-radius:6px;padding:5px 11px;font-size:7.5pt;font-weight:700;">미래사회디자인</div>
+        <div style="background:#F0F4F8;border-radius:6px;padding:5px 11px;font-size:7.5pt;font-weight:600;color:#5A6778;">융합의과학</div>
+        <div style="background:#F0F4F8;border-radius:6px;padding:5px 11px;font-size:7.5pt;font-weight:600;color:#5A6778;">인지융합과학</div>
+        <div style="background:#F0F4F8;border-radius:6px;padding:5px 11px;font-size:7.5pt;font-weight:600;color:#5A6778;">혁신공학경영</div>
+        <div style="background:#F0F4F8;border-radius:6px;padding:5px 11px;font-size:7.5pt;font-weight:600;color:#5A6778;">미래반도체공학</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <div style="background:#EBF4FF;border-radius:6px;padding:5px 10px;font-size:7.5pt;"><span style="font-size:11pt;font-weight:800;color:#1B263B;">5</span><br><span style="color:#7A8899;">전체</span></div>
+        <div style="background:#F0FFF4;border-radius:6px;padding:5px 10px;font-size:7.5pt;"><span style="font-size:11pt;font-weight:800;color:#276749;">4</span><br><span style="color:#7A8899;">체크인완료</span></div>
+        <div style="background:#FFF5F5;border-radius:6px;padding:5px 10px;font-size:7.5pt;"><span style="font-size:11pt;font-weight:800;color:#C53030;">1</span><br><span style="color:#7A8899;">미체크인</span></div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;">
+          <div style="background:#1B263B;color:#fff;border-radius:6px;padding:5px 11px;font-size:7.5pt;font-weight:700;">📄 참석자 명단 PDF</div>
+        </div>
+      </div>
+      <table class="m-table">
+        <thead><tr><th>#</th><th>이름</th><th>학번</th><th>학과</th><th>유형</th><th>체크인 시각</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>홍길동</td><td>2024123456</td><td>전기공학</td><td><span style="background:#EBF4FF;color:#2B6CB0;border-radius:99px;padding:1px 6px;font-size:6.5pt;font-weight:700;">사전</span></td><td style="color:#276749;font-weight:600;">09:32</td></tr>
+          <tr><td>2</td><td>이민지</td><td>2023654321</td><td>기계공학</td><td><span style="background:#FFF8E1;color:#92610A;border-radius:99px;padding:1px 6px;font-size:6.5pt;font-weight:700;">당일</span></td><td style="color:#276749;font-weight:600;">09:45</td></tr>
+          <tr><td>3</td><td>박준호</td><td>2024987654</td><td>경영학</td><td><span style="background:#EBF4FF;color:#2B6CB0;border-radius:99px;padding:1px 6px;font-size:6.5pt;font-weight:700;">사전</span></td><td style="color:#C53030;font-weight:700;">미체크인</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="mockup-caption">▲ 설명회 체크인 탭 — 설명회를 선택하면 참석자 명단과 체크인 현황이 표시됨</p>
+
+  <h3>② 부스 예약 탭</h3>
+  <p>부스별 예약 현황 확인, 슬롯 차단/해제, 현장 예약 마감 처리에 사용합니다.</p>
+
+  <div class="mockup-wrap">
+    <div class="m-head">
+      <div class="m-head-title">📋 행정팀 관리 페이지</div>
+      <div class="m-head-right">
+        <div class="m-btn-red">🚫 현장예약 마감</div>
+        <div class="m-btn">📖 매뉴얼</div>
+        <div class="m-btn-white">⏏ 로그아웃</div>
+      </div>
+    </div>
+    <div class="m-tabs">
+      <div class="m-tab">✍️ 설명회 체크인</div>
+      <div class="m-tab active">📋 부스 예약</div>
+      <div class="m-tab">🎁 참여확인서</div>
+    </div>
+    <div class="m-body">
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">
+        <div style="background:#1B263B;color:#fff;border-radius:6px;padding:5px 11px;font-size:7.5pt;font-weight:700;">인지융합과학</div>
+        <div style="background:#F0F4F8;border-radius:6px;padding:5px 11px;font-size:7.5pt;color:#5A6778;">미래사회디자인</div>
+        <div style="background:#F0F4F8;border-radius:6px;padding:5px 11px;font-size:7.5pt;color:#5A6778;">혁신공학경영</div>
+        <div style="background:#F0F4F8;border-radius:6px;padding:5px 11px;font-size:7.5pt;color:#5A6778;">미래반도체공학</div>
+        <div style="background:#F0F4F8;border-radius:6px;padding:5px 11px;font-size:7.5pt;color:#5A6778;">융합의과학</div>
+      </div>
+      <div style="font-size:7.5pt;font-weight:700;color:#1B263B;margin-bottom:4px;">인지융합과학 — 슬롯 현황</div>
+      <div class="m-slot-grid">
+        <div class="m-slot slot-booked">14:00<div class="slot-time">예약완료</div></div>
+        <div class="m-slot slot-booked">14:15<div class="slot-time">예약완료</div></div>
+        <div class="m-slot slot-open">14:30<div class="slot-time">예약가능</div></div>
+        <div class="m-slot slot-open">14:45<div class="slot-time">예약가능</div></div>
+        <div class="m-slot slot-blocked">15:00<div class="slot-time">차단됨</div></div>
+        <div class="m-slot slot-open">15:15<div class="slot-time">예약가능</div></div>
+        <div class="m-slot slot-booked">15:30<div class="slot-time">예약완료</div></div>
+        <div class="m-slot slot-open">15:45<div class="slot-time">예약가능</div></div>
+        <div class="m-slot slot-open">16:00<div class="slot-time">예약가능</div></div>
+        <div class="m-slot slot-blocked">16:15<div class="slot-time">차단됨</div></div>
+      </div>
+      <div style="display:flex;gap:10px;margin:6px 12px 4px;font-size:7pt;">
+        <span style="display:flex;align-items:center;gap:3px;"><span style="width:9px;height:9px;background:#38A169;border-radius:2px;display:inline-block;"></span>예약가능</span>
+        <span style="display:flex;align-items:center;gap:3px;"><span style="width:9px;height:9px;background:#3182CE;border-radius:2px;display:inline-block;"></span>예약완료</span>
+        <span style="display:flex;align-items:center;gap:3px;"><span style="width:9px;height:9px;background:#C53030;border-radius:2px;display:inline-block;"></span>차단됨</span>
+      </div>
+      <div style="border-top:1px solid #EAECEF;margin:8px 0;"></div>
+      <table class="m-table">
+        <thead><tr><th>시간</th><th>이름</th><th>학번</th><th>학과</th><th>문의</th><th>상태</th></tr></thead>
+        <tbody>
+          <tr><td>14:00</td><td>홍길동</td><td>2024123456</td><td>전기공학</td><td style="text-align:center;">💬</td><td><span style="background:#EBF4FF;color:#2B6CB0;border-radius:99px;padding:1px 6px;font-size:6.5pt;font-weight:700;">대기</span></td></tr>
+          <tr><td>14:15</td><td>김민준</td><td>2023654321</td><td>기계공학</td><td style="text-align:center;">—</td><td><span style="background:#F0FFF4;color:#276749;border-radius:99px;padding:1px 6px;font-size:6.5pt;font-weight:700;">상담완료</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="mockup-caption">▲ 부스 예약 탭 — 프로그램 선택 후 슬롯 현황과 예약자 명단 확인. 슬롯 클릭으로 차단/해제 가능</p>
+  <div class="box box-yellow">⚠️ <strong>현장예약 마감</strong> 버튼: 상단에 위치. 누르면 모든 신규 예약이 전면 중단됩니다. 행사 당일 예약 접수 마감 시 사용하고, 같은 버튼으로 재개도 가능합니다.</div>
+
+  <h3>③ 참여확인서 탭</h3>
+  <p>학생 개인별 참여확인서 발급 및 전체 기념품 서명부 출력에 사용합니다.</p>
+
+  <div class="mockup-wrap">
+    <div class="m-head">
+      <div class="m-head-title">📋 행정팀 관리 페이지</div>
+      <div class="m-head-right">
+        <div class="m-btn">📖 매뉴얼</div>
+        <div class="m-btn-white">⏏ 로그아웃</div>
+      </div>
+    </div>
+    <div class="m-tabs">
+      <div class="m-tab">✍️ 설명회 체크인</div>
+      <div class="m-tab">📋 부스 예약</div>
+      <div class="m-tab active">🎁 참여확인서</div>
+    </div>
+    <div class="m-body">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;">
+          <div class="m-input" style="margin-bottom:8px;">학번 입력 후 조회 🔍</div>
+          <div class="cert-card">
+            <div class="cert-name">홍길동 <span style="font-size:7.5pt;font-weight:400;color:#5A6778;">전기공학과</span></div>
+            <div class="cert-row">학번: 2024123456</div>
+            <div class="cert-row" style="margin-top:4px;">
+              ✅ 체크인 완료 <span class="cert-badge-pre">사전예약</span>&nbsp; 09:32 입장
+            </div>
+            <div class="cert-row" style="margin-top:3px;">
+              📋 참여 설명회: <strong style="color:#1B263B;">인지융합과학 · 혁신공학경영</strong>
+            </div>
+            <div class="cert-row" style="margin-top:3px;">
+              🎁 기념품 수령: <strong style="color:#276749;">완료</strong>
+            </div>
+          </div>
+          <div class="cert-btn-row">
+            <div class="cert-btn cert-btn-navy">📄 PDF 저장</div>
+            <div class="cert-btn cert-btn-ghost">✉️ 이메일 발송</div>
+          </div>
+        </div>
+        <div style="width:130px;display:flex;flex-direction:column;gap:6px;">
+          <div style="background:#F8FAFC;border:1px solid #EAECEF;border-radius:8px;padding:10px;font-size:7.5pt;color:#1B263B;">
+            <div style="font-weight:700;margin-bottom:6px;">📋 전체 출력</div>
+            <div style="background:#1B263B;color:#fff;border-radius:6px;padding:6px 8px;text-align:center;font-size:7pt;font-weight:700;margin-bottom:5px;">🖨️ 기념품 서명부 PDF</div>
+            <div style="font-size:6.5pt;color:#9AA5B4;line-height:1.5;">전체 수령자 명단<br>예산 증빙·보관용</div>
+          </div>
+          <div class="box box-red" style="margin:0;font-size:7pt;padding:6px 8px;">⚠️ PDF가 안 열리면 브라우저 팝업 차단 해제</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-caption">▲ 참여확인서 탭 — 학번 조회 후 PDF 저장 또는 이메일 발송. 우측에서 전체 기념품 서명부 일괄 출력</p>
+
+  <!-- ───────────────────────────────── -->
+  <h2 style="break-before:always;page-break-before:always;">8. 자주 묻는 질문</h2>
+  <div class="qa-item"><div class="qa-q">Q. 통계 숫자가 0으로 보여요</div><div class="qa-a">🔄 새로고침 버튼을 누르거나 다시 로그인해 보세요. 처음 로딩은 최대 15초 걸립니다.</div></div>
+  <div class="qa-item"><div class="qa-q">Q. 참여확인서 PDF가 안 열려요</div><div class="qa-a">브라우저 팝업 차단이 켜져 있을 수 있습니다. 주소창 오른쪽 팝업 허용 버튼을 클릭하세요.</div></div>
+  <div class="qa-item"><div class="qa-q">Q. 기념품 수령이 안 돼요</div><div class="qa-a">설명회 체크인 완료 여부와 방문 부스 3개 이상 체크 여부를 확인하세요.</div></div>
+  <div class="qa-item"><div class="qa-q">Q. 리마인드 메일이 자동 발송되지 않았어요</div><div class="qa-a">Apps Script 편집기에서 setupRemindTrigger() 함수가 실행되어 있는지 확인하세요. (최초 1회 실행 필요)</div></div>
+  <div class="qa-item"><div class="qa-q">Q. 로딩이 너무 느려요</div><div class="qa-a">행사 당일은 워밍업 트리거가 자동 동작하여 빠르게 유지됩니다. 행사 전에는 첫 접속 시 느릴 수 있습니다.</div></div>
+  <div class="qa-item"><div class="qa-q">Q. 내년에도 이 시스템을 쓰려면 어떻게 하나요?</div><div class="qa-a">Settings 시트의 행사명·일시·장소와 설명회세션·부스프로그램 목록만 수정하면 됩니다. 코드 변경은 필요 없습니다. 5번 섹션의 재설정 체크리스트를 참고하세요.</div></div>
+
+  <div class="footer">한양YK인터칼리지 &nbsp;|&nbsp; intercollege@hanyang.ac.kr &nbsp;|&nbsp; 2026. 5. 8.</div>
+</div>
+</body>
+</html>

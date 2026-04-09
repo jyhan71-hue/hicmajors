@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>부스 예약 관리 매뉴얼 — 2026 융합전공 소개행사</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+  @page { size: A4 portrait; margin: 18mm 16mm 18mm 16mm; }
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff; }
+    .page-break { page-break-before: always; }
+    .mockup-wrap, table, .box, .qa-item { break-inside: avoid; page-break-inside: avoid; }
+    h2 { break-after: avoid; page-break-after: avoid; }
+    h3 { break-after: avoid; page-break-after: avoid; }
+    h2 + p, h2 + ul, h2 + ol, h2 + .box, h2 + table { break-before: avoid; page-break-before: avoid; }
+    h3 + p, h3 + ul, h3 + ol { break-before: avoid; page-break-before: avoid; }
+    .footer { break-before: avoid; page-break-before: avoid; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard', 'Malgun Gothic', sans-serif; font-size: 10pt; color: #1a1a1a; line-height: 1.75; background: #eef2f6; padding: 24px; }
+  .sheet { background: #fff; max-width: 794px; margin: 0 auto 30px; padding: 26mm 17mm 22mm; box-shadow: 0 2px 20px rgba(0,0,0,.10); }
+
+  /* 헤더 */
+  .doc-header { border-bottom: 3px solid #1B263B; padding-bottom: 10px; margin-bottom: 18px; }
+  .doc-org { font-size: 7.5pt; color: #7A8899; letter-spacing: .06em; margin-bottom: 3px; }
+  .doc-title { font-size: 15pt; font-weight: 800; color: #1B263B; }
+  .doc-sub { font-size: 9pt; color: #5A6778; margin-top: 3px; }
+
+  /* 섹션 */
+  h2 { font-size: 11pt; font-weight: 800; color: #1B263B; border-left: 4px solid #1B263B; padding-left: 9px; margin: 20px 0 8px; }
+  h3 { font-size: 9.5pt; font-weight: 700; color: #2E4057; margin: 12px 0 5px; }
+  p { margin-bottom: 6px; font-size: 9.5pt; }
+  ul, ol { padding-left: 18px; margin-bottom: 8px; }
+  li { margin-bottom: 3px; font-size: 9.5pt; }
+
+  /* 박스 */
+  .box { border-radius: 6px; padding: 8px 12px; margin: 8px 0; font-size: 9pt; }
+  .box-blue  { background: #EBF4FF; border-left: 4px solid #2B6CB0; color: #1A365D; }
+  .box-yellow{ background: #FFFBEB; border-left: 4px solid #D69E2E; color: #7B5200; }
+  .box-red   { background: #FFF5F5; border-left: 4px solid #C53030; color: #742A2A; }
+  .box-green { background: #F0FFF4; border-left: 4px solid #38A169; color: #1C4532; }
+
+  /* 테이블 */
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; margin: 8px 0 12px; }
+  thead tr { background: #1B263B; color: #fff; }
+  th { padding: 6px 10px; text-align: left; font-weight: 700; }
+  td { padding: 5px 10px; border-bottom: 1px solid #EAECEF; vertical-align: top; }
+  tbody tr:nth-child(even) td { background: #F8FAFC; }
+
+  /* 범례 */
+  .legend-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 9pt; }
+  .dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  /* Q&A */
+  .qa-item { margin-bottom: 9px; }
+  .qa-q { font-weight: 700; color: #1B263B; font-size: 9.5pt; margin-bottom: 2px; }
+  .qa-a { color: #5A6778; font-size: 9pt; padding-left: 12px; }
+
+  /* 인쇄 버튼 */
+  .print-btn { display: block; margin: 0 auto 20px; padding: 10px 32px; background: #1B263B; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Pretendard', sans-serif; }
+  .print-btn:hover { background: #2E4057; }
+
+  .footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #EAECEF; font-size: 8pt; color: #9AA5B4; text-align: center; }
+
+  /* ── 화면 목업 공통 ── */
+  .mockup-wrap { margin: 12px 0 16px; border-radius: 10px; overflow: hidden; border: 1px solid #C8D3DE; box-shadow: 0 2px 8px rgba(0,0,0,.08); font-size: 8.5pt; }
+  .mockup-wrap * { font-family: 'Pretendard', sans-serif; }
+  .mockup-caption { font-size: 8pt; color: #7A8899; text-align: center; margin-top: 5px; font-style: italic; }
+
+  /* 목업: 브라우저 크롬 */
+  .mockup-bar { background: #E8ECF0; padding: 5px 10px; display: flex; align-items: center; gap: 6px; }
+  .mockup-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .mockup-url { background: #fff; border-radius: 4px; padding: 2px 10px; font-size: 7.5pt; color: #7A8899; flex: 1; border: 1px solid #D0D5DC; }
+
+  /* 목업: 관리자 헤더 */
+  .m-head { background: #1B263B; padding: 9px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .m-head-title { color: #fff; font-weight: 800; font-size: 9pt; }
+  .m-head-sub { color: rgba(255,255,255,.65); font-size: 7.5pt; }
+  .m-head-right { display: flex; gap: 6px; }
+  .m-btn { background: transparent; border: 1px solid rgba(255,255,255,.4); color: #fff; border-radius: 5px; padding: 3px 9px; font-size: 7.5pt; cursor: pointer; }
+  .m-btn-white { background: #fff; color: #1B263B; border: none; border-radius: 5px; padding: 3px 9px; font-size: 7.5pt; font-weight: 700; }
+
+  /* 목업: 탭 */
+  .m-tabs { display: flex; gap: 0; border-bottom: 2px solid #EAECEF; background: #F8FAFC; padding: 0 14px; }
+  .m-tab { padding: 7px 13px; font-size: 8pt; font-weight: 600; color: #9AA5B4; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .m-tab.active { color: #1B263B; border-bottom-color: #1B263B; font-weight: 800; }
+
+  /* 목업: 바디 */
+  .m-body { background: #fff; padding: 12px 14px; }
+
+  /* 목업: 통계 박스 */
+  .m-stat-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .m-stat { flex: 1; background: #F8FAFC; border: 1px solid #EAECEF; border-radius: 7px; padding: 8px 10px; text-align: center; }
+  .m-stat.highlight { background: #1B263B; }
+  .m-stat-num { font-size: 16pt; font-weight: 800; color: #1B263B; line-height: 1.2; }
+  .m-stat.highlight .m-stat-num { color: #fff; }
+  .m-stat-lbl { font-size: 7.5pt; color: #7A8899; margin-top: 2px; }
+  .m-stat.highlight .m-stat-lbl { color: rgba(255,255,255,.7); }
+
+  /* 목업: 예약 테이블 */
+  .m-table { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
+  .m-table thead tr { background: #1B263B; }
+  .m-table thead th { color: #fff; padding: 5px 7px; text-align: left; font-weight: 600; }
+  .m-table tbody td { padding: 5px 7px; border-bottom: 1px solid #EAECEF; vertical-align: middle; }
+  .m-table tbody tr:hover td { background: #F8FAFC; }
+  .badge { display: inline-block; border-radius: 99px; padding: 1px 7px; font-size: 7pt; font-weight: 700; }
+  .badge-wait { background: #EBF4FF; color: #2B6CB0; }
+  .badge-done { background: #F0FFF4; color: #276749; }
+  .badge-cancel { background: #FFF5F5; color: #C53030; }
+  .m-select { border: 1px solid #DDE3EA; border-radius: 4px; padding: 2px 5px; font-size: 7pt; color: #1B263B; font-family: 'Pretendard', sans-serif; background: #fff; }
+  .m-save-btn { background: #1B263B; color: #fff; border: none; border-radius: 4px; padding: 2px 8px; font-size: 7pt; font-family: 'Pretendard', sans-serif; cursor: pointer; }
+
+  /* 목업: 슬롯 그리드 */
+  .m-slot-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 10px; }
+  .m-slot { border-radius: 5px; padding: 5px 3px; text-align: center; font-size: 7pt; font-weight: 600; color: #fff; }
+  .slot-open   { background: #38A169; }
+  .slot-booked { background: #3182CE; }
+  .slot-blocked{ background: #C53030; }
+  .slot-session{ background: #D69E2E; }
+  .slot-time   { font-size: 6.5pt; opacity: .85; margin-top: 1px; }
+
+  /* 목업: 로그인 */
+  .m-login { background: #fff; border-radius: 10px; padding: 18px 20px; max-width: 260px; margin: 10px auto; border: 1px solid #EAECEF; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+  .m-login-logo { text-align: center; margin-bottom: 10px; }
+  .m-login-logo .logo-box { display: inline-block; background: #1B263B; color: #fff; font-size: 7.5pt; font-weight: 800; padding: 4px 12px; border-radius: 5px; }
+  .m-login-title { text-align: center; font-size: 9.5pt; font-weight: 800; color: #1B263B; margin-bottom: 12px; }
+  .m-label { font-size: 7.5pt; font-weight: 700; color: #1B263B; margin-bottom: 3px; }
+  .m-input { width: 100%; border: 1.5px solid #DDE3EA; border-radius: 6px; padding: 5px 9px; font-size: 8pt; color: #5A6778; margin-bottom: 8px; font-family: 'Pretendard', sans-serif; }
+  .m-input.selected { border-color: #1B263B; color: #1B263B; }
+  .m-submit { width: 100%; background: #1B263B; color: #fff; border: none; border-radius: 6px; padding: 7px; font-size: 8.5pt; font-weight: 700; font-family: 'Pretendard', sans-serif; cursor: pointer; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ PDF로 저장 / 인쇄</button>
+
+<div class="sheet">
+
+  <div class="doc-header">
+    <div class="doc-org">HANYANG YK INTERCOLLEGE · 2026 융합전공 소개행사</div>
+    <div class="doc-title">부스 예약 관리 매뉴얼</div>
+    <div class="doc-sub">담당 교수자 · 부스 운영진 대상 · 2026. 5. 8.(금)</div>
+  </div>
+
+  <div class="box box-blue">
+    이 매뉴얼은 <strong>부스 담당 교수자 및 운영진</strong>이 관리자 페이지에서 예약 현황을 확인하고 슬롯을 관리하는 방법을 안내합니다.
+  </div>
+
+  <!-- ───────────────────────────────── -->
+  <h2>1. 로그인 방법</h2>
+  <ol>
+    <li>아래 관리자 페이지 URL로 접속합니다.<br>
+      <a href="https://tinyurl.com/hicmajor-staff" style="color:#2B6CB0;font-weight:700;">https://tinyurl.com/hicmajor-staff</a>
+    </li>
+    <li><strong>담당 프로그램</strong>을 선택합니다. (본인 담당 부스 이름)</li>
+    <li><strong>비밀번호</strong>를 입력하고 <strong>접속하기</strong>를 누릅니다.</li>
+  </ol>
+  <div class="box box-yellow">🔑 비밀번호 : <strong>hic2025</strong></div>
+
+  <!-- 로그인 화면 목업 -->
+  <div class="mockup-wrap" style="max-width:300px;margin:12px auto 4px;">
+    <div class="mockup-bar">
+      <div class="mockup-dot" style="background:#FF6058;"></div>
+      <div class="mockup-dot" style="background:#FFBD2E;"></div>
+      <div class="mockup-dot" style="background:#28C840;"></div>
+      <div class="mockup-url">…/admin?page=admin</div>
+    </div>
+    <div style="background:#F4F7F9;padding:16px;">
+      <div class="m-login">
+        <div class="m-login-logo"><div class="logo-box">한양YK인터칼리지</div></div>
+        <div class="m-login-title">부스 관리자 페이지</div>
+        <div class="m-label">담당 프로그램</div>
+        <div class="m-input selected">인지융합과학 ▾</div>
+        <div class="m-label">비밀번호</div>
+        <div class="m-input">●●●●●●</div>
+        <button class="m-submit">접속하기</button>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-caption">▲ 로그인 화면 — 담당 프로그램을 선택하고 비밀번호 입력</p>
+
+  <!-- ───────────────────────────────── -->
+  <div style="break-inside:avoid;page-break-inside:avoid;">
+  <h2>2. 예약 현황 탭</h2>
+  <p>로그인하면 담당 부스의 <strong>시간대별 예약자 목록</strong>이 자동으로 표시됩니다.</p>
+  <table>
+    <thead><tr><th>항목</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td>이름 / 학번 / 학과</td><td>예약자 기본 정보</td></tr>
+      <tr><td>문의 내용</td><td>💬 아이콘 클릭 시 학생이 입력한 문의 내용 확인</td></tr>
+      <tr><td>상태</td><td>대기 / 상담완료 / 상담취소 중 선택 후 저장</td></tr>
+      <tr><td>코멘트</td><td>메모 입력 후 저장 가능</td></tr>
+    </tbody>
+  </table>
+
+  </div>
+  <!-- 예약 현황 목업 -->
+  <div class="mockup-wrap">
+    <div class="mockup-bar">
+      <div class="mockup-dot" style="background:#FF6058;"></div>
+      <div class="mockup-dot" style="background:#FFBD2E;"></div>
+      <div class="mockup-dot" style="background:#28C840;"></div>
+      <div class="mockup-url">관리자 페이지 — 인지융합과학</div>
+    </div>
+    <div class="m-head">
+      <div>
+        <div class="m-head-title">인지융합과학</div>
+        <div class="m-head-sub">담당교수 OOO 교수님</div>
+      </div>
+      <div class="m-head-right">
+        <div class="m-btn">🔄 새로고침</div>
+        <div class="m-btn">📖 매뉴얼</div>
+        <div class="m-btn-white">로그아웃</div>
+      </div>
+    </div>
+    <div class="m-tabs">
+      <div class="m-tab active">📋 예약 현황</div>
+      <div class="m-tab">🔒 슬롯 관리</div>
+    </div>
+    <div class="m-body">
+      <div class="m-stat-row">
+        <div class="m-stat"><div class="m-stat-num">5</div><div class="m-stat-lbl">전체</div></div>
+        <div class="m-stat"><div class="m-stat-num" style="color:#2B6CB0;">3</div><div class="m-stat-lbl">대기</div></div>
+        <div class="m-stat"><div class="m-stat-num" style="color:#276749;">2</div><div class="m-stat-lbl">상담완료</div></div>
+        <div class="m-stat"><div class="m-stat-num" style="color:#C53030;">0</div><div class="m-stat-lbl">상담취소</div></div>
+      </div>
+      <table class="m-table">
+        <thead>
+          <tr><th>시간</th><th>이름</th><th>학번</th><th>학과</th><th>문의</th><th>상태</th><th>저장</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>14:00</td><td>홍길동</td><td>2024XXXXXX</td><td>전기공학</td>
+            <td style="text-align:center;">💬</td>
+            <td><select class="m-select"><option>대기</option><option>상담완료</option><option>상담취소</option></select></td>
+            <td><button class="m-save-btn">저장</button></td>
+          </tr>
+          <tr style="background:#F8FAFC;">
+            <td>14:15</td><td>김민준</td><td>2023XXXXXX</td><td>기계공학</td>
+            <td style="text-align:center;">—</td>
+            <td><select class="m-select"><option selected style="color:#276749;">상담완료</option></select></td>
+            <td><button class="m-save-btn">저장</button></td>
+          </tr>
+          <tr>
+            <td>14:30</td><td>이서연</td><td>2024XXXXXX</td><td>경영학</td>
+            <td style="text-align:center;">💬</td>
+            <td><select class="m-select"><option>대기</option></select></td>
+            <td><button class="m-save-btn">저장</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="mockup-caption">▲ 예약 현황 화면 — 상태를 변경하고 저장 버튼을 눌러야 반영됩니다</p>
+
+  <h3>상태 변경 및 저장 방법</h3>
+  <ol>
+    <li>예약자 행의 <strong>상태</strong> 드롭다운에서 변경합니다.</li>
+    <li><strong>즉시저장</strong> 버튼: 해당 행만 저장</li>
+    <li><strong>선택 항목 일괄저장</strong>: 체크박스로 여러 건 선택 후 한 번에 저장</li>
+  </ol>
+  <div class="box box-red">⚠️ 저장하지 않고 페이지를 벗어나면 변경 내용이 사라집니다. 반드시 저장 버튼을 눌러주세요.</div>
+
+  <!-- ───────────────────────────────── -->
+  <div>
+  <h2 style="break-before:always;page-break-before:always;">3. 슬롯 관리 탭</h2>
+  <p>시간대별로 예약 가능 여부를 직접 관리할 수 있습니다.</p>
+  <div class="box box-yellow">📅 <strong>학생 신청 전 미리 확인해 주세요</strong> — 행사 당일 참여가 어려우신 시간대(수업, 회의 등)가 있으시면 <strong>학생 신청 접수가 시작되기 전에</strong> 해당 슬롯을 미리 차단해 주세요. 신청이 들어온 이후에는 예약자에게 별도로 연락하셔야 합니다.</div>
+  </div>
+
+  <!-- 슬롯 관리 목업 -->
+  <div class="mockup-wrap">
+    <div class="mockup-bar">
+      <div class="mockup-dot" style="background:#FF6058;"></div>
+      <div class="mockup-dot" style="background:#FFBD2E;"></div>
+      <div class="mockup-dot" style="background:#28C840;"></div>
+      <div class="mockup-url">관리자 페이지 — 슬롯 관리</div>
+    </div>
+    <div class="m-head">
+      <div class="m-head-title">인지융합과학 · 슬롯 관리</div>
+      <div class="m-head-right">
+        <div class="m-btn" style="background:rgba(255,255,255,.12);">🔒 선택 차단</div>
+        <div class="m-btn" style="background:rgba(255,255,255,.12);">🔓 선택 해제</div>
+      </div>
+    </div>
+    <div class="m-tabs">
+      <div class="m-tab">📋 예약 현황</div>
+      <div class="m-tab active">🔒 슬롯 관리</div>
+    </div>
+    <div class="m-slot-grid">
+      <div class="m-slot slot-session">14:00<div class="slot-time">설명회중</div></div>
+      <div class="m-slot slot-session">14:15<div class="slot-time">설명회중</div></div>
+      <div class="m-slot slot-booked">14:30<div class="slot-time">예약완료</div></div>
+      <div class="m-slot slot-booked">14:45<div class="slot-time">예약완료</div></div>
+      <div class="m-slot slot-open">15:00<div class="slot-time">예약가능</div></div>
+      <div class="m-slot slot-open">15:15<div class="slot-time">예약가능</div></div>
+      <div class="m-slot slot-blocked">15:30<div class="slot-time">차단됨</div></div>
+      <div class="m-slot slot-blocked">15:45<div class="slot-time">차단됨</div></div>
+      <div class="m-slot slot-open">16:00<div class="slot-time">예약가능</div></div>
+      <div class="m-slot slot-booked">16:15<div class="slot-time">예약완료</div></div>
+      <div class="m-slot slot-open">16:30<div class="slot-time">예약가능</div></div>
+      <div class="m-slot slot-open">16:45<div class="slot-time">예약가능</div></div>
+    </div>
+  </div>
+  <p class="mockup-caption">▲ 슬롯 관리 화면 — 색상별로 상태를 한눈에 확인. 슬롯 선택 후 차단/해제 가능</p>
+
+  <h3>슬롯 색상 안내</h3>
+  <div class="legend-row">
+    <div class="legend-item"><div class="dot" style="background:#38A169;"></div> 초록 — 예약 가능</div>
+    <div class="legend-item"><div class="dot" style="background:#3182CE;"></div> 파랑 — 예약 완료</div>
+    <div class="legend-item"><div class="dot" style="background:#C53030;"></div> 빨강 — 차단됨</div>
+    <div class="legend-item"><div class="dot" style="background:#D69E2E;"></div> 노랑 — 설명회 진행 중</div>
+  </div>
+
+  <ol style="margin-top:8px;">
+    <li>차단할 슬롯을 클릭해 선택합니다. (여러 개 선택 가능)</li>
+    <li><strong>선택 차단</strong> 버튼을 누르면 빨간색으로 변하며 학생 예약이 불가해집니다.</li>
+    <li>차단된 슬롯을 다시 선택하고 <strong>선택 해제</strong>를 누르면 원래대로 돌아옵니다.</li>
+  </ol>
+  <div class="box box-red">⚠️ 이미 예약 완료된 슬롯(파랑)을 차단해도 기존 예약은 취소되지 않습니다. 반드시 예약 신청이 시작되기 전에 미리 차단해 두세요.</div>
+
+  <!-- ───────────────────────────────── -->
+  <h2>4. 기념품 수령 조건 안내</h2>
+  <p>학생이 기념품을 받으려면 <strong>부스 3개 이상 상담</strong>이 필요합니다. 기념품 수령 여부는 행사장 스태프가 직접 확인하여 처리합니다.</p>
+  <div class="box box-blue">ℹ️ 상담 기록을 남기고 싶으신 경우, 예약 현황 탭에서 상태를 <strong>상담완료</strong>로 변경하고 저장하시면 됩니다. (선택 사항)</div>
+
+  <!-- ───────────────────────────────── -->
+  <h2 style="break-before:always;page-break-before:always;">5. 자주 묻는 질문</h2>
+  <div class="qa-item"><div class="qa-q">Q. 예약자 목록이 안 보여요</div><div class="qa-a">🔄 새로고침 버튼을 누르거나 로그아웃 후 다시 로그인해 보세요.</div></div>
+  <div class="qa-item"><div class="qa-q">Q. 슬롯을 잘못 차단했어요</div><div class="qa-a">슬롯을 선택한 후 선택 해제 버튼을 누르면 됩니다.</div></div>
+  <div class="qa-item"><div class="qa-q">Q. 상태를 저장했는데 반영이 안 돼요</div><div class="qa-a">즉시저장 또는 일괄저장 버튼을 눌렀는지 확인하세요. 저장 후 초록색 완료 표시가 나타나야 정상입니다.</div></div>
+  <div class="qa-item"><div class="qa-q">Q. 페이지 로딩이 너무 느려요</div><div class="qa-a">처음 접속 시 서버가 켜지는 데 최대 15초 걸릴 수 있습니다. 잠시 기다린 후 새로고침하세요.</div></div>
+
+  <div class="footer">한양YK인터칼리지 &nbsp;|&nbsp; intercollege@hanyang.ac.kr &nbsp;|&nbsp; 2026. 5. 8.</div>
+</div>
+</body>
+</html>

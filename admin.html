@@ -1,0 +1,990 @@
+<? var _SD = JSON.parse(getSettingsData()); ?>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>한양YK인터칼리지 관리자</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <style>
+    :root{--navy:#1B263B;--navy-light:#2E4057;--bg:#F4F7F9;}
+    *{box-sizing:border-box;}
+    body{font-family:'Pretendard',sans-serif;background:var(--bg);padding:24px 16px 60px;min-height:100vh;}
+    .event-banner{max-width:1100px;margin:0 auto 16px;background:#EBF4FF;border-left:4px solid var(--navy);border-radius:8px;padding:11px 18px;font-size:.82rem;color:#1B3A6B;line-height:1.7;}
+    .login-card{max-width:420px;margin:32px auto 0;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.10);overflow:hidden;}
+    .login-head{padding:28px 32px 20px;text-align:center;border-bottom:1px solid #EAECEF;}
+    .login-head img{height:60px;width:auto;max-width:180px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto;}
+    .login-head .org{color:#9AA5B4;font-size:.72rem;font-weight:600;letter-spacing:.04em;margin:0 0 10px;}
+    .login-head .evt{color:var(--navy);font-size:1.1rem;font-weight:800;margin:0 0 2px;}
+    .login-head h4{color:var(--navy);font-weight:800;font-size:1.1rem;margin:0;}
+    .login-body{padding:24px 32px 30px;}
+    .login-body .hint{text-align:center;color:#9AA5B4;font-size:.83rem;margin-bottom:20px;}
+    .office-card{max-width:1000px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 6px 28px rgba(0,0,0,.07);overflow:hidden;display:none;}
+    .office-head{background:var(--navy);padding:16px 24px;display:flex;justify-content:space-between;align-items:center;}
+    .office-head .title{color:#fff;font-weight:800;font-size:1rem;}
+    .office-head .sub{color:rgba(255,255,255,.7);font-size:.8rem;margin-top:2px;}
+    .office-body{padding:22px 24px;}
+    .admin-card{max-width:1100px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 6px 28px rgba(0,0,0,.07);overflow:hidden;display:none;}
+    .admin-head{background:#fff;border-bottom:2px solid var(--navy);padding:16px 24px;display:flex;justify-content:space-between;align-items:center;}
+    .admin-head .left{display:flex;align-items:center;gap:14px;}
+    .admin-head img{height:40px;width:auto;max-width:110px;object-fit:contain;filter:brightness(0) invert(1);background:var(--navy);padding:4px 8px;border-radius:6px;}
+    .admin-head .divider-v{width:1px;height:32px;background:#DDE3EA;}
+    .admin-head .prog-name{color:var(--navy);font-weight:800;font-size:1rem;margin:0 0 2px;}
+    .admin-head .prof-name{color:#7A8899;font-size:.8rem;}
+    .admin-head .right{display:flex;gap:8px;}
+    .admin-body{padding:22px 24px;}
+    .prog-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+    .prog-chip{padding:8px 16px;border-radius:8px;border:1.5px solid #DDE3EA;background:#fff;font-size:.84rem;font-weight:600;color:var(--navy);cursor:pointer;transition:all .15s;}
+    .prog-chip:hover{border-color:var(--navy);background:#F0F4F8;}
+    .prog-chip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+    .stat-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+    .stat-box{background:var(--bg);border-radius:10px;padding:12px 18px;min-width:100px;text-align:center;flex:1;}
+    .stat-box .num{font-size:1.5rem;font-weight:800;color:var(--navy);}
+    .stat-box .lbl{font-size:.74rem;color:#9AA5B4;margin-top:1px;}
+    .admin-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+    .admin-tab{flex:1;min-width:90px;padding:11px 8px;border-radius:10px;border:2px solid #DDE3EA;background:#fff;font-size:.82rem;font-weight:700;color:#9AA5B4;cursor:pointer;transition:all .18s;text-align:center;}
+    .admin-tab:hover{border-color:var(--navy);color:var(--navy);}
+    .admin-tab.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+    .admin-tab .tab-icon{font-size:1rem;display:block;margin-bottom:2px;}
+    .admin-tab .tab-label{display:block;font-size:.77rem;}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+    .toolbar-left{display:flex;gap:8px;align-items:center;}
+    .sel-count{font-size:.82rem;color:#5A6778;margin-left:4px;}
+    .table-wrap{overflow-x:auto;}
+    .table{font-size:.83rem;}
+    .table thead{background:var(--navy);color:#fff;}
+    .table thead th{font-weight:600;padding:10px;white-space:nowrap;}
+    .table tbody td{vertical-align:middle;padding:8px 10px;}
+    .table-hover tbody tr:hover{background:#F5F7FA;}
+    .table tbody tr.row-selected{background:#EBF4FF !important;}
+    .table tbody tr.st-done{background:#F0FFF4;}
+    .table tbody tr.st-noshow{background:#F7F7F7;}
+    .tr-empty td{background:#F8F9FA;color:#B0BAC9;font-size:.78rem;padding:5px 10px !important;border-bottom:1px dashed #E2E8F0;}
+    .tr-empty .time-cell{font-weight:500;color:#9AA5B4;}
+    .tr-section td{background:#EEF2F7;color:var(--navy);font-size:.75rem;font-weight:700;padding:5px 10px !important;letter-spacing:.04em;border-top:2px solid #DDE3EA;}
+    .status-sel{border:1.5px solid #DDE3EA;border-radius:6px;padding:4px 6px;font-size:.79rem;cursor:pointer;min-width:80px;}
+    .comment-inp{border:1.5px solid #DDE3EA;border-radius:6px;padding:4px 7px;font-size:.79rem;width:100%;min-width:100px;}
+    .comment-inp:focus{outline:none;border-color:var(--navy);}
+    .status-badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.75rem;font-weight:700;white-space:nowrap;}
+    .badge-waiting{background:#EBF4FF;color:#2B6CB0;}
+    .badge-done{background:#E6FFED;color:#276749;}
+    .badge-noshow{background:#FFF5F5;color:#C53030;}
+    .btn-navy{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:.85rem;cursor:pointer;transition:background .2s;white-space:nowrap;}
+    .btn-navy:hover{background:var(--navy-light);}
+    .btn-navy:disabled{background:#B0BAC9;cursor:not-allowed;}
+    .btn-outline{border:1.5px solid var(--navy);color:var(--navy);background:#fff;border-radius:8px;padding:8px 14px;font-size:.83rem;font-weight:600;cursor:pointer;white-space:nowrap;}
+    .btn-outline:hover{background:#F0F4F8;}
+    .btn-ghost{border:1.5px solid #DDE3EA;color:#5A6778;background:#fff;border-radius:8px;padding:7px 13px;font-size:.82rem;cursor:pointer;font-weight:500;}
+    .btn-ghost:hover{border-color:var(--navy);color:var(--navy);}
+    .btn-memo{background:#F4F7F9;color:#5A6778;border:none;border-radius:5px;padding:3px 10px;font-size:.79rem;cursor:pointer;}
+    .btn-memo:hover{background:#DDE3EA;}
+    .btn-save-row{background:#fff;border:1.5px solid #38A169;color:#276749;border-radius:6px;padding:3px 10px;font-size:.78rem;font-weight:600;cursor:pointer;}
+    .btn-save-row:hover{background:#E6FFED;}
+    .saved-ok{font-size:.75rem;color:#38A169;display:none;margin-left:4px;}
+    .block-section{padding-top:4px;}
+    .block-desc{font-size:.81rem;color:#7A8899;margin-bottom:14px;background:#F8FAFC;border-radius:8px;padding:10px 12px;}
+    .slot-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;padding:10px 12px;background:#F8FAFC;border-radius:8px;}
+    .slot-sel-info{font-size:.81rem;color:#5A6778;}
+    .slot-grid{display:flex;flex-wrap:wrap;gap:8px;}
+    .slot-item{display:flex;align-items:center;gap:7px;border-radius:8px;padding:7px 12px;font-size:.81rem;font-weight:600;border:1.5px solid transparent;transition:all .15s;}
+    .slot-item.open{background:#E6FFED;color:#276749;border-color:#9AE6B4;}
+    .slot-item.open:hover{background:#C6F6D5;}
+    .slot-item.closed{background:#FFF5F5;color:#C53030;border-color:#FEB2B2;}
+    .slot-item.booked{background:#EBF4FF;color:#2B6CB0;border-color:#90CDF4;}
+    .slot-item.session{background:#FFF8E1;color:#92610A;border-color:#F6C90E;}
+    .slot-item input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--navy);}
+    .slot-item.booked input,.slot-item.session input{cursor:not-allowed;opacity:.35;}
+    .slot-break{width:100%;margin:6px 0 3px;font-size:.74rem;color:#9AA5B4;font-weight:600;border-top:1px dashed #DDE3EA;padding-top:6px;}
+    .slot-legend{display:flex;gap:12px;margin-bottom:12px;font-size:.77rem;color:#7A8899;flex-wrap:wrap;}
+    .slot-legend span{display:flex;align-items:center;gap:4px;}
+    .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B263B;color:#fff;padding:10px 26px;border-radius:8px;font-size:.87rem;display:none;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999;}
+    .modal-box{background:#fff;border-radius:12px;padding:26px;max-width:400px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.15);}
+    .modal-box h6{color:var(--navy);font-weight:700;margin-bottom:10px;}
+    .modal-box p{font-size:.88rem;color:#444;white-space:pre-wrap;word-break:break-word;min-height:40px;}
+    .modal-close{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:8px 22px;font-weight:700;cursor:pointer;margin-top:14px;float:right;}
+    .dash-section{margin-bottom:22px;}
+    .dash-section-title{font-size:.78rem;font-weight:700;color:#9AA5B4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+    .dash-summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:flex-start;}
+    .dash-card{flex:1;min-width:100px;background:#F0F4F8;border-radius:12px;padding:14px 16px;text-align:center;}
+    .dash-card .dc-num{font-size:2rem;font-weight:800;color:var(--navy);line-height:1;}
+    .dash-card .dc-lbl{font-size:.73rem;color:#9AA5B4;margin-top:4px;}
+    .dash-card .dc-sub{font-size:.68rem;color:#B0BAC9;margin-top:2px;}
+    .dash-card.highlight{background:var(--navy);}
+    .dash-card.highlight .dc-num{color:#fff;}
+    .dash-card.highlight .dc-lbl{color:rgba(255,255,255,.7);}
+    .dash-card.highlight .dc-sub{color:rgba(255,255,255,.5);}
+    .dash-prog-grid{display:flex;flex-direction:column;gap:8px;}
+    .dash-prog-row{background:#F8FAFC;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;}
+    .dash-prog-row .dp-name{font-size:.84rem;font-weight:700;color:var(--navy);width:160px;flex-shrink:0;}
+    .dash-prog-row .dp-bar-wrap{flex:1;}
+    .dash-prog-row .dp-nums{font-size:.75rem;color:#7A8899;white-space:nowrap;}
+    .dash-prog-row .dp-nums strong{color:var(--navy);}
+    .dash-refresh{background:none;border:1.5px solid #DDE3EA;color:#9AA5B4;border-radius:7px;padding:4px 12px;font-size:.76rem;cursor:pointer;font-family:'Pretendard',sans-serif;}
+    .dash-refresh:hover{border-color:var(--navy);color:var(--navy);}
+    .dash-legend{display:flex;gap:14px;font-size:.74rem;color:#7A8899;margin-top:8px;flex-wrap:wrap;}
+    .dash-legend span{display:flex;align-items:center;gap:4px;}
+    .dash-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+    .gift-badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.75rem;font-weight:700;}
+    .gift-badge-ic{background:#EBF4FF;color:#2B6CB0;}
+    .gift-badge-other{background:#F0F4F8;color:#5A6778;}
+    @media print{body>*:not(#signPrintArea){display:none !important;} #signPrintArea{display:block !important;position:fixed;inset:0;background:#fff;padding:12mm 10mm;box-sizing:border-box;}}
+    #signPrintArea{display:none;}
+    .sign-sheet{font-family:'Malgun Gothic','맑은 고딕','Pretendard',sans-serif;max-width:780px;margin:0 auto;}
+    .sign-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+    .sign-header-left{flex:1;}
+    .sign-header-logo{height:44px;width:auto;max-width:130px;object-fit:contain;flex-shrink:0;margin-left:14px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .sign-title{font-size:16px;font-weight:800;color:#1B263B;margin:0 0 3px;}
+    .sign-meta{text-align:right;font-size:10px;color:#5A6778;line-height:1.9;margin-bottom:12px;border-bottom:1.5px solid #1B263B;padding-bottom:7px;}
+    .sign-table{width:100%;border-collapse:collapse;}
+    .sign-table thead th{background:#1B263B !important;color:#fff !important;padding:7px 9px;font-size:10px;font-weight:700;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .sign-table tbody td{border:1px solid #CCC;padding:5px 7px;vertical-align:middle;font-size:10px;text-align:center;}
+    .sign-table tbody tr:nth-child(even) td{background:#F8F8F8 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .sign-table .td-no{width:30px;}
+    .sign-table .td-name{text-align:left;font-weight:600;width:68px;}
+    .sign-table .td-id{width:92px;}
+    .sign-table .td-dept{text-align:left;width:110px;}
+    .sign-table .td-subj{text-align:left;font-size:9px;}
+    .sign-table .td-sig{width:150px;height:50px;padding:2px 4px;}
+    .sign-table .td-sig img{max-width:140px;max-height:46px;object-fit:contain;display:block;margin:0 auto;}
+    .form-control,.form-select{border:1.5px solid #DDE3EA;border-radius:8px;padding:10px 13px;font-size:.9rem;}
+    .form-control:focus,.form-select:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(27,38,59,.08);}
+  </style>
+</head>
+<body>
+<div class="event-banner"><strong>📅 <?!= _SD.eventName ?></strong>&nbsp;&nbsp;일시: <?!= _SD.eventDate ?>&nbsp;&nbsp;|&nbsp;&nbsp;장소: <?!= _SD.eventPlace ?></div>
+<div id="signPrintArea"></div>
+
+<!-- 로그인 -->
+<div class="login-card" id="loginCard">
+  <div class="login-head">
+    <img src="https://drive.google.com/thumbnail?id=1gAd8LC2fRzr7reuiJV2FHSQCbqbz5DoR&sz=w200" alt="로고" onerror="this.style.display='none'">
+    <p class="org">한양YK인터칼리지</p><p class="evt">융합전공 소개 행사</p><h4>부스 관리자 페이지</h4>
+  </div>
+  <div class="login-body">
+    <p class="hint">담당 프로그램과 비밀번호를 입력하세요</p>
+    <div class="mb-3 text-start"><label class="form-label fw-bold" style="font-size:.82rem;color:var(--navy);">담당 프로그램</label><select id="loginProg" class="form-select" onchange="onLoginProgChange(this)"><option value="">선택하세요</option></select></div>
+    <div class="mb-3 text-start"><label class="form-label fw-bold" style="font-size:.82rem;color:var(--navy);">비밀번호</label><input type="password" id="pw" class="form-control" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter'){event.preventDefault();login();}"></div>
+    <button class="btn-navy w-100 mt-1" id="loginBtn" onclick="login()">접속하기</button>
+  </div>
+</div>
+
+<!-- 행정팀 카드 -->
+<div class="office-card" id="officeCard">
+  <div class="office-head">
+    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px;">
+      <div><div class="title">📋 행정팀 관리 페이지</div><div class="sub" id="officeAdminName"></div></div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span id="walkBlockStatus" style="font-size:.75rem;color:#9AA5B4;"></span>
+        <button id="btnWalkBlock" onclick="toggleWalkBlock()" style="font-size:.75rem;padding:5px 10px;border-radius:6px;border:1.5px solid #C53030;background:#fff;color:#C53030;cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;white-space:nowrap;">🚫 현장예약 마감</button>
+        <button style="background:transparent;border:1.5px solid rgba(255,255,255,.5);color:#fff;border-radius:7px;padding:5px 10px;font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap;" onclick="openManual()">📖 매뉴얼</button>
+        <button style="background:#fff;border:1.5px solid #fff;color:var(--navy);border-radius:7px;padding:5px 10px;font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap;" onclick="resetAdmin()">⏏ 로그아웃</button>
+      </div>
+    </div>
+  </div>
+  <div class="office-body">
+    <div class="dash-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div class="dash-section-title" style="margin:0;">📊 전체 참석 현황</div><button class="dash-refresh" onclick="loadOverallStats()">🔄 새로고침</button></div>
+      <div class="dash-summary" id="dashSummary"><div style="text-align:center;padding:20px;color:#9AA5B4;font-size:.83rem;width:100%;">불러오는 중...</div></div>
+      <div class="dash-prog-grid" id="dashProgGrid"></div>
+      <div class="dash-legend"><span><span class="dash-dot" style="background:#4A90D9;"></span>사전예약 참석</span><span><span class="dash-dot" style="background:#68D391;"></span>당일 참석</span><span><span class="dash-dot" style="background:#E2E8F0;"></span>미참석</span></div>
+    </div>
+    <hr style="border:none;border-top:1px solid #EAECEF;margin:18px 0;">
+    <div class="admin-tabs">
+      <button class="admin-tab active" id="off-tab-sign"    onclick="switchOfficeTab('sign')">   <span class="tab-icon">✍️</span><span class="tab-label">설명회 체크인</span></button>
+      <button class="admin-tab"        id="off-tab-booth"   onclick="switchOfficeTab('booth')">  <span class="tab-icon">📋</span><span class="tab-label">부스 예약</span></button>
+      <button class="admin-tab"        id="off-tab-gift"    onclick="switchOfficeTab('gift')">   <span class="tab-icon">🎁</span><span class="tab-label">참여확인서</span></button>
+    </div>
+    <!-- 설명회 체크인 -->
+    <div id="off-pane-sign">
+      <p style="font-size:.83rem;color:#7A8899;margin-bottom:16px;">설명회를 선택하면 참석 현황과 서명 여부를 확인하고 PDF를 저장할 수 있습니다.</p>
+      <div class="prog-grid" id="officeProgGrid"></div>
+      <div id="attendeeSection" style="display:none;">
+        <div id="officeStat" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;"></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;"><button class="btn-ghost" onclick="refreshStatus()">🔄 새로고침</button><button class="btn-navy" id="btnPdfSign" onclick="generateSessionPdf()" style="padding:8px 16px;font-size:.85rem;">📄 참석자 명단 PDF</button></div>
+        <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.84rem;"><thead style="background:var(--navy);color:#fff;"><tr><th style="padding:9px 10px;width:44px;">번호</th><th style="padding:9px 10px;">이름</th><th style="padding:9px 10px;">학번</th><th style="padding:9px 10px;">학과</th><th style="padding:9px 10px;width:80px;">참석유형</th><th style="padding:9px 10px;width:110px;">체크인 시각</th></tr></thead><tbody id="attendeeBody"></tbody></table></div>
+        <p id="attendeeEmpty" style="text-align:center;color:#9AA5B4;padding:20px;display:none;">참석자 데이터가 없습니다.</p>
+      </div>
+    </div>
+    <!-- 부스 예약 -->
+    <div id="off-pane-booth" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;"><div class="dash-section-title" style="margin:0;">프로그램 선택</div><button class="dash-refresh" onclick="loadBoothStatus()">🔄 새로고침</button></div>
+      <div class="prog-grid" id="boothProgGrid" style="margin-bottom:16px;"></div>
+      <div id="boothStatSection" style="display:none;">
+        <div id="boothStat" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;"></div>
+        <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.84rem;"><thead style="background:var(--navy);color:#fff;"><tr><th style="padding:9px 10px;width:36px;">번호</th><th style="padding:9px 10px;">시간</th><th style="padding:9px 10px;">이름</th><th style="padding:9px 10px;">학번</th><th style="padding:9px 10px;">학과</th><th style="padding:9px 10px;width:80px;">상태</th></tr></thead><tbody id="boothBody"></tbody></table></div>
+        <p id="boothEmpty" style="text-align:center;color:#9AA5B4;padding:20px;display:none;">예약 내역이 없습니다.</p>
+      </div>
+    </div>
+    <!-- 기념품 명단 -->
+    <div id="off-pane-gift" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div class="dash-section-title" style="margin:0;">📋 참여확인서 발급 명단</div>
+        <button class="dash-refresh" onclick="loadGiftList()">🔄 새로고침</button>
+      </div>
+
+      <!-- 서명부 PDF 버튼 -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="btn-navy" onclick="generateGiftPdf('all')" style="padding:8px 16px;font-size:.84rem;">📄 전체 서명부 PDF</button>
+        <button class="btn-outline" onclick="generateGiftPdf('intercollege')" style="padding:8px 14px;font-size:.84rem;">📄 인터칼리지만 PDF</button>
+      </div>
+
+      <!-- 참여확인서 발송 섹션 -->
+      <div style="background:#EBF4FF;border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1.5px solid #BEE3F8;">
+        <div style="font-weight:700;color:var(--navy);font-size:.84rem;margin-bottom:5px;">📧 참여확인서 발송 · 미리보기 (인터칼리지 학생 전용)</div>
+        <p style="font-size:.76rem;color:#2B6CB0;margin-bottom:10px;line-height:1.6;">
+          아래 목록에서 학생을 선택 후 발송하거나, 개별 미리보기·다운로드를 할 수 있습니다.<br>
+          확인서는 <strong>PDF 파일로 첨부</strong>되어 발송됩니다.
+        </p>
+        <!-- 선택 발송 툴바 -->
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span id="certSelCount" style="font-size:.81rem;color:#2B6CB0;font-weight:600;min-width:80px;"></span>
+          <button class="btn-navy" id="btnSendSelected" onclick="sendSelectedCerts()" disabled
+            style="padding:7px 14px;font-size:.82rem;white-space:nowrap;">📧 선택 학생 발송</button>
+          <button class="btn-outline" onclick="sendAllIcCerts()"
+            style="padding:7px 14px;font-size:.82rem;white-space:nowrap;">📧 인터칼리지 전체 발송</button>
+        </div>
+        <div id="certResult" style="font-size:.78rem;color:#276749;margin-top:7px;display:none;"></div>
+      </div>
+
+      <!-- 통계 -->
+      <div id="giftStat" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;"></div>
+
+      <!-- 미리보기 패널 -->
+      <div id="certPreviewPanel" style="display:none;background:#fff;border:1.5px solid #DDE3EA;border-radius:10px;margin-bottom:14px;overflow:hidden;">
+        <div style="background:#F0F4F8;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;color:var(--navy);font-size:.83rem;">📄 참여확인서 미리보기</span>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-navy" id="btnDownloadCert" onclick="downloadCert()" style="padding:5px 12px;font-size:.78rem;">⬇ 다운로드</button>
+            <button class="btn-ghost" onclick="closeCertPreview()" style="padding:5px 10px;font-size:.78rem;">✕ 닫기</button>
+          </div>
+        </div>
+        <iframe id="certPreviewFrame" style="width:100%;height:520px;border:none;"></iframe>
+      </div>
+
+      <!-- 테이블 -->
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:.83rem;">
+          <thead style="background:var(--navy);color:#fff;">
+            <tr>
+              <th style="padding:8px 10px;width:36px;text-align:center;">
+                <input type="checkbox" id="giftChkAll" onchange="toggleGiftAll(this)"
+                  style="width:15px;height:15px;cursor:pointer;accent-color:#fff;">
+              </th>
+              <th style="padding:8px 10px;">이름</th>
+              <th style="padding:8px 10px;">학번</th>
+              <th style="padding:8px 10px;">학과</th>
+              <th style="padding:8px 10px;width:70px;">구분</th>
+              <th style="padding:8px 10px;width:54px;">스탬프</th>
+              <th style="padding:8px 10px;">신청 과목</th>
+              <th style="padding:8px 10px;width:88px;">검증코드</th>
+              <th style="padding:8px 10px;width:70px;">미리보기</th>
+            </tr>
+          </thead>
+          <tbody id="giftBody"></tbody>
+        </table>
+      </div>
+      <p id="giftEmpty" style="text-align:center;color:#9AA5B4;padding:20px;display:none;">수령 내역이 없습니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- 교수용 관리자 -->
+<div class="admin-card" id="adminCard">
+  <div class="admin-head">
+    <div class="left"><img src="https://drive.google.com/thumbnail?id=1gAd8LC2fRzr7reuiJV2FHSQCbqbz5DoR&sz=w200" alt="로고" onerror="this.style.display='none'"><div class="divider-v"></div><div><div class="prog-name" id="dispProg"></div><div class="prof-name" id="dispProf"></div></div></div>
+    <div class="right"><button class="btn-ghost" onclick="refresh()">🔄 새로고침</button><button class="btn-ghost" onclick="openManual()">📖 매뉴얼</button><button class="btn-ghost" onclick="resetAdmin()">로그아웃</button></div>
+  </div>
+  <div class="admin-body">
+    <div class="stat-row" id="statRow"></div>
+    <div class="admin-tabs" style="max-width:360px;">
+      <button class="admin-tab active" id="tab-btn-resv"  onclick="switchAdminTab('resv')"> <span class="tab-icon">📋</span><span class="tab-label">예약 현황</span></button>
+      <button class="admin-tab"        id="tab-btn-block" onclick="switchAdminTab('block')"><span class="tab-icon">🔒</span><span class="tab-label">슬롯 관리</span></button>
+    </div>
+    <div id="tab-resv">
+      <div class="toolbar"><div class="toolbar-left"><input type="checkbox" id="chkAll" onchange="toggleAll(this)" style="width:15px;height:15px;cursor:pointer;"><label for="chkAll" style="font-size:.82rem;color:#5A6778;cursor:pointer;margin:0 0 0 4px;">전체 선택</label><span class="sel-count" id="selCount"></span></div><button class="btn-navy" id="btnBatchSave" onclick="batchSave()" disabled>✅ 선택 항목 일괄저장</button></div>
+      <div class="table-wrap"><table class="table table-hover align-middle"><thead><tr><th style="width:34px;text-align:center;">선택</th><th>시간</th><th>이름</th><th>학번</th><th>학과</th><th>이메일</th><th id="th-topic" style="display:none;">진로적성검사</th><th>문의</th><th>상태</th><th>코멘트</th><th style="width:72px;">즉시저장</th></tr></thead><tbody id="listBody"></tbody></table></div>
+      <p id="emptyMsg" style="text-align:center;color:#9AA5B4;padding:28px;display:none;">예약 내역이 없습니다.</p>
+    </div>
+    <div id="tab-block" style="display:none;">
+      <div class="block-section">
+        <div class="block-desc">슬롯을 선택 후 <strong>일괄 차단/해제</strong>할 수 있습니다.</div>
+        <div class="slot-toolbar"><input type="checkbox" id="chkAllSlots" onchange="toggleAllSlots(this)" style="width:15px;height:15px;cursor:pointer;accent-color:var(--navy);"><label for="chkAllSlots" style="font-size:.82rem;color:#5A6778;cursor:pointer;margin:0;">전체 선택</label><span class="slot-sel-info" id="slotSelCount"></span><button class="btn-navy" id="btnBlockSel" onclick="batchToggleSlots(true)" disabled style="padding:7px 14px;font-size:.82rem;">🔒 선택 차단</button><button class="btn-outline" id="btnOpenSel" onclick="batchToggleSlots(false)" disabled style="padding:7px 14px;font-size:.82rem;">🔓 선택 해제</button></div>
+        <div class="slot-legend"><span><span class="dot" style="background:#38A169;"></span>예약 가능</span><span><span class="dot" style="background:#C53030;"></span>차단됨</span><span><span class="dot" style="background:#3182CE;"></span>예약완료</span><span><span class="dot" style="background:#D69E2E;"></span>설명회 진행</span></div>
+        <div class="slot-grid" id="slotGrid"><p style="color:#9AA5B4;font-size:.84rem;">불러오는 중...</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 매뉴얼 모달 -->
+<div class="modal-overlay" id="manualModal" style="display:none;align-items:flex-start;padding:20px 12px;overflow-y:auto;" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:720px;margin:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);overflow:hidden;">
+    <div style="background:var(--navy);padding:18px 24px;display:flex;justify-content:space-between;align-items:center;">
+      <div id="manualTitle" style="color:#fff;font-weight:800;font-size:1rem;">📖 매뉴얼</div>
+      <button onclick="document.getElementById('manualModal').style.display='none'" style="background:transparent;border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:7px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">✕ 닫기</button>
+    </div>
+    <div id="manualBody" style="padding:24px 28px;font-size:.88rem;color:#333;line-height:1.8;"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="memoModal" style="display:none;" onclick="closeMemo(event)"><div class="modal-box"><h6>📋 문의 내용</h6><p id="memoText"></p><button class="modal-close" onclick="document.getElementById('memoModal').style.display='none'">닫기</button></div></div>
+<div id="toast"></div>
+
+<script>
+var _prog,_pw,_slotData=[],_giftData=[],_currentOffProg='',_currentStatus=null,_currentBoothProg='';
+var _SITE_CFG = <?!= getSettingsData() ?>;
+var FALLBACK   = _SITE_CFG.boothPrograms;
+var SESS_LIST  = _SITE_CFG.sessions.map(function(s){ return s.name; });
+var SESS_TIMES = _SITE_CFG.sessionTimes;
+var ALL_PROGS  = _SITE_CFG.boothPrograms;
+
+function fillLoginSelect(p){
+  var s=document.getElementById('loginProg');
+  var prevVal=s.value; // 이미 선택된 값 보존
+  while(s.options.length>1)s.remove(1);
+  p.forEach(function(v){if(v){var o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o);}});
+  var d=document.createElement('option');d.disabled=true;d.textContent='──────────';s.appendChild(d);
+  var oo=document.createElement('option');oo.value='__office__';oo.textContent='🏢 행정팀 (전체 관리)';s.appendChild(oo);
+  if(prevVal) s.value=prevVal; // 이전 선택값 복원
+}
+fillLoginSelect(FALLBACK);
+window.onload=function(){google.script.run.withSuccessHandler(function(d){fillLoginSelect((d&&d.programs&&d.programs.length)?d.programs:FALLBACK);}).withFailureHandler(function(){}).getInitialData();};
+function onLoginProgChange(sel){var h=document.querySelector('.login-body .hint');if(h)h.textContent=sel.value==='__office__'?'행정팀 비밀번호를 입력하세요':'담당 프로그램과 비밀번호를 입력하세요';}
+function login(){
+  // 값을 즉시 로컬 변수로 저장 (비동기 콜백 전에 DOM이 바뀌어도 안전)
+  var progVal=document.getElementById('loginProg').value;
+  var pwVal=document.getElementById('pw').value;
+  if(!progVal||!pwVal){alert('프로그램과 비밀번호를 모두 입력하세요.');return;}
+  var btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent='접속 중...';btn.style.opacity='0.7';
+  function rb(){btn.disabled=false;btn.textContent='접속하기';btn.style.opacity='';}
+  if(progVal==='__office__'){
+    google.script.run
+      .withSuccessHandler(function(d){
+        _prog=progVal; _pw=pwVal; _isOffice=true;
+        rb();
+        document.getElementById('loginCard').style.display='none';
+        document.getElementById('officeCard').style.display='block';
+        document.getElementById('officeAdminName').textContent=d.name+' 님 (행정팀)';
+        loadOfficePrograms();
+        loadWalkBlockStatus();
+      })
+      .withFailureHandler(function(e){rb();alert(e.message);})
+      .adminLogin(pwVal);
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(function(d){
+      _prog=progVal; _pw=pwVal; _isOffice=false;
+      rb();
+      document.getElementById('loginCard').style.display='none';
+      document.getElementById('adminCard').style.display='block';
+      document.getElementById('dispProg').textContent=d.programName;
+      document.getElementById('dispProf').textContent=d.profName+' '+d.title+'님';
+      renderAll(d.reservations);loadSlotStatus();
+    })
+    .withFailureHandler(function(e){rb();alert(e.message);})
+    .getAdminData(progVal,pwVal);
+}
+function refresh(){google.script.run.withSuccessHandler(function(d){renderAll(d.reservations);loadSlotStatus();}).withFailureHandler(function(e){alert(e.message);}).getAdminData(_prog,_pw);}
+function renderStats(list){var t=list.length,dn=list.filter(function(i){return i.status==='상담완료';}).length,ns=list.filter(function(i){return i.status==='상담취소';}).length,w=t-dn-ns;document.getElementById('statRow').innerHTML='<div class="stat-box"><div class="num">'+t+'</div><div class="lbl">전체</div></div><div class="stat-box"><div class="num" style="color:#2B6CB0">'+w+'</div><div class="lbl">대기</div></div><div class="stat-box"><div class="num" style="color:#276749">'+dn+'</div><div class="lbl">상담완료</div></div><div class="stat-box"><div class="num" style="color:#C53030">'+ns+'</div><div class="lbl">상담취소</div></div>';}
+function getAllSlots(){var s=[];for(var m=14*60;m<17*60;m+=15)s.push(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'));return s;}
+function renderAll(list){
+  renderStats(list||[]);
+  var tb=document.getElementById('listBody'),em=document.getElementById('emptyMsg');
+  document.getElementById('chkAll').checked=false;document.getElementById('selCount').textContent='';document.getElementById('btnBatchSave').disabled=true;em.style.display='none';
+  var isLDC=(_prog==='라이프디자인센터');document.getElementById('th-topic').style.display=isLDC?'':'none';
+  var rm={};(list||[]).forEach(function(item){var t=item.time?item.time.substring(0,5):'';if(t)rm[t]=item;});
+  var slots=getAllSlots(),html='',lastS='';
+  slots.forEach(function(t){
+    var sec=t<'13:30'?'AM':'PM';
+    if(sec!==lastS){html+='<tr class="tr-section"><td colspan="'+(isLDC?'11':'10')+'">'+(sec==='AM'?'오전':'오후')+'</td></tr>';lastS=sec;}
+    var et=(function(){var m=parseInt(t.split(':')[0])*60+parseInt(t.split(':')[1])+15;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');})();
+    var lbl=t+' ~ '+et,item=rm[t];
+    if(item){
+      var sc=item.status==='상담완료'?'st-done':item.status==='상담취소'?'st-noshow':'';
+      html+='<tr id="tr-'+item.rowIdx+'" class="'+sc+'"><td style="text-align:center;"><input type="checkbox" class="row-chk" value="'+item.rowIdx+'" onchange="onRowCheck()" style="width:15px;height:15px;cursor:pointer;"></td><td style="white-space:nowrap;font-weight:700;">'+eh(item.time)+'</td><td>'+eh(item.name)+'</td><td style="font-size:.78rem;color:#7A8899;">'+eh(String(item.id))+'</td><td>'+eh(item.dept)+'</td><td style="font-size:.77rem;">'+eh(item.email)+'</td>'+(isLDC?'<td style="text-align:center;">'+parseLdc(item.memo)+'</td>':'')+'<td><button class="btn-memo" data-memo="'+ea(item.memo)+'" onclick="showMemo(this)">'+(item.memo?'보기':'—')+'</button></td><td><div style="display:flex;align-items:center;gap:6px;"><select class="status-sel" id="status-'+item.rowIdx+'" onchange="updateBadge('+item.rowIdx+',this.value)"><option'+(item.status==='예약완료'?' selected':'')+'>예약완료</option><option'+(item.status==='상담완료'?' selected':'')+'>상담완료</option><option'+(item.status==='상담취소'?' selected':'')+'>상담취소</option></select><span class="status-badge '+(item.status==='상담완료'?'badge-done':item.status==='상담취소'?'badge-noshow':'badge-waiting')+'" id="badge-'+item.rowIdx+'">'+(item.status==='예약완료'?'대기중':item.status==='상담완료'?'✓ 완료':'✗ 취소')+'</span></div></td><td><input type="text" class="comment-inp" id="comment-'+item.rowIdx+'" value="'+ea(item.comment)+'" placeholder="메모"></td><td style="text-align:center;"><button class="btn-save-row" id="rowbtn-'+item.rowIdx+'" onclick="saveRow('+item.rowIdx+',this)">저장</button><span class="saved-ok" id="ok-'+item.rowIdx+'">✓</span></td></tr>';
+    }else{html+='<tr class="tr-empty"><td></td><td class="time-cell">'+lbl+'</td><td colspan="'+(isLDC?'9':'8')+'">— 예약 없음</td></tr>';}
+  });
+  tb.innerHTML=html;
+}
+function updateBadge(r,s){var b=document.getElementById('badge-'+r);if(b){b.className='status-badge '+(s==='상담완료'?'badge-done':s==='상담취소'?'badge-noshow':'badge-waiting');b.textContent=s==='예약완료'?'대기중':s==='상담완료'?'✓ 완료':'✗ 취소';}var tr=document.getElementById('tr-'+r);if(tr){tr.classList.remove('st-done','st-noshow');if(s==='상담완료')tr.classList.add('st-done');else if(s==='상담취소')tr.classList.add('st-noshow');}}
+function toggleAll(c){document.querySelectorAll('.row-chk').forEach(function(x){x.checked=c.checked;document.getElementById('tr-'+x.value).classList.toggle('row-selected',c.checked);});updateSelCount();}
+function onRowCheck(){var a=document.querySelectorAll('.row-chk'),c=document.querySelectorAll('.row-chk:checked');document.getElementById('chkAll').checked=(a.length>0&&c.length===a.length);document.querySelectorAll('.row-chk').forEach(function(x){document.getElementById('tr-'+x.value).classList.toggle('row-selected',x.checked);});updateSelCount();}
+function updateSelCount(){var n=document.querySelectorAll('.row-chk:checked').length;document.getElementById('selCount').textContent=n>0?n+'건 선택됨':'';document.getElementById('btnBatchSave').disabled=(n===0);}
+function batchSave(){var c=document.querySelectorAll('.row-chk:checked');if(!c.length){alert('저장할 항목을 선택해주세요.');return;}var u=Array.from(c).map(function(x){return{rowIdx:parseInt(x.value),status:document.getElementById('status-'+x.value).value.trim(),comment:document.getElementById('comment-'+x.value).value};});var btn=document.getElementById('btnBatchSave');btn.disabled=true;btn.textContent='저장 중...';google.script.run.withSuccessHandler(function(m){showToast('✅ '+m);btn.textContent='✅ 선택 항목 일괄저장';document.querySelectorAll('.row-chk:checked').forEach(function(x){x.checked=false;document.getElementById('tr-'+x.value).classList.remove('row-selected');});document.getElementById('chkAll').checked=false;updateSelCount();refresh();}).withFailureHandler(function(e){alert('저장 실패: '+e.message);btn.disabled=false;btn.textContent='✅ 선택 항목 일괄저장';}).batchUpdateStatus(_prog,_pw,u);}
+function saveRow(r,btn){var s=document.getElementById('status-'+r).value.trim(),c=document.getElementById('comment-'+r).value;btn.disabled=true;btn.textContent='...';google.script.run.withSuccessHandler(function(){btn.disabled=false;btn.textContent='저장';var ok=document.getElementById('ok-'+r);ok.style.display='inline';setTimeout(function(){ok.style.display='none';},2000);google.script.run.withSuccessHandler(function(d){renderStats(d.reservations);}).getAdminData(_prog,_pw);}).withFailureHandler(function(e){alert('저장 실패: '+e.message);btn.disabled=false;btn.textContent='저장';}).batchUpdateStatus(_prog,_pw,[{rowIdx:r,status:s,comment:c}]);}
+function switchAdminTab(t){document.getElementById('tab-resv').style.display=t==='resv'?'block':'none';document.getElementById('tab-block').style.display=t==='block'?'block':'none';document.getElementById('tab-btn-resv').classList.toggle('active',t==='resv');document.getElementById('tab-btn-block').classList.toggle('active',t==='block');if(t==='block')loadSlotStatus();}
+function loadSlotStatus(){var g=document.getElementById('slotGrid');g.innerHTML='<p style="color:#9AA5B4;font-size:.84rem;">불러오는 중...</p>';document.getElementById('chkAllSlots').checked=false;document.getElementById('slotSelCount').textContent='';document.getElementById('btnBlockSel').disabled=true;document.getElementById('btnOpenSel').disabled=true;google.script.run.withSuccessHandler(renderSlots).withFailureHandler(function(e){g.innerHTML='<p style="color:#E53E3E;">'+e.message+'</p>';}).getSlotBlockStatus(_prog,_pw);}
+function renderSlots(slots){_slotData=slots||[];var g=document.getElementById('slotGrid');if(!_slotData.length){g.innerHTML='<p style="color:#9AA5B4;">슬롯 없음</p>';return;}var html='',lastS='';_slotData.forEach(function(sl){var sec=sl.time<'13:00'?'오전':'오후';if(sec!==lastS){html+='<div class="slot-break">— '+sec+' —</div>';lastS=sec;}var iB=!!sl.booked,iS=!!sl.sessionBlock,iC=!!sl.blocked,imm=iB||iS;var cls='',icon='';if(iB){cls='booked';icon='👤';}else if(iS){cls='session';icon='🎓';}else if(iC){cls='closed';icon='🔒';}else{cls='open';icon='✅';}var cid='schk-'+sl.time.replace(':','');html+='<div class="slot-item '+cls+'"><input type="checkbox" id="'+cid+'" value="'+sl.time+'" '+(imm?'disabled':'')+' onchange="onSlotCheck()" class="slot-chk"><label for="'+cid+'" style="cursor:'+(imm?'not-allowed':'pointer')+';margin:0;">'+icon+' '+eh(sl.label)+'</label></div>';});g.innerHTML=html;updateSlotSelCount();}
+function toggleAllSlots(c){document.querySelectorAll('.slot-chk:not(:disabled)').forEach(function(x){x.checked=c.checked;});updateSlotSelCount();}
+function onSlotCheck(){var a=document.querySelectorAll('.slot-chk:not(:disabled)'),c=document.querySelectorAll('.slot-chk:not(:disabled):checked');document.getElementById('chkAllSlots').checked=(a.length>0&&c.length===a.length);updateSlotSelCount();}
+function updateSlotSelCount(){var n=document.querySelectorAll('.slot-chk:not(:disabled):checked').length;document.getElementById('slotSelCount').textContent=n>0?n+'개 선택됨':'';document.getElementById('btnBlockSel').disabled=(n===0);document.getElementById('btnOpenSel').disabled=(n===0);}
+function batchToggleSlots(block){var c=Array.from(document.querySelectorAll('.slot-chk:not(:disabled):checked'));if(!c.length){alert('선택된 슬롯이 없습니다.');return;}var times=c.map(function(x){return x.value;});var b1=document.getElementById('btnBlockSel'),b2=document.getElementById('btnOpenSel');b1.disabled=true;b2.disabled=true;b1.textContent='처리 중...';b2.textContent='처리 중...';function next(i){if(i>=times.length){showToast('✅ '+times.length+'개 슬롯 '+(block?'차단':'해제')+' 완료');b1.textContent='🔒 선택 차단';b2.textContent='🔓 선택 해제';loadSlotStatus();return;}google.script.run.withSuccessHandler(function(){next(i+1);}).withFailureHandler(function(e){alert('오류('+times[i]+'): '+e.message);b1.textContent='🔒 선택 차단';b2.textContent='🔓 선택 해제';loadSlotStatus();}).toggleSlotBlock(_prog,_pw,times[i],block);}next(0);}
+function loadOfficePrograms(){var g=document.getElementById('officeProgGrid');g.innerHTML=SESS_LIST.map(function(p){return'<div class="prog-chip" onclick="selectOfficeProg(\''+ea(p)+'\')" id="chip-'+p.replace(/\//g,'-')+'"><div style="font-weight:700;">'+eh(p)+'</div><div style="font-size:.72rem;color:#9AA5B4;margin-top:2px;">'+(SESS_TIMES[p]||'')+'</div></div>';}).join('');loadOverallStats();buildBoothProgChips();}
+function switchOfficeTab(tab){['sign','booth','gift'].forEach(function(t){document.getElementById('off-pane-'+t).style.display=t===tab?'block':'none';document.getElementById('off-tab-'+t).classList.toggle('active',t===tab);});if(tab==='gift')loadGiftList();}
+function selectOfficeProg(p){_currentOffProg=p;document.querySelectorAll('#officeProgGrid .prog-chip').forEach(function(el){el.classList.remove('active');});var c=document.getElementById('chip-'+p.replace(/\//g,'-'));if(c)c.classList.add('active');loadStatus(p);}
+function refreshStatus(){if(_currentOffProg)loadStatus(_currentOffProg);}
+function loadStatus(p){document.getElementById('attendeeSection').style.display='block';document.getElementById('attendeeBody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:#9AA5B4;">불러오는 중...</td></tr>';document.getElementById('officeStat').innerHTML='';google.script.run.withSuccessHandler(function(d){_currentStatus=d;renderStatusTable(d);}).withFailureHandler(function(e){alert(e.message);}).getSessionStatus(_pw,p);}
+function renderStatusTable(data){
+  var checked=data.signed||0, total=data.total||0, unchecked=total-checked;
+  document.getElementById('officeStat').innerHTML=
+    '<div class="stat-box"><div class="num">'+total+'</div><div class="lbl">전체</div></div>'+
+    '<div class="stat-box"><div class="num" style="color:#276749;">'+checked+'</div><div class="lbl">체크인 완료</div></div>'+
+    '<div class="stat-box"><div class="num" style="color:#C53030;">'+unchecked+'</div><div class="lbl">미체크인</div></div>';
+  var list=data.attendees||[],tb=document.getElementById('attendeeBody'),em=document.getElementById('attendeeEmpty');
+  if(!list.length){tb.innerHTML='';em.style.display='block';return;}
+  em.style.display='none';
+  tb.innerHTML=list.map(function(item){
+    var ciCell=item.checkedIn
+      ?'<span style="font-size:.8rem;color:#276749;font-weight:600;">'+fmtTime(item.checkedAt)+'</span>'
+      :'<span style="background:#FFF5F5;color:#C53030;border-radius:99px;padding:2px 9px;font-size:.75rem;font-weight:700;">미체크인</span>';
+    var typeBadge=item.attendType==='당일방문'
+      ?'<span style="background:#FFF8E1;color:#92610A;border-radius:99px;padding:2px 9px;font-size:.75rem;font-weight:600;">당일</span>'
+      :'<span style="background:#EBF4FF;color:#2B6CB0;border-radius:99px;padding:2px 9px;font-size:.75rem;font-weight:600;">사전</span>';
+    return '<tr style="'+(item.checkedIn?'':'opacity:.65;')+'">'+
+      '<td style="text-align:center;">'+item.no+'</td>'+
+      '<td style="font-weight:600;">'+eh(item.name)+'</td>'+
+      '<td style="font-size:.79rem;color:#7A8899;">'+eh(item.id)+'</td>'+
+      '<td>'+eh(item.dept)+'</td>'+
+      '<td style="text-align:center;">'+typeBadge+'</td>'+
+      '<td style="text-align:center;">'+ciCell+'</td>'+
+    '</tr>';
+  }).join('');
+}
+function generateSessionPdf(){if(!_currentStatus){alert('설명회를 먼저 선택하세요.');return;}var p=_currentStatus.program,btn=document.getElementById('btnPdfSign');btn.disabled=true;btn.textContent='불러오는 중...';google.script.run.withSuccessHandler(function(d){btn.disabled=false;btn.textContent='📄 참석자 명단 PDF';_doSessionPdf(d);}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='📄 참석자 명단 PDF';alert('오류: '+e.message);}).getSessionStatus(_pw,p);}
+function _doSessionPdf(data){
+  var p=data.program, pt=SESS_TIMES[p]||'';
+  var list=data.attendees||[];
+  var rows=list.map(function(item,i){
+    var ciCell=item.checkedIn
+      ?'<span style="color:#276749;font-weight:700;">'+fmtTime(item.checkedAt)+'</span>'
+      :'<span style="color:#C53030;font-weight:700;">미체크인</span>';
+    var typeBadge=item.attendType==='당일방문'?'당일':'사전';
+    return '<tr style="'+(i%2===1?'background:#F8F8F8;':'')+'">'+
+      '<td class="td-no">'+(i+1)+'</td>'+
+      '<td class="td-name">'+eh(item.name)+'</td>'+
+      '<td class="td-id">'+eh(String(item.id||''))+'</td>'+
+      '<td class="td-dept">'+eh(item.dept||'')+'</td>'+
+      '<td style="text-align:center;font-size:10px;">'+typeBadge+'</td>'+
+      '<td style="text-align:center;font-size:10px;width:90px;">'+ciCell+'</td>'+
+    '</tr>';
+  }).join('');
+  var logo='https://drive.google.com/thumbnail?id=1gAd8LC2fRzr7reuiJV2FHSQCbqbz5DoR&sz=w200';
+  document.getElementById('signPrintArea').innerHTML=
+    '<div class="sign-sheet">'+
+      '<div class="sign-header">'+
+        '<div class="sign-header-left"><div class="sign-title">2026 융합전공 설명회: '+eh(p)+'</div></div>'+
+        '<img src="'+logo+'" class="sign-header-logo" alt="로고">'+
+      '</div>'+
+      '<div class="sign-meta">일시: '+_SITE_CFG.eventDate+'&nbsp;&nbsp;'+eh(pt)+'<br>장소: '+_SITE_CFG.eventPlace+'</div>'+
+      '<table class="sign-table">'+
+        '<thead><tr>'+
+          '<th class="td-no">번호</th>'+
+          '<th style="text-align:left;">이름</th>'+
+          '<th>학번</th>'+
+          '<th style="text-align:left;">학과</th>'+
+          '<th style="width:40px;">유형</th>'+
+          '<th style="width:90px;">체크인 시각</th>'+
+        '</tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+      '</table>'+
+    '</div>';
+  _waitPrint();
+}
+function buildBoothProgChips(){document.getElementById('boothProgGrid').innerHTML=ALL_PROGS.map(function(p){return'<div class="prog-chip" onclick="selectBoothProg(this.dataset.prog)" data-prog="'+ea(p)+'" id="bchip-'+p.replace(/\//g,'-')+'"><div style="font-weight:700;">'+eh(p)+'</div></div>';}).join('');}
+function selectBoothProg(p){_currentBoothProg=p;document.querySelectorAll('#boothProgGrid .prog-chip').forEach(function(el){el.classList.remove('active');});var c=document.getElementById('bchip-'+p.replace(/\//g,'-'));if(c)c.classList.add('active');loadBoothStatus();}
+function loadBoothStatus(){if(!_currentBoothProg){alert('프로그램을 선택하세요.');return;}document.getElementById('boothStatSection').style.display='block';document.getElementById('boothBody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:#9AA5B4;">불러오는 중...</td></tr>';document.getElementById('boothStat').innerHTML='';google.script.run.withSuccessHandler(renderBoothStatus).withFailureHandler(function(e){alert(e.message);}).getAdminDataForOffice(_pw,_currentBoothProg);}
+function renderBoothStatus(data){var list=data.reservations||[],t=list.length,dn=list.filter(function(r){return r.status==='상담완료';}).length,cn=list.filter(function(r){return r.status==='상담취소';}).length,w=t-dn-cn;document.getElementById('boothStat').innerHTML='<div class="stat-box"><div class="num">'+t+'</div><div class="lbl">전체 예약</div></div><div class="stat-box"><div class="num" style="color:#2B6CB0;">'+w+'</div><div class="lbl">대기</div></div><div class="stat-box"><div class="num" style="color:#276749;">'+dn+'</div><div class="lbl">상담완료</div></div><div class="stat-box"><div class="num" style="color:#C53030;">'+cn+'</div><div class="lbl">상담취소</div></div>';var tb=document.getElementById('boothBody'),em=document.getElementById('boothEmpty');if(!list.length){tb.innerHTML='';em.style.display='block';return;}em.style.display='none';tb.innerHTML=list.map(function(item,i){var sc=item.status==='상담완료'?'#276749':item.status==='상담취소'?'#C53030':'#2B6CB0';var sb=item.status==='상담완료'?'#E6FFED':item.status==='상담취소'?'#FFF5F5':'#EBF4FF';return'<tr><td style="text-align:center;color:#888;">'+(i+1)+'</td><td style="font-weight:700;white-space:nowrap;">'+eh(item.time)+'</td><td style="font-weight:600;">'+eh(item.name)+'</td><td style="font-size:.79rem;color:#7A8899;">'+eh(String(item.id))+'</td><td>'+eh(item.dept)+'</td><td style="text-align:center;"><span style="background:'+sb+';color:'+sc+';border-radius:99px;padding:2px 10px;font-size:.77rem;font-weight:700;">'+eh(item.status)+'</span></td></tr>';}).join('');}
+function loadOverallStats(){document.getElementById('dashSummary').innerHTML='<div style="text-align:center;padding:16px;color:#9AA5B4;font-size:.83rem;width:100%;">불러오는 중...</div>';document.getElementById('dashProgGrid').innerHTML='';google.script.run.withSuccessHandler(renderDashboard).withFailureHandler(function(e){document.getElementById('dashSummary').innerHTML='<div style="color:#C53030;font-size:.82rem;">오류: '+eh(e.message)+'</div>';}).getOverallStats(_pw);}
+function renderDashboard(data) {
+  var tp  = data.totalPre    || 0;  // 사전예약 총 건수
+  var ps  = data.totalPreSign|| 0;  // 사전예약 참석 건수
+  var w   = data.totalWalk   || 0;  // 당일 참석 건수
+  var sc  = data.sessTotalCount  || 0;  // 설명회 참석 건수 (중복 포함)
+  var su  = data.sessTotalUnique || 0;  // 설명회 참석 인원 (중복 제거)
+  var pu  = data.sessPreUnique   || 0;  // 사전예약 참석 인원 (중복 제거)
+  var wu  = data.sessWalkUnique  || 0;  // 당일 참석 인원 (중복 제거)
+  var gu  = data.giftTotalUnique || 0;  // 기념품 수령 인원 (중복 제거)
+
+  // ── 상단 요약 카드 ──────────────────────────
+  document.getElementById('dashSummary').innerHTML =
+    // 설명회 섹션 - 건수 행
+    '<div style="width:100%;font-size:.72rem;font-weight:700;color:#9AA5B4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">📋 설명회 참석 건수 <span style="font-weight:400;">(1인 다중 참여 포함)</span></div>'+
+    '<div class="dash-card highlight"><div class="dc-num">'+sc+'</div><div class="dc-lbl">총 참석건수</div></div>'+
+    '<div class="dash-card"><div class="dc-num" style="color:#2B6CB0;">'+ps+'</div><div class="dc-lbl">사전예약 참석건수</div></div>'+
+    '<div class="dash-card"><div class="dc-num" style="color:#276749;">'+w+'</div><div class="dc-lbl">당일 참석건수</div></div>'+
+    // 설명회 섹션 - 인원 행
+    '<div style="width:100%;border-top:1px dashed #DDE3EA;margin:8px 0 10px;"></div>'+
+    '<div style="width:100%;font-size:.72rem;font-weight:700;color:#9AA5B4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">👤 설명회 참석 인원 <span style="font-weight:400;">(학번 중복 제거)</span></div>'+
+    '<div class="dash-card highlight"><div class="dc-num">'+su+'</div><div class="dc-lbl">총 참석인원</div></div>'+
+    '<div class="dash-card"><div class="dc-num" style="color:#2B6CB0;">'+pu+'</div><div class="dc-lbl">사전예약 참석인원</div></div>'+
+    '<div class="dash-card"><div class="dc-num" style="color:#276749;">'+wu+'</div><div class="dc-lbl">당일 참석인원</div></div>'+
+    // 구분선
+    '<div style="width:100%;border-top:1px dashed #DDE3EA;margin:8px 0 10px;"></div>'+
+    // 기념품 섹션
+    '<div style="width:100%;font-size:.72rem;font-weight:700;color:#9AA5B4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">🎁 기념품 수령</div>'+
+    '<div class="dash-card"><div class="dc-num" style="color:#276749;">'+gu+'</div><div class="dc-lbl">수령 인원</div><div class="dc-sub">학번 중복 제거</div></div>';
+
+  // ── 프로그램별 바 차트 ──────────────────────
+  var bp = data.byProg || [];
+  var mx = Math.max.apply(null, bp.map(function(r){ return r.preTotal||0; }).concat([1]));
+  document.getElementById('dashProgGrid').innerHTML = bp.map(function(r) {
+    var pr2 = r.preTotal > 0 ? Math.round(r.preSigned / r.preTotal * 100) : 0;
+    var pb  = Math.round(r.preSigned   / mx * 100);
+    var wb  = Math.round(r.walkSigned  / mx * 100);
+    var nb  = Math.round(Math.max(0, r.preTotal - r.preSigned) / mx * 100);
+    return '<div class="dash-prog-row">'+
+      '<div class="dp-name">'+eh(r.program)+'</div>'+
+      '<div class="dp-bar-wrap">'+
+        '<div style="display:flex;gap:2px;margin-bottom:5px;height:10px;">'+
+          (r.preSigned >0?'<div style="background:#4A90D9;height:10px;border-radius:4px 0 0 4px;width:'+pb+'%;"></div>':'')+
+          (r.walkSigned>0?'<div style="background:#68D391;height:10px;width:'+wb+'%;"></div>':'')+
+          (nb>0          ?'<div style="background:#E2E8F0;height:10px;border-radius:0 4px 4px 0;width:'+nb+'%;"></div>':'')+
+        '</div>'+
+        '<div class="dp-nums">'+
+          '참석 <strong>'+(r.preSigned+r.walkSigned)+'건</strong>'+
+          ' &nbsp;|&nbsp; 사전 <strong>'+r.preSigned+'/'+r.preTotal+'</strong> ('+pr2+'%)'+
+          ' &nbsp;|&nbsp; 당일 <strong>'+r.walkSigned+'건</strong>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+function loadGiftList(){
+  document.getElementById('giftBody').innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:#9AA5B4;">불러오는 중...</td></tr>';
+  document.getElementById('giftStat').innerHTML='';
+  document.getElementById('giftEmpty').style.display='none';
+  _certHtmlCache = {}; // 새로고침 시 캐시 초기화
+  closeCertPreview();
+  google.script.run.withSuccessHandler(renderGiftList).withFailureHandler(function(e){alert(e.message);}).getGiftList(_pw);
+}
+
+function renderGiftList(list) {
+  _giftData = list || [];
+  var t=list.length, ic=list.filter(function(r){return r.isIntercollege;}).length, ot=t-ic;
+  document.getElementById('giftStat').innerHTML=
+    '<div class="stat-box"><div class="num">'+t+'</div><div class="lbl">전체 수령</div></div>'+
+    '<div class="stat-box"><div class="num" style="color:#2B6CB0;">'+ic+'</div><div class="lbl">인터칼리지</div></div>'+
+    '<div class="stat-box"><div class="num" style="color:#5A6778;">'+ot+'</div><div class="lbl">타과생</div></div>';
+
+  var tb=document.getElementById('giftBody'), em=document.getElementById('giftEmpty');
+  document.getElementById('giftChkAll').checked = false;
+  updateCertSelCount();
+
+  if (!list.length) { tb.innerHTML=''; em.style.display='block'; return; }
+  em.style.display='none';
+
+  tb.innerHTML = list.map(function(item) {
+    var ib = item.isIntercollege
+      ? '<span class="gift-badge gift-badge-ic">인터칼리지</span>'
+      : '<span class="gift-badge gift-badge-other">타과</span>';
+    var sc = item.bonusSubject
+      ? '<span style="font-size:.77rem;color:#276749;font-weight:600;">'+eh(item.bonusSubject)+'</span>'
+      : '<span style="color:#C8C8C8;font-size:.77rem;">—</span>';
+    var vc = item.verifyCode
+      ? '<span style="font-size:.72rem;font-weight:700;color:var(--navy);letter-spacing:.05em;">'+eh(item.verifyCode)+'</span>'
+      : '<span style="color:#CCC;font-size:.72rem;">—</span>';
+    // 체크박스: 인터칼리지 학생만 활성화
+    var chkCell = item.isIntercollege
+      ? '<input type="checkbox" class="gift-chk" value="'+eh(item.studentId)+'" onchange="onGiftChkChange()" style="width:15px;height:15px;cursor:pointer;accent-color:var(--navy);">'
+      : '<span style="color:#DDE3EA;font-size:.72rem;">—</span>';
+    // 미리보기 버튼: 인터칼리지만
+    var previewBtn = item.isIntercollege
+      ? '<button onclick="previewCert(\''+eh(item.studentId)+'\')" style="background:none;border:1.5px solid #BEE3F8;color:#2B6CB0;border-radius:6px;padding:3px 9px;font-size:.75rem;cursor:pointer;font-family:\'Pretendard\',sans-serif;" title="미리보기">👁</button>'
+      : '';
+    return '<tr id="gift-row-'+eh(item.studentId)+'">'+
+      '<td style="text-align:center;">'+chkCell+'</td>'+
+      '<td style="font-weight:600;">'+eh(item.name)+'</td>'+
+      '<td style="font-size:.79rem;color:#7A8899;">'+eh(item.studentId)+'</td>'+
+      '<td>'+eh(item.dept)+'</td>'+
+      '<td style="text-align:center;">'+ib+'</td>'+
+      '<td style="text-align:center;font-weight:700;color:var(--navy);">'+item.stampCount+'</td>'+
+      '<td>'+sc+'</td>'+
+      '<td style="text-align:center;">'+vc+'</td>'+
+      '<td style="text-align:center;">'+previewBtn+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+// ── 체크박스 관리 ────────────────────────────
+function toggleGiftAll(chk) {
+  document.querySelectorAll('.gift-chk').forEach(function(c){ c.checked=chk.checked; });
+  updateCertSelCount();
+}
+function onGiftChkChange() {
+  var all=document.querySelectorAll('.gift-chk'), checked=document.querySelectorAll('.gift-chk:checked');
+  document.getElementById('giftChkAll').checked=(all.length>0&&checked.length===all.length);
+  updateCertSelCount();
+}
+function updateCertSelCount() {
+  var n=document.querySelectorAll('.gift-chk:checked').length;
+  document.getElementById('certSelCount').textContent = n>0 ? n+'명 선택됨' : '';
+  document.getElementById('btnSendSelected').disabled = (n===0);
+}
+
+// ── 선택 학생 발송 ───────────────────────────
+function sendSelectedCerts() {
+  var checked = Array.from(document.querySelectorAll('.gift-chk:checked'));
+  if (!checked.length) { alert('발송할 학생을 선택해주세요.'); return; }
+  if (!confirm(checked.length+'명에게 참여확인서(PDF)를 발송합니다.\n계속하시겠습니까?')) return;
+  _sendCertsSequential(checked.map(function(c){ return c.value; }));
+}
+
+// ── 인터칼리지 전체 발송 ─────────────────────
+function sendAllIcCerts() {
+  var icList = _giftData.filter(function(r){ return r.isIntercollege; });
+  if (!icList.length) { alert('발송 대상 인터칼리지 학생이 없습니다.\n먼저 명단을 새로고침해주세요.'); return; }
+  if (!confirm('인터칼리지 학생 '+icList.length+'명 전원에게 참여확인서(PDF)를 발송합니다.\n계속하시겠습니까?')) return;
+  _sendCertsSequential(icList.map(function(r){ return r.studentId; }));
+}
+
+// ── 순차 발송 공통 ───────────────────────────
+function _sendCertsSequential(sids) {
+  var resultEl=document.getElementById('certResult');
+  resultEl.style.display='block'; resultEl.style.color='#9AA5B4';
+  resultEl.textContent='0 / '+sids.length+'명 발송 중...';
+  var sent=0, failed=0;
+  function next(i) {
+    if (i>=sids.length) {
+      resultEl.style.color='#276749';
+      resultEl.textContent='✅ 발송 완료: 성공 '+sent+'명'+(failed?' / 실패 '+failed+'명':'');
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(function(){
+        sent++;
+        resultEl.textContent=(sent+failed)+' / '+sids.length+'명 처리 중... (성공 '+sent+'명)';
+        next(i+1);
+      })
+      .withFailureHandler(function(err){
+        failed++;
+        resultEl.textContent=(sent+failed)+' / '+sids.length+'명 처리 중... (실패 '+failed+'명)';
+        next(i+1);
+      })
+      .sendCertificateMail(_pw, sids[i]);
+  }
+  next(0);
+}
+
+// ── 참여확인서 미리보기 ──────────────────────
+var _certHtmlCache = {}; // 탭 전환 시만 유지, loadGiftList 시 초기화
+
+function previewCert(studentId) {
+  var panel=document.getElementById('certPreviewPanel');
+  var frame=document.getElementById('certPreviewFrame');
+  panel.style.display='block';
+  frame.srcdoc='<div style="text-align:center;padding:40px;color:#9AA5B4;font-family:sans-serif;">불러오는 중...</div>';
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  document.getElementById('btnDownloadCert').dataset.sid = studentId;
+
+  // 캐시 없이 항상 최신 데이터 조회
+  google.script.run
+    .withSuccessHandler(function(html) {
+      _certHtmlCache[studentId] = html;
+      frame.srcdoc = html;
+    })
+    .withFailureHandler(function(err) {
+      frame.srcdoc = '<div style="padding:40px;color:#C53030;font-family:sans-serif;">오류: '+err.message+'</div>';
+    })
+    .getCertificateHtmlForStudent(_pw, studentId);
+}
+
+function closeCertPreview() {
+  document.getElementById('certPreviewPanel').style.display='none';
+  document.getElementById('certPreviewFrame').srcdoc='';
+}
+
+// ── 참여확인서 다운로드 ──────────────────────
+function downloadCert() {
+  var sid = document.getElementById('btnDownloadCert').dataset.sid;
+  if (!sid) return;
+  var html = _certHtmlCache[sid];
+  if (!html) { alert('먼저 미리보기를 열어주세요.'); return; }
+  // HTML 파일로 다운로드 (브라우저에서 열면 인쇄 가능)
+  var item = _giftData.filter(function(r){ return r.studentId===sid; })[0];
+  var name = item ? item.name : sid;
+  var blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href   = url;
+  a.download= '참여확인서_'+name+'.html';
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+function generateGiftPdf(mode){
+  if(!_giftData.length){alert('먼저 명단을 불러오세요.');return;}
+  var list=mode==='intercollege'?_giftData.filter(function(r){return r.isIntercollege;}):_giftData;
+  if(!list.length){alert('해당 조건의 수령자가 없습니다.');return;}
+  var logo='https://drive.google.com/thumbnail?id=1gAd8LC2fRzr7reuiJV2FHSQCbqbz5DoR&sz=w200';
+
+  if(mode==='intercollege'){
+    // ── 인터칼리지 전용: 과목별 정렬, 학생서명란, 진위코드 포함 ──
+
+    // 과목별로 그룹핑
+    var subjectGroups = {};
+    var noSubject = [];
+    list.forEach(function(item){
+      var subj = item.bonusSubject || '';
+      if(!subj){ noSubject.push(item); return; }
+      if(!subjectGroups[subj]) subjectGroups[subj]=[];
+      subjectGroups[subj].push(item);
+    });
+
+    // 과목별 섹션 HTML 생성
+    var allSections = '';
+    var globalNo = 0;
+    var subjects = Object.keys(subjectGroups).sort();
+
+    function makeRows(items){
+      return items.map(function(item){
+        var bg=(globalNo++)%2===1?'background:#F8F8F8;':'';
+        var vc=item.verifyCode?'<span style="font-size:8px;letter-spacing:.05em;color:#5A6778;">'+eh(item.verifyCode)+'</span>':'<span style="color:#CCC;font-size:8px;">—</span>';
+        var sig=item.signature&&item.signature.startsWith('data:')?
+          '<img src="'+item.signature+'" style="max-width:100px;max-height:36px;object-fit:contain;display:block;margin:0 auto;">':
+          '<div style="height:36px;border-bottom:1px solid #DDD;"></div>';
+        return '<tr style="'+bg+'">'
+          +'<td class="td-no">'+globalNo+'</td>'
+          +'<td class="td-name">'+eh(item.name)+'</td>'
+          +'<td class="td-id">'+eh(item.studentId)+'</td>'
+          +'<td class="td-dept">'+eh(item.dept)+'</td>'
+          +'<td style="width:110px;">'+sig+'</td>'
+          +'<td style="text-align:center;width:90px;">'+vc+'</td>'
+          +'</tr>';
+      }).join('');
+    }
+
+    var thead = '<thead><tr>'
+      +'<th class="td-no">No.</th>'
+      +'<th style="text-align:left;">이름<br><span style="font-size:8px;font-weight:400;">Name</span></th>'
+      +'<th>학번<br><span style="font-size:8px;font-weight:400;">Student ID</span></th>'
+      +'<th style="text-align:left;">학과<br><span style="font-size:8px;font-weight:400;">Dept.</span></th>'
+      +'<th style="width:110px;text-align:center;">학생 서명<br><span style="font-size:8px;font-weight:400;">Signature</span></th>'
+      +'<th style="width:90px;text-align:center;">진위확인코드<br><span style="font-size:8px;font-weight:400;">Verify Code</span></th>'
+      +'</tr></thead>';
+
+    subjects.forEach(function(subj){
+      var items=subjectGroups[subj];
+      allSections+='<div style="margin-bottom:20px;">'
+        +'<div style="background:#1B263B;color:#fff;padding:6px 10px;font-size:11px;font-weight:700;">'
+        +eh(subj)+' &nbsp;|&nbsp; Applied Course &nbsp;|&nbsp; '+items.length+'명</div>'
+        +'<table class="sign-table">'+thead+'<tbody>'+makeRows(items)+'</tbody></table>'
+        +'</div>';
+    });
+
+    if(noSubject.length){
+      allSections+='<div style="margin-bottom:20px;">'
+        +'<div style="background:#5A6778;color:#fff;padding:6px 10px;font-size:11px;font-weight:700;">'
+        +'신청 과목 없음 / No Applied Course &nbsp;|&nbsp; '+noSubject.length+'명</div>'
+        +'<table class="sign-table">'+thead+'<tbody>'+makeRows(noSubject)+'</tbody></table>'
+        +'</div>';
+    }
+
+    // 과목별 요약
+    var summary = subjects.map(function(s){
+      return eh(s)+': '+subjectGroups[s].length+'명';
+    }).join(' &nbsp;/&nbsp; ');
+    if(noSubject.length) summary+=' &nbsp;/&nbsp; 미신청: '+noSubject.length+'명';
+
+    document.getElementById('signPrintArea').innerHTML=
+      '<div class="sign-sheet">'
+        +'<div class="sign-header">'
+          +'<div class="sign-header-left">'
+            +'<div style="font-size:9px;color:#7A8899;letter-spacing:.1em;margin-bottom:3px;">HANYANG YK INTERCOLLEGE · 공식 문서</div>'
+            +'<div class="sign-title">참여확인서 발급 명단</div>'
+            +'<div style="font-size:10px;color:#7A8899;margin-top:2px;">Certificate of Participation — Issuance List</div>'
+            +'<div style="font-size:9px;color:#9AA5B4;margin-top:1px;">2026 HIC Majors Fair / 2026 융합전공 소개행사</div>'
+          +'</div>'
+          +'<img src="'+logo+'" class="sign-header-logo" alt="로고">'
+        +'</div>'
+        +'<div class="sign-meta">'
+          +'일시 / Date: '+_SITE_CFG.eventDate+' &nbsp;|&nbsp; 장소 / Venue: '+_SITE_CFG.eventPlace+'<br>'
+          +'발급 대상 / Eligible: '+list.length+'명 &nbsp;|&nbsp; '+summary+'<br>'
+          +'출력: '+new Date().toLocaleString('ko-KR')
+        +'</div>'
+        +allSections
+      +'</div>';
+  } else {
+    // ── 전체 서명부 (기존 방식 유지) ──
+    var hc='<th class="td-no">번호</th><th style="text-align:left;">이름</th><th>학번</th><th style="text-align:left;">학과</th><th>서명</th>';
+    var rows2=list.map(function(item,i){
+      var sh=item.signature&&item.signature.startsWith('data:')?'<img src="'+item.signature+'" style="max-width:140px;max-height:46px;object-fit:contain;display:block;margin:0 auto;">':'<span style="color:#bbb;font-size:9px;">—</span>';
+      var bg=i%2===1?'background:#F8F8F8;':'';
+      return'<tr style="'+bg+'"><td class="td-no">'+(i+1)+'</td><td class="td-name">'+eh(item.name)+'</td><td class="td-id">'+eh(item.studentId)+'</td><td class="td-dept">'+eh(item.dept)+'</td><td class="td-sig">'+sh+'</td></tr>';
+    }).join('');
+    document.getElementById('signPrintArea').innerHTML=
+      '<div class="sign-sheet">'
+        +'<div class="sign-header"><div class="sign-header-left"><div class="sign-title">2026 융합전공 소개행사 기념품 수령 서명부 (전체)</div></div><img src="'+logo+'" class="sign-header-logo" alt="로고"></div>'
+        +'<div class="sign-meta">일시: '+_SITE_CFG.eventDate+' | 장소: '+_SITE_CFG.eventPlace+'<br>총 '+list.length+'명 | 출력: '+new Date().toLocaleString('ko-KR')+'</div>'
+        +'<table class="sign-table"><thead><tr>'+hc+'</tr></thead><tbody>'+rows2+'</tbody></table>'
+      +'</div>';
+  }
+  _waitPrint();
+}
+function _waitPrint(){var pa=document.getElementById('signPrintArea'),imgs=Array.from(pa.querySelectorAll('img'));if(!imgs.length){window.print();return;}var mw=8000,st=Date.now();function tp(){var ld=imgs.filter(function(img){return img.complete;}).length;if(ld>=imgs.length||Date.now()-st>=mw){window.print();}else{setTimeout(tp,150);}}if(imgs.every(function(img){return img.complete;})){window.print();}else{setTimeout(tp,150);}}
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(function(){t.style.display='none';},2500);}
+function parseLdc(memo){if(!memo)return'<span style="color:#CCC;">—</span>';var m=memo.match(/\[진로적성검사:\s*(.+?)\]/);if(!m)return'<span style="color:#CCC;font-size:.78rem;">미희망</span>';return'<span style="background:#EBF4FF;color:#2B6CB0;border-radius:6px;padding:3px 10px;font-size:.76rem;font-weight:700;">🔍 응시 희망</span>';}
+function showMemo(btn){document.getElementById('memoText').textContent=btn.dataset.memo||'(내용 없음)';document.getElementById('memoModal').style.display='flex';}
+function closeMemo(e){if(e.target===document.getElementById('memoModal'))document.getElementById('memoModal').style.display='none';}
+function loadWalkBlockStatus(){
+  google.script.run
+    .withSuccessHandler(function(d){
+      // 현장예약 마감 버튼
+      var btn=document.getElementById('btnWalkBlock');
+      var lbl=document.getElementById('walkBlockStatus');
+      if(btn){
+        if(d.isBlocked){
+          btn.textContent='✅ 현장예약 재개';
+          btn.style.borderColor='#276749'; btn.style.color='#276749';
+          if(lbl) lbl.textContent='현재 수동 마감 중';
+        } else {
+          btn.textContent='🚫 현장예약 마감';
+          btn.style.borderColor='#C53030'; btn.style.color='#C53030';
+          if(lbl) lbl.textContent='';
+        }
+      }
+    })
+    .withFailureHandler(function(){})
+    .getCheckinPageData();
+}
+
+var _isOffice = false;
+
+function openManual(){
+  var title = document.getElementById('manualTitle');
+  var body  = document.getElementById('manualBody');
+  if(_isOffice){
+    title.textContent = '📖 전체 시스템 운영 매뉴얼';
+    body.innerHTML = MANUAL_OFFICE;
+  } else {
+    title.textContent = '📖 부스 예약 관리 매뉴얼';
+    body.innerHTML = MANUAL_BOOTH;
+  }
+  document.getElementById('manualModal').style.display = 'flex';
+}
+
+var MANUAL_BOOTH = '<div style="background:#EBF4FF;border-left:4px solid var(--navy);border-radius:8px;padding:12px 16px;margin-bottom:22px;font-size:.83rem;color:#1B3A6B;">이 페이지는 <strong>부스 담당 교수자 전용</strong> 관리 페이지입니다. 담당 프로그램의 예약 현황을 확인하고 슬롯을 관리할 수 있습니다.</div>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">📋 예약 현황 탭</h3>'
++'<ol style="margin:0 0 16px;padding-left:18px;color:#5A6778;">'
++'<li>로그인하면 담당 부스의 <strong style="color:#333;">시간대별 예약자 목록</strong>이 자동으로 표시됩니다.</li>'
++'<li>각 예약자의 이름, 학번, 학과, 이메일을 확인할 수 있습니다.</li>'
++'<li>메모 아이콘(💬)을 클릭하면 학생이 입력한 <strong style="color:#333;">문의 내용</strong>을 볼 수 있습니다.</li>'
++'<li>상담이 끝나면 해당 예약의 상태를 <strong style="color:#333;">상담완료</strong>로 변경하고 저장하세요.</li>'
++'<li>여러 건을 한꺼번에 처리하려면 체크박스로 선택 후 <strong style="color:#333;">일괄저장</strong> 버튼을 누르세요.</li>'
++'</ol>'
++'<div style="background:#F0F9FF;border-left:4px solid #3182CE;border-radius:6px;padding:10px 14px;margin-bottom:20px;font-size:.82rem;color:#1A365D;">💡 상태 변경 후 반드시 <strong>저장</strong>을 눌러야 반영됩니다. 저장하지 않고 페이지를 이동하면 변경 내용이 사라집니다.</div>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">🔒 슬롯 관리 탭</h3>'
++'<ol style="margin:0 0 8px;padding-left:18px;color:#5A6778;">'
++'<li>슬롯 관리 탭을 클릭하면 시간대별 예약 가능 여부를 확인할 수 있습니다.</li>'
++'<li>특정 시간대를 <strong style="color:#C53030;">차단</strong>하면 학생이 해당 시간에 예약할 수 없게 됩니다.</li>'
++'<li>자리를 비워야 하거나 예약을 받지 않을 시간대에 미리 차단해 두세요.</li>'
++'<li>차단된 슬롯을 다시 클릭하면 <strong style="color:#276749;">해제</strong>됩니다.</li>'
++'<li>여러 슬롯을 체크박스로 선택 후 일괄 차단/해제도 가능합니다.</li>'
++'</ol>'
++'<div style="background:#FFF0F0;border-left:4px solid #C53030;border-radius:6px;padding:10px 14px;margin-bottom:20px;font-size:.82rem;color:#742A2A;">⚠️ 이미 예약이 완료된 슬롯(파란색)은 차단해도 기존 예약이 취소되지 않습니다. 직접 예약자에게 연락하여 조율하세요.</div>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">🎨 슬롯 색상 안내</h3>'
++'<table style="width:100%;border-collapse:collapse;font-size:.84rem;margin-bottom:20px;">'
++'<tbody>'
++'<tr style="border-bottom:1px solid #EAECEF;"><td style="padding:9px 12px;"><span style="display:inline-block;width:14px;height:14px;background:#38A169;border-radius:3px;vertical-align:middle;margin-right:6px;"></span><strong>초록</strong></td><td style="padding:9px 12px;color:#5A6778;">예약 가능 (빈 슬롯)</td></tr>'
++'<tr style="border-bottom:1px solid #EAECEF;"><td style="padding:9px 12px;"><span style="display:inline-block;width:14px;height:14px;background:#3182CE;border-radius:3px;vertical-align:middle;margin-right:6px;"></span><strong>파랑</strong></td><td style="padding:9px 12px;color:#5A6778;">예약 완료</td></tr>'
++'<tr style="border-bottom:1px solid #EAECEF;"><td style="padding:9px 12px;"><span style="display:inline-block;width:14px;height:14px;background:#C53030;border-radius:3px;vertical-align:middle;margin-right:6px;"></span><strong>빨강</strong></td><td style="padding:9px 12px;color:#5A6778;">차단됨 (예약 불가)</td></tr>'
++'<tr><td style="padding:9px 12px;"><span style="display:inline-block;width:14px;height:14px;background:#D69E2E;border-radius:3px;vertical-align:middle;margin-right:6px;"></span><strong>노랑</strong></td><td style="padding:9px 12px;color:#5A6778;">설명회 진행 중인 시간대</td></tr>'
++'</tbody></table>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">❓ 자주 묻는 질문</h3>'
++'<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">'
++'<details style="background:#F8FAFC;border-radius:8px;padding:12px 16px;"><summary style="font-weight:700;color:var(--navy);list-style:none;cursor:pointer;">▶ 예약자 목록이 안 보여요</summary><p style="margin:10px 0 0;color:#5A6778;font-size:.83rem;">🔄 새로고침 버튼을 누르거나 로그아웃 후 다시 로그인해 보세요.</p></details>'
++'<details style="background:#F8FAFC;border-radius:8px;padding:12px 16px;"><summary style="font-weight:700;color:var(--navy);list-style:none;cursor:pointer;">▶ 슬롯을 잘못 차단했어요</summary><p style="margin:10px 0 0;color:#5A6778;font-size:.83rem;">슬롯 관리 탭에서 해당 슬롯을 다시 클릭하면 해제됩니다.</p></details>'
++'<details style="background:#F8FAFC;border-radius:8px;padding:12px 16px;"><summary style="font-weight:700;color:var(--navy);list-style:none;cursor:pointer;">▶ 상태를 저장했는데 반영이 안 돼요</summary><p style="margin:10px 0 0;color:#5A6778;font-size:.83rem;">즉시저장 버튼 또는 일괄저장 버튼을 눌렀는지 확인하세요. 저장 후 초록색 완료 표시가 나타나야 정상 반영된 것입니다.</p></details>'
++'</div>'
++'<div style="background:#F0F4F8;border-radius:8px;padding:14px 18px;font-size:.8rem;color:#7A8899;text-align:center;">문의: 한양YK인터칼리지 담당자 &nbsp;|&nbsp; intercollege@hanyang.ac.kr</div>';
+
+var MANUAL_OFFICE = '<div style="background:#EBF4FF;border-left:4px solid var(--navy);border-radius:8px;padding:12px 16px;margin-bottom:22px;font-size:.83rem;color:#1B3A6B;">이 페이지는 <strong>행정팀 전용</strong> 관리 페이지입니다. 전체 통계, 참석자 명단, 확인서 발급 등 행사 전반을 관리합니다.</div>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">🗂 이 시스템은 무엇인가요?</h3>'
++'<p style="margin:0 0 16px;">2026 융합전공 소개행사(5월 8일) 운영을 위해 만들어진 웹 기반 관리 시스템입니다. 학생 사전예약 접수부터 당일 체크인, 기념품 수령까지 전 과정을 디지털로 처리합니다.</p>'
++'<table style="width:100%;border-collapse:collapse;font-size:.84rem;margin-bottom:20px;">'
++'<thead><tr style="background:#F0F4F8;"><th style="padding:9px 12px;text-align:left;font-weight:700;color:var(--navy);">페이지</th><th style="padding:9px 12px;text-align:left;font-weight:700;color:var(--navy);">사용자</th><th style="padding:9px 12px;text-align:left;font-weight:700;color:var(--navy);">하는 일</th></tr></thead>'
++'<tbody>'
++'<tr style="border-bottom:1px solid #EAECEF;"><td style="padding:9px 12px;font-weight:600;">예약 페이지</td><td style="padding:9px 12px;color:#5A6778;">학생</td><td style="padding:9px 12px;color:#5A6778;">부스 상담 예약, 설명회 사전예약, 예약 변경·취소</td></tr>'
++'<tr style="border-bottom:1px solid #EAECEF;"><td style="padding:9px 12px;font-weight:600;">스태프 페이지</td><td style="padding:9px 12px;color:#5A6778;">스태프</td><td style="padding:9px 12px;color:#5A6778;">현장 체크인 처리, 기념품 수령 처리</td></tr>'
++'<tr><td style="padding:9px 12px;font-weight:600;">관리자 페이지 <span style="background:#1B263B;color:#fff;border-radius:4px;padding:1px 6px;font-size:.72rem;">지금 여기</span></td><td style="padding:9px 12px;color:#5A6778;">행정팀</td><td style="padding:9px 12px;color:#5A6778;">통계 확인, 참석자 명단 출력, 부스 슬롯 관리, 확인서 발급</td></tr>'
++'</tbody></table>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">📊 전체 참석 현황 (대시보드)</h3>'
++'<ul style="margin:0 0 16px;padding-left:18px;color:#5A6778;">'
++'<li><strong style="color:#333;">설명회 참석 건수</strong> — 1명이 3개 설명회 참석 시 3건으로 계산</li>'
++'<li><strong style="color:#333;">설명회 참석 인원</strong> — 학번 기준 중복 제거, 실제 참석한 사람 수</li>'
++'<li><strong style="color:#333;">사전예약 / 당일 참석</strong> — 건수와 인원을 각각 집계</li>'
++'<li><strong style="color:#333;">기념품 수령 인원</strong> — 수령 서명한 학생 수</li>'
++'<li>처음 로딩은 최대 15초 걸릴 수 있습니다. 🔄 새로고침으로 최신 데이터를 불러오세요.</li>'
++'</ul>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">✍️ 설명회 체크인 탭</h3>'
++'<ol style="margin:0 0 16px;padding-left:18px;color:#5A6778;">'
++'<li>확인할 설명회 이름 클릭 → 참석자 목록 및 체크인 시각 표시</li>'
++'<li><strong style="color:#333;">참석자 명단 PDF</strong> 버튼으로 출력 (예산 증빙·보관용)</li>'
++'</ol>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">📋 부스 예약 탭</h3>'
++'<ol style="margin:0 0 8px;padding-left:18px;color:#5A6778;">'
++'<li>프로그램 선택 → 시간대별 예약자 명단 확인</li>'
++'<li>슬롯 차단/해제 가능 (같은 슬롯 재클릭으로 해제)</li>'
++'<li>예약자 메모 아이콘으로 문의 내용 확인</li>'
++'</ol>'
++'<div style="background:#FFF8E1;border-left:4px solid #E9A800;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:.82rem;color:#92610A;">⚠️ 상단 <strong>현장예약 마감</strong> 버튼: 누르면 신규 예약 전면 중단. 행사 당일 마감 시 사용. 같은 버튼으로 재개 가능.</div>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">🎁 참여확인서 탭</h3>'
++'<ol style="margin:0 0 16px;padding-left:18px;color:#5A6778;">'
++'<li>학번 입력 → 참여 내역 조회</li>'
++'<li><strong style="color:#333;">PDF 저장</strong> / <strong style="color:#333;">이메일 발송</strong> 가능</li>'
++'<li><strong style="color:#333;">기념품 서명부 PDF</strong>: 전체 수령자 명단 출력 (예산 증빙용)</li>'
++'</ol>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">🔄 세션 진행 관리 (스태프 페이지)</h3>'
++'<p style="margin:0 0 8px;color:#5A6778;">스태프 페이지에서만 조작합니다. 참고용으로 알아두세요.</p>'
++'<ul style="margin:0 0 16px;padding-left:18px;color:#5A6778;">'
++'<li>설명회가 끝날 때마다 스태프가 <strong style="color:#333;">다음 세션 →</strong> 버튼 + 비밀번호로 단계를 넘깁니다.</li>'
++'<li>잘못 눌렀을 경우 이전 세션으로 되돌릴 수 있습니다.</li>'
++'</ul>'
++'<table style="width:100%;border-collapse:collapse;font-size:.84rem;margin-bottom:20px;">'
++'<thead><tr style="background:#F0F4F8;"><th style="padding:9px 12px;text-align:left;font-weight:700;color:var(--navy);">단계</th><th style="padding:9px 12px;text-align:left;font-weight:700;color:var(--navy);">설명회</th><th style="padding:9px 12px;text-align:left;font-weight:700;color:var(--navy);">시간</th></tr></thead>'
++'<tbody>'
++SESS_LIST.map(function(n,i){var s=_SITE_CFG.sessions[i];return '<tr style="border-bottom:1px solid #EAECEF;"><td style="padding:8px 12px;">'+(i+1)+'단계</td><td style="padding:8px 12px;color:#5A6778;">'+n+'</td><td style="padding:8px 12px;color:#5A6778;">'+(s?s.start+'~'+s.end:'')+'</td></tr>';}).join('')
++'<tr><td style="padding:8px 12px;">행사 종료</td><td style="padding:8px 12px;color:#5A6778;">체크인 마감</td><td></td></tr>'
++'</tbody></table>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">📧 자동 발송 이메일</h3>'
++'<table style="width:100%;border-collapse:collapse;font-size:.84rem;margin-bottom:20px;">'
++'<thead><tr style="background:#F0F4F8;"><th style="padding:9px 12px;text-align:left;font-weight:700;color:var(--navy);">시점</th><th style="padding:9px 12px;text-align:left;font-weight:700;color:var(--navy);">내용</th></tr></thead>'
++'<tbody>'
++'<tr style="border-bottom:1px solid #EAECEF;"><td style="padding:9px 12px;font-weight:600;">예약 완료</td><td style="padding:9px 12px;color:#5A6778;">예약 내역 확인 메일</td></tr>'
++'<tr style="border-bottom:1px solid #EAECEF;"><td style="padding:9px 12px;font-weight:600;">예약 변경</td><td style="padding:9px 12px;color:#5A6778;">변경 내역 안내 메일</td></tr>'
++'<tr style="border-bottom:1px solid #EAECEF;"><td style="padding:9px 12px;font-weight:600;">예약 취소</td><td style="padding:9px 12px;color:#5A6778;">취소 확인 메일</td></tr>'
++'<tr><td style="padding:9px 12px;font-weight:600;">5월 7일 09:00 (자동)</td><td style="padding:9px 12px;color:#5A6778;">전체 예약자 리마인드 메일 자동 발송</td></tr>'
++'</tbody></table>'
++'<h3 style="color:var(--navy);font-size:1rem;font-weight:800;border-bottom:2px solid #EEF2F7;padding-bottom:8px;margin:0 0 14px;">❓ 자주 묻는 질문</h3>'
++'<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">'
++'<details style="background:#F8FAFC;border-radius:8px;padding:12px 16px;"><summary style="font-weight:700;color:var(--navy);list-style:none;cursor:pointer;">▶ 통계 숫자가 0으로 보여요</summary><p style="margin:10px 0 0;color:#5A6778;font-size:.83rem;">🔄 새로고침 버튼을 누르거나 다시 로그인해 보세요. 처음 로딩은 최대 15초 걸릴 수 있습니다.</p></details>'
++'<details style="background:#F8FAFC;border-radius:8px;padding:12px 16px;"><summary style="font-weight:700;color:var(--navy);list-style:none;cursor:pointer;">▶ 부스 슬롯을 잘못 차단했어요</summary><p style="margin:10px 0 0;color:#5A6778;font-size:.83rem;">부스 예약 탭에서 같은 슬롯을 다시 클릭하면 해제됩니다.</p></details>'
++'<details style="background:#F8FAFC;border-radius:8px;padding:12px 16px;"><summary style="font-weight:700;color:var(--navy);list-style:none;cursor:pointer;">▶ 참여확인서 PDF가 안 나와요</summary><p style="margin:10px 0 0;color:#5A6778;font-size:.83rem;">브라우저 팝업 차단이 켜져 있을 수 있습니다. 주소창 오른쪽 팝업 허용 버튼을 눌러주세요.</p></details>'
++'</div>'
++'<div style="background:#F0F4F8;border-radius:8px;padding:14px 18px;font-size:.8rem;color:#7A8899;text-align:center;">문의: 한양YK인터칼리지 담당자 &nbsp;|&nbsp; intercollege@hanyang.ac.kr</div>';
+
+function toggleWalkBlock(){
+  var btn=document.getElementById('btnWalkBlock');
+  var isBlocking=btn.textContent.indexOf('마감')!==-1;
+  var msg=isBlocking?'현장예약을 수동으로 마감하시겠습니까?':'현장예약을 재개하시겠습니까?';
+  if(!confirm(msg)) return;
+  btn.disabled=true;
+  google.script.run
+    .withSuccessHandler(function(res){
+      btn.disabled=false;
+      alert(res);
+      loadWalkBlockStatus();
+    })
+    .withFailureHandler(function(e){btn.disabled=false;alert(e.message);})
+    .setWalkInBlock(_pw, isBlocking);
+}
+
+function resetAdmin(){_prog='';_pw='';document.getElementById('adminCard').style.display='none';document.getElementById('officeCard').style.display='none';document.getElementById('loginCard').style.display='block';document.getElementById('loginProg').value='';document.getElementById('pw').value='';document.getElementById('listBody').innerHTML='';document.getElementById('statRow').innerHTML='';document.getElementById('selCount').textContent='';document.getElementById('btnBatchSave').disabled=true;document.getElementById('chkAll').checked=false;window.scrollTo(0,0);}
+function fmtTime(str){if(!str)return'';try{var d=new Date(str);if(isNaN(d))return str;return(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}catch(e){return str;}}
+function eh(str){if(str==null)return'';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function ea(str){if(str==null)return'';return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
