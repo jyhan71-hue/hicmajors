@@ -756,6 +756,34 @@ window.clearMainSearch = function() {
   document.getElementById('existingResvBox').style.display='none';
 };
 
+// ─── 예약 전체 취소 ──────────────────────────────────────────────
+window.cancelAllReservations = async function() {
+  if(!_pendingEditSid || !_pendingEditData) return;
+  if(!confirm('예약을 전체 취소하시겠습니까?\n취소 후에는 되돌릴 수 없습니다.')) return;
+
+  const btn = document.querySelector('#existingResvBox button[onclick="cancelAllReservations()"]');
+  if(btn){ btn.disabled=true; btn.textContent='취소 중...'; }
+
+  try {
+    // 부스 예약 삭제
+    for(const b of (_pendingEditData.booths||[])){
+      if(!b.docId) continue;
+      await db.collection('boothReservations').doc(b.docId).delete();
+    }
+    // 설명회 예약 삭제
+    for(const s of (_pendingEditData.sessions||[])){
+      if(!s.docId) continue;
+      await db.collection('sessionPreReg').doc(s.docId).delete();
+    }
+    alert('예약이 취소되었습니다.');
+    clearMainSearch();
+    resetPage();
+  } catch(e) {
+    alert('오류: '+e.message);
+    if(btn){ btn.disabled=false; btn.textContent='🗑 예약 취소'; }
+  }
+};
+
 window.loadEditMode = function() {
   if(!_pendingEditSid||!_pendingEditData)return;
   openEditView(_pendingEditSid,_pendingEditData);
