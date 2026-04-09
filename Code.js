@@ -1310,9 +1310,10 @@ function getSessionStatus(password, program) {
 
   // CheckIns에서 학번 → {checkedAt, type, sessions[]} 맵 구성
   var ciMap={};
+  var ciRows=[];
   var ciSheet=ss.getSheetByName('CheckIns');
   if (ciSheet&&ciSheet.getLastRow()>1) {
-    var ciRows=ciSheet.getDataRange().getValues();
+    ciRows=ciSheet.getDataRange().getValues();
     for (var c=1;c<ciRows.length;c++) {
       var cSid=ciRows[c][1]?ciRows[c][1].toString().trim():'';
       var cSess=ciRows[c][7]?ciRows[c][7].toString().trim():'';
@@ -1330,6 +1331,7 @@ function getSessionStatus(password, program) {
 
   // 사전예약자 목록 (SessionPreReg 기준)
   var result=[];
+  var seenIds={};
   var sessSheet=ss.getSheetByName('SessionPreReg');
   if (sessSheet&&sessSheet.getLastRow()>1) {
     var sessRows=sessSheet.getDataRange().getValues();
@@ -1338,6 +1340,7 @@ function getSessionStatus(password, program) {
       var sid=sessRows[j][1].toString().trim();
       var ci=ciMap[sid]||null;
       var attended=ci&&ci.sessions.indexOf(program)!==-1;
+      seenIds[sid]=true;
       result.push({
         no:        result.length+1,
         name:      sessRows[j][0].toString().trim(),
@@ -1349,6 +1352,27 @@ function getSessionStatus(password, program) {
       });
     }
   }
+
+  // 당일방문 체크인자 추가 (SessionPreReg에 없으므로 CheckIns에서 직접 조회)
+  for (var c2=1;c2<ciRows.length;c2++) {
+    var cSid2=ciRows[c2][1]?ciRows[c2][1].toString().trim():'';
+    var cType2=ciRows[c2][6]?ciRows[c2][6].toString().trim():'';
+    var cSess2=ciRows[c2][7]?ciRows[c2][7].toString().trim():'';
+    if (!cSid2||seenIds[cSid2]) continue;       // 없거나 이미 사전예약자로 포함된 경우 스킵
+    if (cType2!=='당일방문') continue;           // 당일방문만
+    if (cSess2!==program) continue;              // 이 설명회를 실제로 체크인한 행만
+    seenIds[cSid2]=true;
+    result.push({
+      no:        result.length+1,
+      name:      ciRows[c2][2]?ciRows[c2][2].toString().trim():'',
+      id:        cSid2,
+      dept:      ciRows[c2][3]?ciRows[c2][3].toString().trim():'',
+      attendType: '당일방문',
+      checkedIn:  true,
+      checkedAt:  ciRows[c2][0]?ciRows[c2][0].toString():''
+    });
+  }
+
   result.sort(function(a,b){ return a.name<b.name?-1:a.name>b.name?1:0; });
   result.forEach(function(r,i){ r.no=i+1; });
   return {
