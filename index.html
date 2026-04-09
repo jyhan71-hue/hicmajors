@@ -798,7 +798,7 @@ async function submitReservation(data) {
   for(const item of data.reservations){
     let memo=item.memo||'';
     if(item.ldcTest) memo+='\n[진로적성검사: 진로적성검사 응시 희망]';
-    await addDoc(collection(db,'boothReservations'),{
+    await db.collection('boothReservations').add({
       name:data.name,studentId:sid,dept:data.dept,email,phone:data.phone,
       program:item.program,time:item.time,memo,
       signature:data.signature,status:'예약완료',comment:'',createdAt:firebase.firestore.FieldValue.serverTimestamp()
