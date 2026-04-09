@@ -816,8 +816,13 @@ async function submitSessionOnly(data) {
   const email = data.email+'@hanyang.ac.kr';
   const added = [];
 
-  // 기존 예약 확인
+  // 규칙2: 기존 예약(부스/설명회) 존재 시 신규 제출 차단
+  const bCheckSnap = await db.collection('boothReservations').where('studentId','==',data.studentId).get();
+  let hasBooth=false;
+  bCheckSnap.forEach(d=>{const st=d.data().status||'';if(st!==''&&st!=='취소'&&st!=='상담취소')hasBooth=true;});
+  if(hasBooth) throw new Error('이미 예약된 학번입니다. 기존 예약을 조회한 후 \'예약 변경\' 버튼을 이용해 주세요.');
   const existSnap = await db.collection('sessionPreReg').where('studentId','==',data.studentId).get();
+  if(!existSnap.empty) throw new Error('이미 설명회가 등록된 학번입니다. 기존 예약을 조회한 후 \'예약 변경\' 버튼을 이용해 주세요.');
   const alreadySet = new Set();
   existSnap.forEach(d => alreadySet.add(d.data().sessionName));
 
@@ -854,11 +859,15 @@ async function submitReservation(data) {
       throw new Error('라이프디자인센터 부스는 한양인터칼리지학부 재학생만 예약 가능합니다.');
   }
 
-  // 중복/시간겹침/선착순 검증
+  // 규칙2: 기존 예약(부스/설명회) 존재 시 신규 제출 차단
   const bSnap = await db.collection('boothReservations').where('studentId','==',sid).get();
   const activeBooth = [];
   bSnap.forEach(d => { const r=d.data(),st=r.status||''; if(st!==''&&st!=='취소'&&st!=='상담취소') activeBooth.push({program:r.program,time:r.time}); });
+  if(activeBooth.length>0) throw new Error('이미 예약된 학번입니다. 기존 예약을 조회한 후 \'예약 변경\' 버튼을 이용해 주세요.');
+  const sChkSnap = await db.collection('sessionPreReg').where('studentId','==',sid).get();
+  if(!sChkSnap.empty) throw new Error('이미 설명회가 등록된 학번입니다. 기존 예약을 조회한 후 \'예약 변경\' 버튼을 이용해 주세요.');
 
+  // 중복/시간겹침/선착순 검증
   for(const item of data.reservations){
     const prog=item.program, time=item.time;
     // 기존 예약과 중복 체크
@@ -977,6 +986,7 @@ document.getElementById('sessionForm').onsubmit = async function(e) {
   if(!name){alert('성명을 입력해주세요.');return;}
   if(!/^\d{10}$/.test(sid)){alert('학번은 숫자 10자리여야 합니다.');return;}
   if(!dept){alert('소속 학과를 입력해주세요.');return;}
+  if(['인칼','인터칼리지','한양인터칼리지'].some(v=>dept.includes(v))&&dept!==INTERCOLLEGE_DEPT){alert('학과명을 정확히 입력해주세요.\n한양인터칼리지학부 재학생이라면 \'한양인터칼리지학부 재학생입니다\' 체크박스를 체크하거나\n학과명을 \'한양인터칼리지학부\'로 정확히 입력해주세요.');return;}
   if(!/^01\d-\d{3,4}-\d{4}$/.test(phone)){alert('연락처 형식이 올바르지 않습니다.');return;}
   if(!email){alert('이메일 아이디를 입력해주세요.');return;}
   const sessions=Array.from(document.querySelectorAll('.s-sess-chk:checked')).map(c=>c.value);
@@ -1006,6 +1016,7 @@ document.getElementById('boothForm').onsubmit = async function(e) {
   const email=document.getElementById('b-email').value.trim();
   if(!name||!sid||!dept||!phone||!email){alert('모든 항목을 입력해주세요.');return;}
   if(!/^\d{10}$/.test(sid)){alert('학번은 숫자 10자리여야 합니다.');return;}
+  if(['인칼','인터칼리지','한양인터칼리지'].some(v=>dept.includes(v))&&dept!==INTERCOLLEGE_DEPT){alert('학과명을 정확히 입력해주세요.\n한양인터칼리지학부 재학생이라면 \'한양인터칼리지학부 재학생입니다\' 체크박스를 체크하거나\n학과명을 \'한양인터칼리지학부\'로 정확히 입력해주세요.');return;}
   if(!/^01\d-\d{3,4}-\d{4}$/.test(phone)){alert('연락처 형식이 올바르지 않습니다.');return;}
   const sessions=Array.from(document.querySelectorAll('.b-sess-chk:checked')).map(c=>c.value);
   if(!sessions.length){alert('참여할 설명회를 하나 이상 선택해주세요.');return;}
