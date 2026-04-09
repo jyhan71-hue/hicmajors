@@ -285,12 +285,12 @@
   </div>
 </div>
 
-<!-- Firebase SDK -->
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, doc, getDoc, getDocs, addDoc, deleteDoc, query, where, runTransaction, serverTimestamp }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import SignaturePad from 'https://unpkg.com/signature_pad@4.1.2/dist/signature_pad.es.js';
+<!-- SignaturePad -->
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.2/dist/signature_pad.umd.min.js"></script>
+<!-- Firebase compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
 
 // ─── Firebase 설정 (Step 5에서 복사한 값으로 교체) ───────────────
 const firebaseConfig = {
@@ -333,9 +333,9 @@ const SITE_CONFIG = {
 
 const INTERCOLLEGE_DEPT = '한양인터칼리지학부';
 
-// ─── 초기화 ──────────────────────────────────────────────────────
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
+// ─── Firebase 초기화 ─────────────────────────────────────────────
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
 let sigPad, sSigPad, sigInited = false;
 let allPrograms = SITE_CONFIG.boothPrograms;
@@ -384,13 +384,13 @@ async function init() {
 
   // Firestore에서 settings/config 읽기 (isOpen 오버라이드 가능)
   try {
-    const cfgSnap = await getDoc(doc(db, 'settings', 'config'));
-    if (cfgSnap.exists()) {
+    const cfgSnap = await db.collection('settings').doc('config').get();
+    if (cfgSnap.exists) {
       const d = cfgSnap.data();
       if (d.isOpen !== undefined) SITE_CONFIG.isOpen = d.isOpen;
       if (d.sessionCounts) _sessionCounts = d.sessionCounts;
     }
-  } catch(e) { /* Firestore 없으면 로컬 config 사용 */ }
+  } catch(e) { }
 
   // sessionCounts가 없으면 직접 집계
   if (!Object.keys(_sessionCounts).length) {
@@ -414,7 +414,7 @@ async function refreshSessionCounts() {
   _sessionCounts = {};
   SITE_CONFIG.sessions.forEach(s => { _sessionCounts[s.name] = 0; });
   try {
-    const snap = await getDocs(collection(db, 'sessionPreReg'));
+    const snap = await db.collection('sessionPreReg').get();
     snap.forEach(d => {
       const p = d.data().sessionName;
       if (_sessionCounts[p] !== undefined) _sessionCounts[p]++;
@@ -509,10 +509,8 @@ window.onBoothICCheck = function(chk) {
 
 // ─── 부스 슬롯 조회 (Firestore) ──────────────────────────────────
 async function getAvailableSlots(programName, excludeDocId=null) {
-  // 예약된 슬롯 수집
   const bookedTimes = new Set();
-  const q = query(collection(db,'boothReservations'), where('program','==',programName));
-  const snap = await getDocs(q);
+  const snap = await db.collection('boothReservations').where('program','==',programName).get();
   snap.forEach(d => {
     if (d.id === excludeDocId) return;
     const st = d.data().status || '';
@@ -520,8 +518,6 @@ async function getAvailableSlots(programName, excludeDocId=null) {
       bookedTimes.add(d.data().time);
     }
   });
-
-  // 전체 슬롯 생성
   const sessBlock = SITE_CONFIG.sessionBlockMap[programName] || [];
   const slots = [];
   let m = toMin(SITE_CONFIG.boothSlotRange.start);
@@ -706,18 +702,13 @@ window.loadEditMode = function() {
 // ─── Firestore: 내 예약 조회 ─────────────────────────────────────
 async function getMyReservations(studentId) {
   const result=[];
-  // 부스 예약
-  const bq=query(collection(db,'boothReservations'),where('studentId','==',studentId));
-  const bSnap=await getDocs(bq);
+  const bSnap = await db.collection('boothReservations').where('studentId','==',studentId).get();
   bSnap.forEach(d=>{
-    const r=d.data();
-    const st=r.status||'';
-    if(st==='취소')return;
+    const r=d.data(), st=r.status||'';
+    if(st==='취소') return;
     result.push({type:'booth',docId:d.id,program:r.program,time:r.time?(r.time+' ~ '+addMinutes(r.time,15)):'',rawTime:r.time||'',memo:r.memo||'',status:st,name:r.name||'',dept:r.dept||'',email:r.email?r.email.replace('@hanyang.ac.kr',''):'',phone:r.phone||''});
   });
-  // 설명회 예약
-  const sq=query(collection(db,'sessionPreReg'),where('studentId','==',studentId));
-  const sSnap=await getDocs(sq);
+  const sSnap = await db.collection('sessionPreReg').where('studentId','==',studentId).get();
   sSnap.forEach(d=>{
     const r=d.data();
     result.push({type:'session',docId:d.id,program:'설명회 참여',time:r.sessionName||'',status:'등록완료',name:r.name||'',dept:r.dept||'',phone:r.phone||'',email:r.email?r.email.replace('@hanyang.ac.kr',''):''});
@@ -732,33 +723,27 @@ async function submitSessionOnly(data) {
   if(!data.sessions?.length) throw new Error('참여할 설명회를 선택해주세요.');
 
   const email = data.email+'@hanyang.ac.kr';
-  const now   = serverTimestamp();
   const added = [];
 
-  // 트랜잭션으로 선착순 처리
-  await runTransaction(db, async tx => {
-    // 기존 예약 확인
-    const existQ=query(collection(db,'sessionPreReg'),where('studentId','==',data.studentId));
-    const existSnap=await getDocs(existQ);
-    const alreadySet=new Set();
-    existSnap.forEach(d=>alreadySet.add(d.data().sessionName));
+  // 기존 예약 확인
+  const existSnap = await db.collection('sessionPreReg').where('studentId','==',data.studentId).get();
+  const alreadySet = new Set();
+  existSnap.forEach(d => alreadySet.add(d.data().sessionName));
 
-    // 각 설명회 카운트 확인
-    for(const sessName of data.sessions){
-      if(alreadySet.has(sessName)) continue;
-      const cntSnap=await getDocs(query(collection(db,'sessionPreReg'),where('sessionName','==',sessName)));
-      if(cntSnap.size>=SITE_CONFIG.sessionCapacity) throw new Error(`[${sessName}] 설명회 예약이 마감되었습니다.`);
-      added.push(sessName);
-    }
-    if(!added.length) throw new Error('선택하신 설명회는 이미 모두 등록되어 있습니다.');
-  });
+  // 각 설명회 카운트 확인
+  for(const sessName of data.sessions){
+    if(alreadySet.has(sessName)) continue;
+    const cntSnap = await db.collection('sessionPreReg').where('sessionName','==',sessName).get();
+    if(cntSnap.size >= SITE_CONFIG.sessionCapacity) throw new Error(`[${sessName}] 설명회 예약이 마감되었습니다.`);
+    added.push(sessName);
+  }
+  if(!added.length) throw new Error('선택하신 설명회는 이미 모두 등록되어 있습니다.');
 
-  // 트랜잭션 밖에서 실제 저장 (트랜잭션 내 addDoc 불가)
   for(const sessName of added){
-    await addDoc(collection(db,'sessionPreReg'),{
+    await db.collection('sessionPreReg').add({
       name:data.name, studentId:data.studentId, dept:data.dept,
       phone:data.phone, email, sessionName:sessName,
-      signature:data.signature, createdAt:serverTimestamp()
+      signature:data.signature, createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
   }
   return added.length+'개 설명회 참여 등록이 완료되었습니다.';
@@ -779,34 +764,29 @@ async function submitReservation(data) {
   }
 
   // 중복/시간겹침/선착순 검증
-  await runTransaction(db, async tx => {
-    // 기존 부스 예약 조회
-    const bSnap=await getDocs(query(collection(db,'boothReservations'),where('studentId','==',sid)));
-    const activeBooth=[];
-    bSnap.forEach(d=>{const r=d.data(),st=r.status||'';if(st!==''&&st!=='취소'&&st!=='상담취소')activeBooth.push({program:r.program,time:r.time});});
+  const bSnap = await db.collection('boothReservations').where('studentId','==',sid).get();
+  const activeBooth = [];
+  bSnap.forEach(d => { const r=d.data(),st=r.status||''; if(st!==''&&st!=='취소'&&st!=='상담취소') activeBooth.push({program:r.program,time:r.time}); });
 
-    for(const item of data.reservations){
-      const prog=item.program,time=item.time;
-      if(activeBooth.some(b=>b.program===prog)) throw new Error(`[${prog}] 이미 예약하셨습니다.`);
-      if(activeBooth.some(b=>timesOverlap(time,15,b.time,15))) throw new Error(`[${prog}] 시간이 기존 예약과 겹칩니다.`);
-      // 슬롯 선착순
-      const slotSnap=await getDocs(query(collection(db,'boothReservations'),where('program','==',prog),where('time','==',time)));
-      let taken=0;
-      slotSnap.forEach(d=>{const st=d.data().status||'';if(st!==''&&st!=='취소'&&st!=='상담취소'&&st!=='상담완료')taken++;});
-      if(taken>0) throw new Error(`[${prog}] ${time} 시간은 방금 마감되었습니다.`);
+  for(const item of data.reservations){
+    const prog=item.program, time=item.time;
+    if(activeBooth.some(b=>b.program===prog)) throw new Error(`[${prog}] 이미 예약하셨습니다.`);
+    if(activeBooth.some(b=>timesOverlap(time,15,b.time,15))) throw new Error(`[${prog}] 시간이 기존 예약과 겹칩니다.`);
+    const slotSnap = await db.collection('boothReservations').where('program','==',prog).where('time','==',time).get();
+    let taken=0;
+    slotSnap.forEach(d=>{ const st=d.data().status||''; if(st!==''&&st!=='취소'&&st!=='상담취소'&&st!=='상담완료') taken++; });
+    if(taken>0) throw new Error(`[${prog}] ${time} 시간은 방금 마감되었습니다.`);
+  }
+  if(data.sessions?.length){
+    const sSnap = await db.collection('sessionPreReg').where('studentId','==',sid).get();
+    const alreadySet = new Set();
+    sSnap.forEach(d => alreadySet.add(d.data().sessionName));
+    for(const sessName of data.sessions){
+      if(alreadySet.has(sessName)) continue;
+      const cntSnap = await db.collection('sessionPreReg').where('sessionName','==',sessName).get();
+      if(cntSnap.size>=SITE_CONFIG.sessionCapacity) throw new Error(`[${sessName}] 설명회 예약이 마감되었습니다.`);
     }
-    // 설명회 선착순
-    if(data.sessions?.length){
-      const sSnap=await getDocs(query(collection(db,'sessionPreReg'),where('studentId','==',sid)));
-      const alreadySet=new Set();
-      sSnap.forEach(d=>alreadySet.add(d.data().sessionName));
-      for(const sessName of data.sessions){
-        if(alreadySet.has(sessName)) continue;
-        const cntSnap=await getDocs(query(collection(db,'sessionPreReg'),where('sessionName','==',sessName)));
-        if(cntSnap.size>=SITE_CONFIG.sessionCapacity) throw new Error(`[${sessName}] 설명회 예약이 마감되었습니다.`);
-      }
-    }
-  });
+  }
 
   // 저장
   for(const item of data.reservations){
@@ -815,18 +795,18 @@ async function submitReservation(data) {
     await addDoc(collection(db,'boothReservations'),{
       name:data.name,studentId:sid,dept:data.dept,email,phone:data.phone,
       program:item.program,time:item.time,memo,
-      signature:data.signature,status:'예약완료',comment:'',createdAt:serverTimestamp()
+      signature:data.signature,status:'예약완료',comment:'',createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
   }
   if(data.sessions?.length){
-    const sSnap=await getDocs(query(collection(db,'sessionPreReg'),where('studentId','==',sid)));
+    const sSnap = await db.collection('sessionPreReg').where('studentId','==',sid).get();
     const alreadySet=new Set();
     sSnap.forEach(d=>alreadySet.add(d.data().sessionName));
     for(const sessName of data.sessions){
       if(alreadySet.has(sessName)) continue;
-      await addDoc(collection(db,'sessionPreReg'),{
+      await db.collection('sessionPreReg').add({
         name:data.name,studentId:sid,dept:data.dept,phone:data.phone,email,
-        sessionName:sessName,signature:data.signature,createdAt:serverTimestamp()
+        sessionName:sessName,signature:data.signature,createdAt:firebase.firestore.FieldValue.serverTimestamp()
       });
     }
   }
@@ -844,27 +824,26 @@ async function changeReservation(data) {
 
   // 기존 삭제
   for(const item of (data.oldBoothDocIds||[])){
-    try{ await deleteDoc(doc(db,'boothReservations',item.docId)); }catch(e){}
+    try{ await db.collection('boothReservations').doc(item.docId).delete(); }catch(e){}
   }
   for(const item of (data.oldSessionDocIds||[])){
-    try{ await deleteDoc(doc(db,'sessionPreReg',item.docId)); }catch(e){}
+    try{ await db.collection('sessionPreReg').doc(item.docId).delete(); }catch(e){}
   }
 
   const email=data.email+'@hanyang.ac.kr';
-  // 새 부스 저장
+  const ts=firebase.firestore.FieldValue.serverTimestamp();
   for(const b of (data.newBooths||[])){
     let memo=b.memo||'';
     if(b.ldcTest) memo+='\n[진로적성검사: 진로적성검사 응시 희망]';
-    await addDoc(collection(db,'boothReservations'),{
+    await db.collection('boothReservations').add({
       name:data.name,studentId:sid,dept:data.dept,email,phone:data.phone,
-      program:b.program,time:b.time,memo,status:'예약완료',comment:'',createdAt:serverTimestamp()
+      program:b.program,time:b.time,memo,status:'예약완료',comment:'',createdAt:ts
     });
   }
-  // 새 설명회 저장
   for(const sessName of data.newSessions){
-    await addDoc(collection(db,'sessionPreReg'),{
+    await db.collection('sessionPreReg').add({
       name:data.name,studentId:sid,dept:data.dept,phone:data.phone,email,
-      sessionName:sessName,createdAt:serverTimestamp()
+      sessionName:sessName,createdAt:ts
     });
   }
   return '변경이 완료되었습니다.';
