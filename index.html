@@ -292,7 +292,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
 
-// ─── Firebase 설정 (Step 5에서 복사한 값으로 교체) ───────────────
+// ─── Firebase 설정 ───────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyBotWI4mwvHzeKKlbZ1LAnYZDqAZhTC5EI",
   authDomain: "hic-major-booking-656ca.firebaseapp.com",
@@ -302,24 +302,20 @@ const firebaseConfig = {
   appId: "1:746665122386:web:701056d6c66cf5616e1d8b"
 };
 
-// ─── 행사 설정 (GAS Settings 시트와 동일) ────────────────────────
-const SITE_CONFIG = {
+// ─── GAS 설정값 API URL (Settings 시트에서 실시간 로드) ──────────
+const GAS_CONFIG_URL = 'https://script.google.com/macros/s/AKfycbxFZIxpeUyl_nLcBAWXToTi5LDTaW1eIGaXHuFP2aHTZFCeUdHhWKLFC7-ryl1tTaXwMQ/exec?page=config';
+
+// ─── 설정값 (GAS API 로드 전 기본값) ────────────────────────────
+let SITE_CONFIG = {
   isOpen: true,
-  eventName: '융합 Universe : 6개 융합의 별을 연결하다',
-  eventDate: '2026. 5. 8.(금) 09:30 ~ 17:00',
-  eventPlace: '한양종합기술원(HIT) 1층 양민용 커리어라운지',
-  sessions: [
-    { name: '미래사회디자인',        start: '09:30', end: '09:55' },
-    { name: '융합의과학/융합의공학', start: '10:00', end: '10:25' },
-    { name: '인지융합과학',          start: '10:30', end: '10:55' },
-    { name: '혁신공학경영',          start: '11:00', end: '11:25' },
-    { name: '미래반도체공학',        start: '11:30', end: '11:55' },
-  ],
-  boothPrograms: [
-    '미래반도체공학', '혁신공학경영', '융합의과학/융합의공학',
-    '미래사회디자인', '인지융합과학', '라이프디자인센터'
-  ],
+  eventName: '',
+  eventDate: '',
+  eventPlace: '',
+  sessions: [],
+  boothPrograms: [],
+  sessionCounts: {},
   sessionCapacity: 30,
+  sessionTimes: {},
   boothSlotRange: { start: '14:00', end: '17:00' },
   sessionBlockMap: {
     '미래반도체공학':        ['09:30','09:45'],
@@ -338,7 +334,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let sigPad, sSigPad, sigInited = false;
-let allPrograms = SITE_CONFIG.boothPrograms;
+let allPrograms = [];
 let blockCount = 0;
 let _sessionCounts = {};
 let _mainSearchSid = '', _mainSearchResult = null;
@@ -377,25 +373,35 @@ document.getElementById('b-phone').addEventListener('input', function(){ autoHyp
 
 // ─── 페이지 초기화 ───────────────────────────────────────────────
 async function init() {
+  try {
+    // GAS API에서 Settings 시트 설정값 실시간 로드
+    const res = await fetch(GAS_CONFIG_URL);
+    const cfg = await res.json();
+
+    SITE_CONFIG.isOpen          = cfg.isOpen;
+    SITE_CONFIG.eventName       = cfg.eventName  || '';
+    SITE_CONFIG.eventDate       = cfg.eventDate  || '';
+    SITE_CONFIG.eventPlace      = cfg.eventPlace || '';
+    SITE_CONFIG.sessions        = cfg.sessions   || [];
+    SITE_CONFIG.boothPrograms   = cfg.boothPrograms || [];
+    SITE_CONFIG.sessionCapacity = cfg.sessionCapacity || 30;
+    SITE_CONFIG.sessionTimes    = cfg.sessionTimes || {};
+    _sessionCounts              = cfg.sessionCounts || {};
+    allPrograms                 = SITE_CONFIG.boothPrograms;
+
+  } catch(e) {
+    document.getElementById('loading').innerHTML =
+      '<p style="color:#C53030;font-size:.85rem;">설정을 불러오지 못했습니다.<br>잠시 후 새로고침해주세요.</p>';
+    return;
+  }
+
   // 행사 정보 표시
   document.getElementById('eventNameEl').textContent  = SITE_CONFIG.eventName;
   document.getElementById('eventDateEl').textContent  = SITE_CONFIG.eventDate;
   document.getElementById('eventPlaceEl').textContent = SITE_CONFIG.eventPlace;
 
-  // Firestore에서 settings/config 읽기 (isOpen 오버라이드 가능)
-  try {
-    const cfgSnap = await db.collection('settings').doc('config').get();
-    if (cfgSnap.exists) {
-      const d = cfgSnap.data();
-      if (d.isOpen !== undefined) SITE_CONFIG.isOpen = d.isOpen;
-      if (d.sessionCounts) _sessionCounts = d.sessionCounts;
-    }
-  } catch(e) { }
-
-  // sessionCounts가 없으면 직접 집계
-  if (!Object.keys(_sessionCounts).length) {
-    await refreshSessionCounts();
-  }
+  // Firebase에서 최신 잔여석 집계
+  await refreshSessionCounts();
 
   document.getElementById('loading').style.display = 'none';
 
