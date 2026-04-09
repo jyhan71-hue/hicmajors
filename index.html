@@ -123,7 +123,8 @@
         <div id="existingResvList"></div>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
           <button onclick="loadEditMode()" class="btn-main" style="width:auto;padding:8px 18px;font-size:.84rem;flex:1;">✏️ 예약 변경</button>
-          <button onclick="clearMainSearch()" style="background:#fff;border:1.5px solid #DDE3EA;border-radius:8px;padding:8px 14px;font-size:.82rem;cursor:pointer;font-family:'Pretendard',sans-serif;">취소</button>
+          <button onclick="cancelAllReservations()" style="background:#fff;border:1.5px solid #C53030;color:#C53030;border-radius:8px;padding:8px 14px;font-size:.82rem;cursor:pointer;font-family:'Pretendard',sans-serif;font-weight:600;">🗑 예약 취소</button>
+          <button onclick="clearMainSearch()" style="background:#fff;border:1.5px solid #DDE3EA;border-radius:8px;padding:8px 14px;font-size:.82rem;cursor:pointer;font-family:'Pretendard',sans-serif;">닫기</button>
         </div>
       </div>
 
@@ -553,7 +554,7 @@ window.addProgBlock = function() {
         <option value="">선택하세요</option>
       </select></div>
     <div class="mb-3"><label class="form-label">상담 시간 <span class="text-danger">*</span></label>
-      <select class="form-select time-sel" data-block="${id}" required disabled>
+      <select class="form-select time-sel" data-block="${id}" required disabled onchange="refreshOtherBlockSlots('${id}')">
         <option value="">프로그램을 먼저 선택하세요</option>
       </select></div>
     <div class="mb-3"><label class="form-label">문의 내용 <span class="text-danger">*</span></label>
@@ -611,8 +612,10 @@ window.onProgChange = async function(sel) {
   const deptEl=document.getElementById('b-dept'), noticeEl=document.getElementById('b-dept-notice');
   const thisIsLDC=sel.value==='라이프디자인센터';
   const isICChecked=document.getElementById('b-isIC')?.checked;
+  const isICDept=(deptEl&&deptEl.value.trim()===INTERCOLLEGE_DEPT);
+  const isIC = isICChecked || isICDept;
 
-  if(thisIsLDC && !isICChecked){
+  if(thisIsLDC && !isIC){
     alert('라이프디자인센터 부스는 한양인터칼리지학부 재학생만 예약 가능합니다.');
     sel.value=''; timeSel.disabled=true; timeSel.innerHTML='<option value="">프로그램을 먼저 선택하세요</option>';
     refreshProgOptions(); return;
@@ -625,19 +628,34 @@ window.onProgChange = async function(sel) {
     else{if(wrap)wrap.style.display='none';if(chkLdc)chkLdc.checked=false;}
   }
 
-  if(hasLDC||isICChecked){
+  if(hasLDC||isIC){
     deptEl.value=INTERCOLLEGE_DEPT; deptEl.readOnly=true;
     deptEl.style.background='#F0F4F8'; deptEl.style.color='#5A6778';
-    if(noticeEl)noticeEl.style.display=hasLDC?'block':'none';
+    if(noticeEl)noticeEl.style.display=(hasLDC&&!isICChecked)?'block':'none';
   } else {
-    const icBox=document.getElementById('b-isIC');
-    if(!icBox?.checked){deptEl.readOnly=false;deptEl.style.background='';deptEl.style.color='';if(deptEl.value===INTERCOLLEGE_DEPT)deptEl.value='';if(noticeEl)noticeEl.style.display='none';}
+    deptEl.readOnly=false;deptEl.style.background='';deptEl.style.color='';
+    if(deptEl.value===INTERCOLLEGE_DEPT)deptEl.value='';
+    if(noticeEl)noticeEl.style.display='none';
   }
 
   if(!sel.value){timeSel.innerHTML='<option value="">프로그램을 먼저 선택하세요</option>';return;}
 
   try {
-    const slots = await getAvailableSlots(sel.value);
+    let slots = await getAvailableSlots(sel.value);
+
+    // 다른 블록에서 이미 선택한 시간 제외
+    const otherSelectedTimes = [];
+    document.querySelectorAll('.prog-sel').forEach(function(otherSel) {
+      if(otherSel.dataset.block === blockId) return; // 현재 블록 스킵
+      const otherTimeSel = document.querySelector('#'+otherSel.dataset.block+' .time-sel');
+      if(otherTimeSel && otherTimeSel.value) {
+        otherSelectedTimes.push(otherTimeSel.value);
+      }
+    });
+    if(otherSelectedTimes.length) {
+      slots = slots.filter(s => !otherSelectedTimes.some(t => timesOverlap(s.value, 15, t, 15)));
+    }
+
     timeSel.innerHTML='';
     if(!slots.length){timeSel.innerHTML='<option value="">예약 가능한 시간이 없습니다</option>';}
     else{timeSel.add(new Option('시간을 선택하세요',''));slots.forEach(s=>timeSel.add(new Option(s.label,s.value)));timeSel.disabled=false;}
@@ -647,6 +665,44 @@ window.onProgChange = async function(sel) {
 };
 
 // ─── 학번 메인 검색 ──────────────────────────────────────────────
+
+// 시간 선택 시 다른 블록 슬롯 갱신
+window.refreshOtherBlockSlots = async function(changedBlockId) {
+  const blocks = document.querySelectorAll('.prog-block');
+  for(const block of blocks) {
+    if(block.id === changedBlockId) continue;
+    const progSel = block.querySelector('.prog-sel');
+    const timeSel = block.querySelector('.time-sel');
+    if(!progSel || !progSel.value || !timeSel) continue;
+    // 현재 선택된 값 기억
+    const currentVal = timeSel.value;
+    timeSel.innerHTML='<option value="">불러오는 중...</option>';
+    timeSel.disabled=true;
+    try {
+      let slots = await getAvailableSlots(progSel.value);
+      // 다른 블록에서 선택한 시간 제외
+      const otherSelectedTimes = [];
+      document.querySelectorAll('.prog-sel').forEach(function(otherSel) {
+        if(otherSel.dataset.block === block.id) return;
+        const otherTimeSel = document.querySelector('#'+otherSel.dataset.block+' .time-sel');
+        if(otherTimeSel && otherTimeSel.value) otherSelectedTimes.push(otherTimeSel.value);
+      });
+      if(otherSelectedTimes.length) {
+        slots = slots.filter(s => !otherSelectedTimes.some(t => timesOverlap(s.value,15,t,15)));
+      }
+      timeSel.innerHTML='<option value="">시간을 선택하세요</option>';
+      slots.forEach(s => {
+        const opt = new Option(s.label, s.value);
+        if(s.value === currentVal) opt.selected = true;
+        timeSel.appendChild(opt);
+      });
+      timeSel.disabled = false;
+    } catch(e) {
+      timeSel.innerHTML='<option value="">불러오기 실패</option>';
+    }
+  }
+};
+
 window.doMainSearch = async function() {
   const sid=document.getElementById('mainSearchSid').value.trim();
   if(!/^\d{10}$/.test(sid)){
@@ -776,12 +832,24 @@ async function submitReservation(data) {
 
   for(const item of data.reservations){
     const prog=item.program, time=item.time;
+    // 기존 예약과 중복 체크
     if(activeBooth.some(b=>b.program===prog)) throw new Error(`[${prog}] 이미 예약하셨습니다.`);
     if(activeBooth.some(b=>timesOverlap(time,15,b.time,15))) throw new Error(`[${prog}] 시간이 기존 예약과 겹칩니다.`);
+    // 슬롯 선착순 체크
     const slotSnap = await db.collection('boothReservations').where('program','==',prog).where('time','==',time).get();
     let taken=0;
     slotSnap.forEach(d=>{ const st=d.data().status||''; if(st!==''&&st!=='취소'&&st!=='상담취소'&&st!=='상담완료') taken++; });
     if(taken>0) throw new Error(`[${prog}] ${time} 시간은 방금 마감되었습니다.`);
+  }
+
+  // 이번에 선택한 부스들끼리 시간 겹침 체크
+  for(let i=0; i<data.reservations.length; i++){
+    for(let j=i+1; j<data.reservations.length; j++){
+      const tA=data.reservations[i].time, tB=data.reservations[j].time;
+      const pA=data.reservations[i].program, pB=data.reservations[j].program;
+      if(pA===pB) throw new Error(`[${pA}] 동일 프로그램을 중복 선택했습니다.`);
+      if(timesOverlap(tA,15,tB,15)) throw new Error(`[${pA} / ${pB}] 선택한 시간대가 서로 겹칩니다.`);
+    }
   }
   if(data.sessions?.length){
     const sSnap = await db.collection('sessionPreReg').where('studentId','==',sid).get();
