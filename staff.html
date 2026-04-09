@@ -559,6 +559,31 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<!-- Firebase: Firestore 등록자 사전예약 조회용 -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyBotWI4mwvHzeKKlbZ1LAnYZDqAZhTC5EI",
+  authDomain:"hic-major-booking-656ca.firebaseapp.com",
+  projectId:"hic-major-booking-656ca"
+});
+var _fsDb = firebase.firestore();
+// Firestore에서 학번으로 사전예약 설명회 조회
+async function getPreDataFromFirestore(sid) {
+  try {
+    var snap = await _fsDb.collection('sessionPreReg').where('studentId','==',sid).get();
+    if (snap.empty) return null;
+    var sessions=[], info={};
+    snap.forEach(function(d){
+      var r=d.data();
+      if (!info.name){ info.name=r.name||''; info.dept=r.dept||''; info.phone=r.phone||''; info.email=r.email?r.email.replace('@hanyang.ac.kr',''):''; }
+      if (r.sessionName) sessions.push(r.sessionName);
+    });
+    return sessions.length ? {name:info.name,dept:info.dept,phone:info.phone,email:info.email,sessions:sessions} : null;
+  } catch(e) { return null; }
+}
+</script>
 <script>
 // ══════════════════════════════════════════════
 // 공통 유틸
@@ -891,7 +916,17 @@ function onPreSidInput(sid) {
   area.innerHTML='<div class="loading-inline"><div class="spinner"></div>조회 중...</div>';
   _preDebounce=setTimeout(function(){
     google.script.run
-      .withSuccessHandler(function(d){ ciRenderPreResult(sid, d.checkIn, d.preData, area); })
+      .withSuccessHandler(function(d){
+        if (d.preData) {
+          ciRenderPreResult(sid, d.checkIn, d.preData, area);
+        } else {
+          // Sheets에 없으면 Firestore(index.html 등록자)도 조회
+          area.innerHTML='<div class="loading-inline"><div class="spinner"></div>예약 조회 중...</div>';
+          getPreDataFromFirestore(sid).then(function(fsData){
+            ciRenderPreResult(sid, d.checkIn, fsData, area);
+          });
+        }
+      })
       .withFailureHandler(function(){ ciRenderPreResult(sid, null, null, area); })
       .getPreCheckinData(sid);
   },400);

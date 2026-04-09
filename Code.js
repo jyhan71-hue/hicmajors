@@ -479,6 +479,10 @@ function checkInStudent(data) {
           }
         }
       } catch(e) {}
+      // Sheets에 없는 학생(Firestore 등록자)은 클라이언트가 전달한 programs 사용
+      if (sessionsToRecord.length === 0 && data.programs && data.programs.length) {
+        sessionsToRecord = data.programs.map(function(p){ return p.toString().trim(); });
+      }
       var curIdx3 = checkinableSession.idx;
       var _sched = _getSessionSchedule();
       sessionsToRecord = sessionsToRecord.filter(function(sessName) {
@@ -1353,21 +1357,21 @@ function getSessionStatus(password, program) {
     }
   }
 
-  // 당일방문 체크인자 추가 (SessionPreReg에 없으므로 CheckIns에서 직접 조회)
+  // SessionPreReg에 없지만 CheckIns에 이 설명회로 체크인된 학생 추가
+  // (당일방문 + Firestore 등록 후 walk-in 처리된 사전예약자 모두 포함)
   for (var c2=1;c2<ciRows.length;c2++) {
     var cSid2=ciRows[c2][1]?ciRows[c2][1].toString().trim():'';
     var cType2=ciRows[c2][6]?ciRows[c2][6].toString().trim():'';
     var cSess2=ciRows[c2][7]?ciRows[c2][7].toString().trim():'';
-    if (!cSid2||seenIds[cSid2]) continue;       // 없거나 이미 사전예약자로 포함된 경우 스킵
-    if (cType2!=='당일방문') continue;           // 당일방문만
-    if (cSess2!==program) continue;              // 이 설명회를 실제로 체크인한 행만
+    if (!cSid2||seenIds[cSid2]) continue;   // 이미 결과에 포함된 경우 스킵
+    if (cSess2!==program) continue;          // 이 설명회 행만
     seenIds[cSid2]=true;
     result.push({
       no:        result.length+1,
       name:      ciRows[c2][2]?ciRows[c2][2].toString().trim():'',
       id:        cSid2,
       dept:      ciRows[c2][3]?ciRows[c2][3].toString().trim():'',
-      attendType: '당일방문',
+      attendType: cType2||'사전예약',
       checkedIn:  true,
       checkedAt:  ciRows[c2][0]?ciRows[c2][0].toString():''
     });
