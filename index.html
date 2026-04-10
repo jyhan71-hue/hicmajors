@@ -304,18 +304,7 @@ const firebaseConfig = {
 };
 
 // ─── GAS 웹앱 URL ────────────────────────────────────────────────
-const GAS_BASE_URL = 'https://script.google.com/macros/s/AKfycbxFZIxpeUyl_nLcBAWXToTi5LDTaW1eIGaXHuFP2aHTZFCeUdHhWKLFC7-ryl1tTaXwMQ/exec';
-const GAS_CONFIG_URL = GAS_BASE_URL + '?page=config';
-
-// GAS에 POST 요청 (메일 발송 + Sheets 동기화)
-async function gasPost(action, data) {
-  try {
-    await fetch(GAS_BASE_URL, {
-      method: 'POST',
-      body: JSON.stringify({action, data})
-    });
-  } catch(e) { console.error('[gasPost 실패]', action, e); }
-}
+const GAS_CONFIG_URL = 'https://script.google.com/macros/s/AKfycbxFZIxpeUyl_nLcBAWXToTi5LDTaW1eIGaXHuFP2aHTZFCeUdHhWKLFC7-ryl1tTaXwMQ/exec?page=config';
 
 // ─── 설정값 (GAS API 로드 전 기본값) ────────────────────────────
 let SITE_CONFIG = {
@@ -787,16 +776,6 @@ window.cancelAllReservations = async function() {
       if(!s.docId) continue;
       await db.collection('sessionPreReg').doc(s.docId).delete();
     }
-    // Sheets 동기화 + 취소 메일 (비동기)
-    const personInfo = _pendingEditData;
-    const cancelEmail = (personInfo.email||'')+'@hanyang.ac.kr';
-    gasPost('cancel', {
-      studentId: _pendingEditSid,
-      email: cancelEmail,
-      name: personInfo.name||'',
-      booths: (personInfo.booths||[]).map(b=>({program:b.program,time:b.time})),
-      sessions: (personInfo.sessions||[]).map(s=>s.time||'')
-    });
     alert('예약이 취소되었습니다.');
     clearMainSearch();
     resetPage();
@@ -863,8 +842,6 @@ async function submitSessionOnly(data) {
       signature:data.signature, createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
   }
-  // Sheets 동기화 + 확인 메일 (비동기, 실패해도 예약은 완료)
-  gasPost('confirm', {name:data.name, studentId:data.studentId, dept:data.dept, phone:data.phone, email, sessions:added, booths:[], hasLdcTest:false});
   return added.length+'개 설명회 참여 등록이 완료되었습니다.';
 }
 
@@ -949,9 +926,6 @@ async function submitReservation(data) {
   const parts=[];
   if(sc>0)parts.push('설명회 '+sc+'개');
   if(bc>0)parts.push('부스 상담 '+bc+'개');
-  // Sheets 동기화 + 확인 메일 (비동기, 실패해도 예약은 완료)
-  const hasLdcTest=data.reservations.some(r=>r.ldcTest);
-  gasPost('confirm', {name:data.name, studentId:data.studentId, dept:data.dept, phone:data.phone, email, sessions:data.sessions||[], booths:data.reservations.map(r=>({program:r.program,time:r.time,memo:r.memo||''})), hasLdcTest});
   return parts.join(', ')+' 예약이 완료되었습니다.';
 }
 
@@ -997,17 +971,6 @@ async function changeReservation(data) {
       sessionName:sessName,createdAt:ts
     });
   }
-  // Sheets 동기화 + 변경 메일 (비동기, 실패해도 변경은 완료)
-  const hasLdcTest=(data.newBooths||[]).some(b=>b.ldcTest);
-  const oldSessionNames=(data.oldSessionDocIds||[]).map(s=>s.sessName||s.time||'').filter(Boolean);
-  const oldBoothProgs=(data.oldBoothDocIds||[]).map(b=>({program:b.program||''}));
-  gasPost('change', {
-    studentId:sid, name:data.name, dept:data.dept, phone:data.phone, email,
-    oldSessions:oldSessionNames, oldBooths:oldBoothProgs,
-    sessions:data.newSessions||[],
-    booths:(data.newBooths||[]).map(b=>({program:b.program,time:b.time,memo:b.memo||''})),
-    hasLdcTest
-  });
   return '변경이 완료되었습니다.';
 }
 

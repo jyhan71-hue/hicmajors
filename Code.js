@@ -245,35 +245,6 @@ function doGet(e) {
     .addMetaTag('viewport','width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
 }
 
-// GitHub Pages 등 외부에서 fetch POST로 호출하는 엔드포인트
-// action: 'confirm' | 'change' | 'cancel' | 'sync' | 'syncChange' | 'syncCancel'
-function doPost(e) {
-  var result = { ok: false };
-  try {
-    var body = JSON.parse(e.postData.contents);
-    var action = body.action;
-    if (action === 'confirm') {
-      sendBookingConfirmMail(body.data);
-      syncToSheets(body.data);
-      result.ok = true;
-    } else if (action === 'change') {
-      sendBookingChangeMail(body.data);
-      syncChangeToSheets(body.data);
-      result.ok = true;
-    } else if (action === 'cancel') {
-      sendBookingCancelMail(body.data);
-      syncCancelToSheets(body.data);
-      result.ok = true;
-    } else {
-      result.error = 'unknown action: ' + action;
-    }
-  } catch(err) {
-    result.error = err.message;
-  }
-  return ContentService
-    .createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
-}
 
 // ─────────────────────────────────────────────
 // 초기 데이터 (설명회 선착순 현황 포함)
@@ -1641,165 +1612,137 @@ function sendChangeMail(toEmail, name, sessions, reservations, hasLdcTest) {
   sendConfirmMail(toEmail, name, sessions, reservations, hasLdcTest);
 }
 
-// ─── Firestore → Sheets 동기화 (index.html에서 호출) ─────────────
-// data: { name, studentId, dept, phone, email, sessions:[], booths:[{program,time,memo}] }
-function syncToSheets(data) {
-  var ss  = SpreadsheetApp.getActiveSpreadsheet();
+// ─── Firestore → Sheets 1분 트리거 동기화 ────────────────────────
+// GAS 편집기에서 최초 1회 setupSyncTrigger() 실행하여 트리거 등록
+function setupSyncTrigger() {
+  // 기존 syncFirestoreToSheets 트리거 제거 후 재등록
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'syncFirestoreToSheets') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('syncFirestoreToSheets')
+    .timeBased().everyMinutes(1).create();
+  Logger.log('트리거 등록 완료: syncFirestoreToSheets (1분마다)');
+}
+
+function syncFirestoreToSheets() {
+  var PROJECT_ID = 'hic-major-booking-656ca';
+  var token = ScriptApp.getOAuthToken();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
   var now = new Date();
-  var sid   = (data.studentId||'').toString().trim();
-  var name  = (data.name||'').toString().trim();
-  var dept  = (data.dept||'').toString().trim();
-  var phone = (data.phone||'').toString().trim();
-  var email = (data.email||'').toString().trim();
 
-  // SessionPreReg 동기화
-  if (data.sessions && data.sessions.length) {
-    var sessSheet = ss.getSheetByName('SessionPreReg');
-    if (!sessSheet) {
-      sessSheet = ss.insertSheet('SessionPreReg');
-      sessSheet.getRange(1,1,1,7).setValues([['이름','학번','학과','연락처','이메일','설명회명','등록일시']]);
-      sessSheet.getRange(1,1,1,7).setFontWeight('bold');
-      sessSheet.setFrozenRows(1);
-    }
-    // 이미 등록된 설명회는 건너뜀 (중복 방지)
-    var existSess = new Set();
-    if (sessSheet.getLastRow() > 1) {
-      var sRows = sessSheet.getDataRange().getValues();
-      for (var si = 1; si < sRows.length; si++) {
-        if (sRows[si][1].toString().trim() === sid) existSess.add(sRows[si][5].toString().trim());
-      }
-    }
-    for (var s = 0; s < data.sessions.length; s++) {
-      var sName = data.sessions[s].toString().trim();
-      if (!sName || existSess.has(sName)) continue;
-      sessSheet.appendRow([name, sid, dept, phone, email, sName, now]);
-    }
+  // ── Sheets 현재 상태 로드 ──
+  var sessSheet  = _getOrCreateSheet(ss, 'SessionPreReg',  ['이름','학번','학과','연락처','이메일','설명회명','등록일시']);
+  var boothSheet = _getOrCreateSheet(ss, 'BoothReservations', ['이름','학번','학과','이메일','연락처','프로그램','시간','문의내용','서명','상태','코멘트','예약일시']);
+
+  // 시트에 있는 (학번+설명회명) 키 세트
+  var existSessKeys = {};
+  if (sessSheet.getLastRow() > 1) {
+    sessSheet.getDataRange().getValues().slice(1).forEach(function(r) {
+      existSessKeys[r[1].toString().trim() + '|' + r[5].toString().trim()] = true;
+    });
+  }
+  // 시트에 있는 (학번+프로그램) 키 세트 (취소된 행 제외)
+  var existBoothKeys = {};
+  if (boothSheet.getLastRow() > 1) {
+    boothSheet.getDataRange().getValues().slice(1).forEach(function(r) {
+      var st = r[9] ? r[9].toString().trim() : '';
+      if (st !== '취소') existBoothKeys[r[1].toString().trim() + '|' + r[5].toString().trim()] = true;
+    });
   }
 
-  // BoothReservations 동기화
-  if (data.booths && data.booths.length) {
-    var boothSheet = ss.getSheetByName('BoothReservations');
-    if (!boothSheet) {
-      boothSheet = ss.insertSheet('BoothReservations');
-      boothSheet.getRange(1,1,1,12).setValues([['이름','학번','학과','이메일','연락처','프로그램','시간','문의내용','서명','상태','코멘트','예약일시']]);
-      boothSheet.getRange(1,1,1,12).setFontWeight('bold');
-      boothSheet.setFrozenRows(1);
-    }
-    // 이미 등록된 부스+시간 조합은 건너뜀 (중복 방지)
-    var existBooth = new Set();
-    if (boothSheet.getLastRow() > 1) {
-      var bRows = boothSheet.getDataRange().getValues();
-      for (var bi = 1; bi < bRows.length; bi++) {
-        if (bRows[bi][1].toString().trim() === sid) {
-          var bSt = bRows[bi][9]?bRows[bi][9].toString().trim():'';
-          if (bSt !== '취소') existBooth.add(bRows[bi][5].toString().trim());
-        }
-      }
-    }
-    for (var b = 0; b < data.booths.length; b++) {
-      var booth = data.booths[b];
-      var prog  = (booth.program||'').toString().trim();
-      if (!prog || existBooth.has(prog)) continue;
-      boothSheet.appendRow([name, sid, dept, email, phone, prog, booth.time||'', booth.memo||'', '', '예약완료', '', now]);
-    }
-  }
+  // ── Firestore sessionPreReg 전체 조회 ──
+  var newSessMail = {}; // 새로 추가된 항목: sid → {name,email,sessions[],dept,phone}
+  var sessUrl = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents/sessionPreReg?pageSize=500';
+  var sessDocs = _firestoreFetchAll(sessUrl, token);
+  sessDocs.forEach(function(doc) {
+    var f = doc.fields || {};
+    var sid      = _fsStr(f.studentId);
+    var sessName = _fsStr(f.sessionName);
+    var name     = _fsStr(f.name);
+    var dept     = _fsStr(f.dept);
+    var phone    = _fsStr(f.phone);
+    var email    = _fsStr(f.email);
+    if (!sid || !sessName) return;
+    var key = sid + '|' + sessName;
+    if (existSessKeys[key]) return; // 이미 시트에 있음
+    sessSheet.appendRow([name, sid, dept, phone, email, sessName, now]);
+    existSessKeys[key] = true;
+    // 메일 발송 대상 수집
+    if (!newSessMail[sid]) newSessMail[sid] = {name:name, email:email, dept:dept, phone:phone, sessions:[], booths:[]};
+    newSessMail[sid].sessions.push(sessName);
+  });
+
+  // ── Firestore boothReservations 전체 조회 ──
+  var boothUrl = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents/boothReservations?pageSize=500';
+  var boothDocs = _firestoreFetchAll(boothUrl, token);
+  boothDocs.forEach(function(doc) {
+    var f = doc.fields || {};
+    var sid     = _fsStr(f.studentId);
+    var prog    = _fsStr(f.program);
+    var time    = _fsStr(f.time);
+    var name    = _fsStr(f.name);
+    var dept    = _fsStr(f.dept);
+    var phone   = _fsStr(f.phone);
+    var email   = _fsStr(f.email);
+    var memo    = _fsStr(f.memo);
+    var status  = _fsStr(f.status);
+    if (!sid || !prog) return;
+    if (status === '취소' || status === '상담취소') return;
+    var key = sid + '|' + prog;
+    if (existBoothKeys[key]) return;
+    boothSheet.appendRow([name, sid, dept, email, phone, prog, time, memo, '', status||'예약완료', '', now]);
+    existBoothKeys[key] = true;
+    if (!newSessMail[sid]) newSessMail[sid] = {name:name, email:email, dept:dept, phone:phone, sessions:[], booths:[]};
+    newSessMail[sid].booths.push({program:prog, time:time});
+  });
+
+  // ── 신규 항목에 대해 확인 메일 발송 ──
+  Object.keys(newSessMail).forEach(function(sid) {
+    var m = newSessMail[sid];
+    if (!m.email) return;
+    try {
+      var hasLdc = m.booths.some(function(b){ return b.program === '라이프디자인센터'; });
+      sendConfirmMail(m.email, m.name, m.sessions, m.booths, hasLdc);
+      Utilities.sleep(200);
+    } catch(e) { Logger.log('메일 발송 실패 (' + sid + '): ' + e.message); }
+  });
 }
 
-// 예약 변경 시 기존 행 삭제 후 새 행 추가
-// data: { studentId, oldSessions:[], oldBooths:[{program}], name, dept, phone, email, sessions:[], booths:[{program,time,memo}] }
-function syncChangeToSheets(data) {
-  var ss  = SpreadsheetApp.getActiveSpreadsheet();
-  var sid = (data.studentId||'').toString().trim();
-
-  // 기존 SessionPreReg 행 삭제
-  if (data.oldSessions && data.oldSessions.length) {
-    var sessSheet = ss.getSheetByName('SessionPreReg');
-    if (sessSheet && sessSheet.getLastRow() > 1) {
-      var sRows = sessSheet.getDataRange().getValues();
-      var sDel = [];
-      for (var si = 1; si < sRows.length; si++) {
-        if (sRows[si][1].toString().trim() === sid &&
-            data.oldSessions.indexOf(sRows[si][5].toString().trim()) !== -1) sDel.push(si+1);
-      }
-      sDel.sort(function(a,b){return b-a;}).forEach(function(r){ sessSheet.deleteRow(r); });
+// Firestore REST API 페이지네이션 처리
+function _firestoreFetchAll(url, token) {
+  var docs = [];
+  var nextUrl = url;
+  while (nextUrl) {
+    var res = UrlFetchApp.fetch(nextUrl, {
+      headers: { Authorization: 'Bearer ' + token },
+      muteHttpExceptions: true
+    });
+    if (res.getResponseCode() !== 200) {
+      Logger.log('Firestore 오류: ' + res.getContentText());
+      break;
     }
+    var data = JSON.parse(res.getContentText());
+    if (data.documents) docs = docs.concat(data.documents);
+    nextUrl = data.nextPageToken ? url + '&pageToken=' + data.nextPageToken : null;
   }
-
-  // 기존 BoothReservations 행 삭제
-  if (data.oldBooths && data.oldBooths.length) {
-    var boothSheet = ss.getSheetByName('BoothReservations');
-    if (boothSheet && boothSheet.getLastRow() > 1) {
-      var oldProgSet = {};
-      data.oldBooths.forEach(function(b){ oldProgSet[(b.program||'').toString().trim()]=true; });
-      var bRows = boothSheet.getDataRange().getValues();
-      var bDel = [];
-      for (var bi = 1; bi < bRows.length; bi++) {
-        var bSt = bRows[bi][9]?bRows[bi][9].toString().trim():'';
-        if (bRows[bi][1].toString().trim() === sid &&
-            bSt !== '상담완료' &&
-            oldProgSet[bRows[bi][5].toString().trim()]) bDel.push(bi+1);
-      }
-      bDel.sort(function(a,b){return b-a;}).forEach(function(r){ boothSheet.deleteRow(r); });
-    }
-  }
-
-  // 새 데이터 추가
-  syncToSheets(data);
+  return docs;
 }
 
-// 예약 전체 취소 시 Sheets에서도 삭제
-// data: { studentId, sessions:[], booths:[{program}] }
-function syncCancelToSheets(data) {
-  var ss  = SpreadsheetApp.getActiveSpreadsheet();
-  var sid = (data.studentId||'').toString().trim();
+// Firestore 필드값 문자열 추출
+function _fsStr(field) {
+  if (!field) return '';
+  return (field.stringValue || field.integerValue || '').toString().trim();
+}
 
-  var sessSheet = ss.getSheetByName('SessionPreReg');
-  if (sessSheet && sessSheet.getLastRow() > 1) {
-    var sRows = sessSheet.getDataRange().getValues();
-    var sDel = [];
-    for (var si = 1; si < sRows.length; si++) {
-      if (sRows[si][1].toString().trim() === sid) sDel.push(si+1);
-    }
-    sDel.sort(function(a,b){return b-a;}).forEach(function(r){ sessSheet.deleteRow(r); });
+// 시트가 없으면 생성
+function _getOrCreateSheet(ss, name, headers) {
+  var sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    sh.getRange(1,1,1,headers.length).setValues([headers]).setFontWeight('bold');
+    sh.setFrozenRows(1);
   }
-
-  var boothSheet = ss.getSheetByName('BoothReservations');
-  if (boothSheet && boothSheet.getLastRow() > 1) {
-    var bRows = boothSheet.getDataRange().getValues();
-    var bDel = [];
-    for (var bi = 1; bi < bRows.length; bi++) {
-      var bSt = bRows[bi][9]?bRows[bi][9].toString().trim():'';
-      if (bRows[bi][1].toString().trim() === sid && bSt !== '상담완료') bDel.push(bi+1);
-    }
-    bDel.sort(function(a,b){return b-a;}).forEach(function(r){ boothSheet.deleteRow(r); });
-  }
-}
-
-// ─── index.html(Firestore 경로)에서 google.script.run으로 호출하는 메일 래퍼 ───
-// data: { email, name, sessions[], booths:[{program,time}], hasLdcTest }
-function sendBookingConfirmMail(data) {
-  try {
-    var toEmail = data.email.toString().trim();
-    if (!toEmail) return;
-    sendConfirmMail(toEmail, data.name||'', data.sessions||[], data.booths||[], !!data.hasLdcTest);
-  } catch(e) { Logger.log('확인 메일 발송 실패: '+e.message); }
-}
-
-function sendBookingChangeMail(data) {
-  try {
-    var toEmail = data.email.toString().trim();
-    if (!toEmail) return;
-    sendChangeMail(toEmail, data.name||'', data.sessions||[], data.booths||[], !!data.hasLdcTest);
-  } catch(e) { Logger.log('변경 메일 발송 실패: '+e.message); }
-}
-
-// data: { email, name, booths:[{program,time}], sessions[] }
-function sendBookingCancelMail(data) {
-  try {
-    var toEmail = data.email.toString().trim();
-    if (!toEmail) return;
-    sendCancelMail(toEmail, data.name||'', data.booths||[], data.sessions||[]);
-  } catch(e) { Logger.log('취소 메일 발송 실패: '+e.message); }
+  return sh;
 }
 
 function sendRemindMails() {
