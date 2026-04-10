@@ -1611,6 +1611,140 @@ function sendChangeMail(toEmail, name, sessions, reservations, hasLdcTest) {
   sendConfirmMail(toEmail, name, sessions, reservations, hasLdcTest);
 }
 
+// ─── Firestore → Sheets 동기화 (index.html에서 호출) ─────────────
+// data: { name, studentId, dept, phone, email, sessions:[], booths:[{program,time,memo}] }
+function syncToSheets(data) {
+  var ss  = SpreadsheetApp.getActiveSpreadsheet();
+  var now = new Date();
+  var sid   = (data.studentId||'').toString().trim();
+  var name  = (data.name||'').toString().trim();
+  var dept  = (data.dept||'').toString().trim();
+  var phone = (data.phone||'').toString().trim();
+  var email = (data.email||'').toString().trim();
+
+  // SessionPreReg 동기화
+  if (data.sessions && data.sessions.length) {
+    var sessSheet = ss.getSheetByName('SessionPreReg');
+    if (!sessSheet) {
+      sessSheet = ss.insertSheet('SessionPreReg');
+      sessSheet.getRange(1,1,1,7).setValues([['이름','학번','학과','연락처','이메일','설명회명','등록일시']]);
+      sessSheet.getRange(1,1,1,7).setFontWeight('bold');
+      sessSheet.setFrozenRows(1);
+    }
+    // 이미 등록된 설명회는 건너뜀 (중복 방지)
+    var existSess = new Set();
+    if (sessSheet.getLastRow() > 1) {
+      var sRows = sessSheet.getDataRange().getValues();
+      for (var si = 1; si < sRows.length; si++) {
+        if (sRows[si][1].toString().trim() === sid) existSess.add(sRows[si][5].toString().trim());
+      }
+    }
+    for (var s = 0; s < data.sessions.length; s++) {
+      var sName = data.sessions[s].toString().trim();
+      if (!sName || existSess.has(sName)) continue;
+      sessSheet.appendRow([name, sid, dept, phone, email, sName, now]);
+    }
+  }
+
+  // BoothReservations 동기화
+  if (data.booths && data.booths.length) {
+    var boothSheet = ss.getSheetByName('BoothReservations');
+    if (!boothSheet) {
+      boothSheet = ss.insertSheet('BoothReservations');
+      boothSheet.getRange(1,1,1,12).setValues([['이름','학번','학과','이메일','연락처','프로그램','시간','문의내용','서명','상태','코멘트','예약일시']]);
+      boothSheet.getRange(1,1,1,12).setFontWeight('bold');
+      boothSheet.setFrozenRows(1);
+    }
+    // 이미 등록된 부스+시간 조합은 건너뜀 (중복 방지)
+    var existBooth = new Set();
+    if (boothSheet.getLastRow() > 1) {
+      var bRows = boothSheet.getDataRange().getValues();
+      for (var bi = 1; bi < bRows.length; bi++) {
+        if (bRows[bi][1].toString().trim() === sid) {
+          var bSt = bRows[bi][9]?bRows[bi][9].toString().trim():'';
+          if (bSt !== '취소') existBooth.add(bRows[bi][5].toString().trim());
+        }
+      }
+    }
+    for (var b = 0; b < data.booths.length; b++) {
+      var booth = data.booths[b];
+      var prog  = (booth.program||'').toString().trim();
+      if (!prog || existBooth.has(prog)) continue;
+      boothSheet.appendRow([name, sid, dept, email, phone, prog, booth.time||'', booth.memo||'', '', '예약완료', '', now]);
+    }
+  }
+}
+
+// 예약 변경 시 기존 행 삭제 후 새 행 추가
+// data: { studentId, oldSessions:[], oldBooths:[{program}], name, dept, phone, email, sessions:[], booths:[{program,time,memo}] }
+function syncChangeToSheets(data) {
+  var ss  = SpreadsheetApp.getActiveSpreadsheet();
+  var sid = (data.studentId||'').toString().trim();
+
+  // 기존 SessionPreReg 행 삭제
+  if (data.oldSessions && data.oldSessions.length) {
+    var sessSheet = ss.getSheetByName('SessionPreReg');
+    if (sessSheet && sessSheet.getLastRow() > 1) {
+      var sRows = sessSheet.getDataRange().getValues();
+      var sDel = [];
+      for (var si = 1; si < sRows.length; si++) {
+        if (sRows[si][1].toString().trim() === sid &&
+            data.oldSessions.indexOf(sRows[si][5].toString().trim()) !== -1) sDel.push(si+1);
+      }
+      sDel.sort(function(a,b){return b-a;}).forEach(function(r){ sessSheet.deleteRow(r); });
+    }
+  }
+
+  // 기존 BoothReservations 행 삭제
+  if (data.oldBooths && data.oldBooths.length) {
+    var boothSheet = ss.getSheetByName('BoothReservations');
+    if (boothSheet && boothSheet.getLastRow() > 1) {
+      var oldProgSet = {};
+      data.oldBooths.forEach(function(b){ oldProgSet[(b.program||'').toString().trim()]=true; });
+      var bRows = boothSheet.getDataRange().getValues();
+      var bDel = [];
+      for (var bi = 1; bi < bRows.length; bi++) {
+        var bSt = bRows[bi][9]?bRows[bi][9].toString().trim():'';
+        if (bRows[bi][1].toString().trim() === sid &&
+            bSt !== '상담완료' &&
+            oldProgSet[bRows[bi][5].toString().trim()]) bDel.push(bi+1);
+      }
+      bDel.sort(function(a,b){return b-a;}).forEach(function(r){ boothSheet.deleteRow(r); });
+    }
+  }
+
+  // 새 데이터 추가
+  syncToSheets(data);
+}
+
+// 예약 전체 취소 시 Sheets에서도 삭제
+// data: { studentId, sessions:[], booths:[{program}] }
+function syncCancelToSheets(data) {
+  var ss  = SpreadsheetApp.getActiveSpreadsheet();
+  var sid = (data.studentId||'').toString().trim();
+
+  var sessSheet = ss.getSheetByName('SessionPreReg');
+  if (sessSheet && sessSheet.getLastRow() > 1) {
+    var sRows = sessSheet.getDataRange().getValues();
+    var sDel = [];
+    for (var si = 1; si < sRows.length; si++) {
+      if (sRows[si][1].toString().trim() === sid) sDel.push(si+1);
+    }
+    sDel.sort(function(a,b){return b-a;}).forEach(function(r){ sessSheet.deleteRow(r); });
+  }
+
+  var boothSheet = ss.getSheetByName('BoothReservations');
+  if (boothSheet && boothSheet.getLastRow() > 1) {
+    var bRows = boothSheet.getDataRange().getValues();
+    var bDel = [];
+    for (var bi = 1; bi < bRows.length; bi++) {
+      var bSt = bRows[bi][9]?bRows[bi][9].toString().trim():'';
+      if (bRows[bi][1].toString().trim() === sid && bSt !== '상담완료') bDel.push(bi+1);
+    }
+    bDel.sort(function(a,b){return b-a;}).forEach(function(r){ boothSheet.deleteRow(r); });
+  }
+}
+
 // ─── index.html(Firestore 경로)에서 google.script.run으로 호출하는 메일 래퍼 ───
 // data: { email, name, sessions[], booths:[{program,time}], hasLdcTest }
 function sendBookingConfirmMail(data) {
