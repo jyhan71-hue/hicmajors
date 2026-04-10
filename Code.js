@@ -245,6 +245,36 @@ function doGet(e) {
     .addMetaTag('viewport','width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
 }
 
+// GitHub Pages 등 외부에서 fetch POST로 호출하는 엔드포인트
+// action: 'confirm' | 'change' | 'cancel' | 'sync' | 'syncChange' | 'syncCancel'
+function doPost(e) {
+  var result = { ok: false };
+  try {
+    var body = JSON.parse(e.postData.contents);
+    var action = body.action;
+    if (action === 'confirm') {
+      sendBookingConfirmMail(body.data);
+      syncToSheets(body.data);
+      result.ok = true;
+    } else if (action === 'change') {
+      sendBookingChangeMail(body.data);
+      syncChangeToSheets(body.data);
+      result.ok = true;
+    } else if (action === 'cancel') {
+      sendBookingCancelMail(body.data);
+      syncCancelToSheets(body.data);
+      result.ok = true;
+    } else {
+      result.error = 'unknown action: ' + action;
+    }
+  } catch(err) {
+    result.error = err.message;
+  }
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 // ─────────────────────────────────────────────
 // 초기 데이터 (설명회 선착순 현황 포함)
 // ─────────────────────────────────────────────
