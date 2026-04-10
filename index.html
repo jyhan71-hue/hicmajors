@@ -776,6 +776,17 @@ window.cancelAllReservations = async function() {
       if(!s.docId) continue;
       await db.collection('sessionPreReg').doc(s.docId).delete();
     }
+    // 취소 메일 발송
+    try {
+      const personInfo = _pendingEditData;
+      const cancelEmail = (personInfo.email||'')+'@hanyang.ac.kr';
+      google.script.run.sendBookingCancelMail({
+        email: cancelEmail,
+        name: personInfo.name||'',
+        booths: (personInfo.booths||[]).map(b=>({program:b.program,time:b.time})),
+        sessions: (personInfo.sessions||[]).map(s=>s.time||'')
+      });
+    } catch(e) {}
     alert('예약이 취소되었습니다.');
     clearMainSearch();
     resetPage();
@@ -842,6 +853,10 @@ async function submitSessionOnly(data) {
       signature:data.signature, createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
   }
+  // 확인 메일 발송 (실패해도 예약은 완료)
+  try {
+    google.script.run.sendBookingConfirmMail({email, name:data.name, sessions:added, booths:[], hasLdcTest:false});
+  } catch(e) {}
   return added.length+'개 설명회 참여 등록이 완료되었습니다.';
 }
 
@@ -926,6 +941,16 @@ async function submitReservation(data) {
   const parts=[];
   if(sc>0)parts.push('설명회 '+sc+'개');
   if(bc>0)parts.push('부스 상담 '+bc+'개');
+  // 확인 메일 발송 (실패해도 예약은 완료)
+  try {
+    const hasLdcTest=data.reservations.some(r=>r.ldcTest);
+    google.script.run.sendBookingConfirmMail({
+      email, name:data.name,
+      sessions:data.sessions||[],
+      booths:data.reservations.map(r=>({program:r.program,time:r.time})),
+      hasLdcTest
+    });
+  } catch(e) {}
   return parts.join(', ')+' 예약이 완료되었습니다.';
 }
 
@@ -971,6 +996,16 @@ async function changeReservation(data) {
       sessionName:sessName,createdAt:ts
     });
   }
+  // 변경 메일 발송 (실패해도 변경은 완료)
+  try {
+    const hasLdcTest=(data.newBooths||[]).some(b=>b.ldcTest);
+    google.script.run.sendBookingChangeMail({
+      email, name:data.name,
+      sessions:data.newSessions||[],
+      booths:(data.newBooths||[]).map(b=>({program:b.program,time:b.time})),
+      hasLdcTest
+    });
+  } catch(e) {}
   return '변경이 완료되었습니다.';
 }
 

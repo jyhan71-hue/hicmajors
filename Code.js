@@ -1611,6 +1611,33 @@ function sendChangeMail(toEmail, name, sessions, reservations, hasLdcTest) {
   sendConfirmMail(toEmail, name, sessions, reservations, hasLdcTest);
 }
 
+// ─── index.html(Firestore 경로)에서 google.script.run으로 호출하는 메일 래퍼 ───
+// data: { email, name, sessions[], booths:[{program,time}], hasLdcTest }
+function sendBookingConfirmMail(data) {
+  try {
+    var toEmail = data.email.toString().trim();
+    if (!toEmail) return;
+    sendConfirmMail(toEmail, data.name||'', data.sessions||[], data.booths||[], !!data.hasLdcTest);
+  } catch(e) { Logger.log('확인 메일 발송 실패: '+e.message); }
+}
+
+function sendBookingChangeMail(data) {
+  try {
+    var toEmail = data.email.toString().trim();
+    if (!toEmail) return;
+    sendChangeMail(toEmail, data.name||'', data.sessions||[], data.booths||[], !!data.hasLdcTest);
+  } catch(e) { Logger.log('변경 메일 발송 실패: '+e.message); }
+}
+
+// data: { email, name, booths:[{program,time}], sessions[] }
+function sendBookingCancelMail(data) {
+  try {
+    var toEmail = data.email.toString().trim();
+    if (!toEmail) return;
+    sendCancelMail(toEmail, data.name||'', data.booths||[], data.sessions||[]);
+  } catch(e) { Logger.log('취소 메일 발송 실패: '+e.message); }
+}
+
 function sendRemindMails() {
   var ss=SpreadsheetApp.getActiveSpreadsheet();
   var SESSION_TIMES={'미래사회디자인':'09:30~09:55','융합의과학/융합의공학':'10:00~10:25','인지융합과학':'10:30~10:55','혁신공학경영':'11:00~11:25','미래반도체공학':'11:30~11:55'};
