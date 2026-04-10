@@ -1312,69 +1312,27 @@ function getSessionStatus(password, program) {
   }
   if (!authorized) throw new Error('권한이 없습니다.');
 
-  // CheckIns에서 학번 → {checkedAt, type, sessions[]} 맵 구성
-  var ciMap={};
-  var ciRows=[];
+  // CheckIns에서 이 설명회를 체크인한 학생 목록만 구성
+  var result=[];
+  var seenIds={};
   var ciSheet=ss.getSheetByName('CheckIns');
   if (ciSheet&&ciSheet.getLastRow()>1) {
-    ciRows=ciSheet.getDataRange().getValues();
+    var ciRows=ciSheet.getDataRange().getValues();
     for (var c=1;c<ciRows.length;c++) {
       var cSid=ciRows[c][1]?ciRows[c][1].toString().trim():'';
       var cSess=ciRows[c][7]?ciRows[c][7].toString().trim():'';
-      if (!cSid) continue;
-      if (!ciMap[cSid]) {
-        ciMap[cSid]={
-          checkedAt: ciRows[c][0]?ciRows[c][0].toString():'',
-          type:      ciRows[c][6]?ciRows[c][6].toString().trim():'사전예약',
-          sessions:  []
-        };
-      }
-      if (cSess) ciMap[cSid].sessions.push(cSess);
-    }
-  }
-
-  // 사전예약자 목록 (SessionPreReg 기준)
-  var result=[];
-  var seenIds={};
-  var sessSheet=ss.getSheetByName('SessionPreReg');
-  if (sessSheet&&sessSheet.getLastRow()>1) {
-    var sessRows=sessSheet.getDataRange().getValues();
-    for (var j=1;j<sessRows.length;j++) {
-      if (sessRows[j][5].toString().trim()!==program) continue;
-      var sid=sessRows[j][1].toString().trim();
-      var ci=ciMap[sid]||null;
-      var attended=ci&&ci.sessions.indexOf(program)!==-1;
-      seenIds[sid]=true;
+      if (!cSid||cSess!==program||seenIds[cSid]) continue;
+      seenIds[cSid]=true;
       result.push({
-        no:        result.length+1,
-        name:      sessRows[j][0].toString().trim(),
-        id:        sid,
-        dept:      sessRows[j][2].toString().trim(),
-        attendType: ci?ci.type:'사전예약',
-        checkedIn:  attended,
-        checkedAt:  attended?(ci?ci.checkedAt:''):''
+        no:        0,
+        name:      ciRows[c][2]?ciRows[c][2].toString().trim():'',
+        id:        cSid,
+        dept:      ciRows[c][3]?ciRows[c][3].toString().trim():'',
+        attendType: ciRows[c][6]?ciRows[c][6].toString().trim():'사전예약',
+        checkedIn:  true,
+        checkedAt:  ciRows[c][0]?ciRows[c][0].toString():''
       });
     }
-  }
-
-  // SessionPreReg에 없지만 CheckIns에 이 설명회로 체크인된 학생 추가
-  // (당일방문 + Firestore 등록 후 walk-in 처리된 사전예약자 모두 포함)
-  for (var c2=1;c2<ciRows.length;c2++) {
-    var cSid2=ciRows[c2][1]?ciRows[c2][1].toString().trim():'';
-    var cType2=ciRows[c2][6]?ciRows[c2][6].toString().trim():'';
-    var cSess2=ciRows[c2][7]?ciRows[c2][7].toString().trim():'';
-    if (!cSid2||seenIds[cSid2]) continue;   // 이미 결과에 포함된 경우 스킵
-    if (cSess2!==program) continue;          // 이 설명회 행만
-    seenIds[cSid2]=true;
-    result.push({
-      no:        result.length+1,
-      name:      ciRows[c2][2]?ciRows[c2][2].toString().trim():'',
-      id:        cSid2,
-      dept:      ciRows[c2][3]?ciRows[c2][3].toString().trim():'',
-      attendType: cType2||'사전예약',
-      checkedIn:  true,
-      checkedAt:  ciRows[c2][0]?ciRows[c2][0].toString():''
-    });
   }
 
   result.sort(function(a,b){ return a.name<b.name?-1:a.name>b.name?1:0; });
@@ -1382,7 +1340,7 @@ function getSessionStatus(password, program) {
   return {
     program:   program,
     total:     result.length,
-    signed:    result.filter(function(r){ return r.checkedIn; }).length, // 하위 호환
+    signed:    result.length,
     attendees: result
   };
 }
