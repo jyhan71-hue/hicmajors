@@ -258,7 +258,7 @@ function doPost(e) {
     var ss      = SpreadsheetApp.getActiveSpreadsheet();
     var now     = new Date();
 
-    if (action === 'reserve' || action === 'change') {
+    if (action === 'reserve') {
       var name    = payload.name    || '';
       var sid     = payload.studentId || '';
       var dept    = payload.dept    || '';
@@ -279,7 +279,6 @@ function doPost(e) {
         var key = sid + '|' + sessName;
         if (!existSessKeys[key]) {
           sessSheet.appendRow([name, sid, dept, phone, email, sessName, now]);
-          existSessKeys[key] = true;
         }
       });
 
@@ -296,18 +295,62 @@ function doPost(e) {
         var key = sid + '|' + b.program;
         if (!existBoothKeys[key]) {
           boothSheet.appendRow([name, sid, dept, email, phone, b.program, b.time, b.memo||'', '', '예약완료', '', now]);
-          existBoothKeys[key] = true;
         }
       });
 
-      // ── 확인 메일 발송 ──
+      // ── 예약확인 메일 발송 ──
       if (email) {
         var hasLdc = booths.some(function(b){ return b.program === '라이프디자인센터'; });
         var boothsForMail = booths.map(function(b){ return {program: b.program, time: b.time}; });
-        try {
-          if (action === 'change') sendChangeMail(email, name, sessions, boothsForMail, hasLdc);
-          else                     sendConfirmMail(email, name, sessions, boothsForMail, hasLdc);
-        } catch(mailErr) { Logger.log('메일 오류: ' + mailErr.message); }
+        try { sendConfirmMail(email, name, sessions, boothsForMail, hasLdc); }
+        catch(mailErr) { Logger.log('메일 오류(reserve): ' + mailErr.message); }
+      }
+
+    } else if (action === 'change') {
+      var name    = payload.name    || '';
+      var sid     = payload.studentId || '';
+      var dept    = payload.dept    || '';
+      var email   = payload.email   || '';
+      var phone   = payload.phone   || '';
+      var sessions  = payload.sessions  || [];
+      var booths    = payload.booths    || [];
+
+      var sessSheet = _getOrCreateSheet(ss, 'SessionPreReg', ['이름','학번','학과','연락처','이메일','설명회명','등록일시']);
+      var boothSheet = _getOrCreateSheet(ss, 'BoothReservations', ['이름','학번','학과','이메일','연락처','프로그램','시간','문의내용','서명','상태','코멘트','예약일시']);
+
+      // ── 기존 설명회 행 삭제 (해당 학번 전체) ──
+      if (sessSheet.getLastRow() > 1) {
+        var sessRows = sessSheet.getDataRange().getValues();
+        for (var si = sessRows.length - 1; si >= 1; si--) {
+          if (sessRows[si][1].toString().trim() === sid) sessSheet.deleteRow(si + 1);
+        }
+      }
+      // ── 기존 부스 예약 → '취소' 처리 (해당 학번 전체) ──
+      if (boothSheet.getLastRow() > 1) {
+        var boothRows = boothSheet.getDataRange().getValues();
+        for (var bi = 1; bi < boothRows.length; bi++) {
+          if (boothRows[bi][1].toString().trim() !== sid) continue;
+          var bSt = boothRows[bi][9] ? boothRows[bi][9].toString().trim() : '';
+          if (bSt !== '취소' && bSt !== '상담취소' && bSt !== '상담완료') {
+            boothSheet.getRange(bi + 1, 10).setValue('취소');
+          }
+        }
+      }
+      // ── 새 설명회 추가 ──
+      sessions.forEach(function(sessName) {
+        sessSheet.appendRow([name, sid, dept, phone, email, sessName, now]);
+      });
+      // ── 새 부스 추가 ──
+      booths.forEach(function(b) {
+        boothSheet.appendRow([name, sid, dept, email, phone, b.program, b.time, b.memo||'', '', '예약완료', '', now]);
+      });
+
+      // ── 변경 확인 메일 발송 ──
+      if (email) {
+        var hasLdc = booths.some(function(b){ return b.program === '라이프디자인센터'; });
+        var boothsForMail = booths.map(function(b){ return {program: b.program, time: b.time}; });
+        try { sendChangeMail(email, name, sessions, boothsForMail, hasLdc); }
+        catch(mailErr) { Logger.log('메일 오류(change): ' + mailErr.message); }
       }
 
     } else if (action === 'cancel') {
@@ -1714,7 +1757,14 @@ function sendCancelMail(toEmail, name, cancelledBooths, cancelledSessions) {
 function sendChangeMail(toEmail, name, sessions, reservations, hasLdcTest) {
   var SENDER='intercollege@hanyang.ac.kr';
   var subject='[한양YK인터칼리지] 2026 융합전공 소개행사 예약이 변경되었습니다';
-  sendConfirmMail(toEmail, name, sessions, reservations, hasLdcTest);
+  var SESSION_TIMES={'미래사회디자인':'09:30~09:55','융합의과학/융합의공학':'10:00~10:25','인지융합과학':'10:30~10:55','혁신공학경영':'11:00~11:25','미래반도체공학':'11:30~11:55'};
+  var sessRows='';
+  if (sessions&&sessions.length) sessions.forEach(function(s){ sessRows+='<tr><td style="padding:8px 14px;border-bottom:1px solid #EAECEF;">'+s+'</td><td style="padding:8px 14px;border-bottom:1px solid #EAECEF;color:#5A6778;">'+(SESSION_TIMES[s]||'')+'</td></tr>'; });
+  var boothRows='';
+  if (reservations&&reservations.length) reservations.forEach(function(r){ boothRows+='<tr><td style="padding:8px 14px;border-bottom:1px solid #EAECEF;">'+r.program+'</td><td style="padding:8px 14px;border-bottom:1px solid #EAECEF;color:#5A6778;">'+r.time+'</td></tr>'; });
+  var ldcNotice=hasLdcTest?'<div style="margin:16px 0;padding:12px 16px;background:#EBF4FF;border-left:4px solid #2B6CB0;border-radius:6px;font-size:14px;color:#2B6CB0;">[진로적성검사] <strong>응시 희망</strong>으로 등록되었습니다.<br>예약하신 상담 시간보다 <strong>15분 일찍</strong> 라이프디자인센터 부스에 도착해 주세요.</div>':'';
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#F4F7F9;font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',sans-serif;"><div style="max-width:600px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);"><div style="background:#1B263B;padding:28px 32px;text-align:center;"><div style="color:#fff;font-size:11px;letter-spacing:0.1em;margin-bottom:6px;opacity:0.7;">HANYANG YK INTERCOLLEGE</div><div style="color:#fff;font-size:20px;font-weight:800;">2026 융합전공 소개행사</div><div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:4px;">예약 변경 완료 안내</div></div><div style="padding:28px 32px 0;"><p style="font-size:15px;color:#1B263B;margin:0 0 6px;"><strong>'+name+'</strong>님, 안녕하세요!</p><p style="font-size:14px;color:#5A6778;margin:0 0 20px;line-height:1.7;">2026 융합전공 소개행사 예약이 <strong style="color:#1B263B;">변경</strong>되었습니다. 아래 내용을 확인해 주세요.</p><div style="background:#F8FAFC;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#5A6778;line-height:1.8;"><strong style="color:#1B263B;">일시</strong> &nbsp; 2026. 5. 8.(금) 09:30 ~ 17:00<br><strong style="color:#1B263B;">장소</strong> &nbsp; 한양종합기술원(HIT) 1층 양민용 커리어라운지</div>'+(sessRows?'<p style="font-size:13px;font-weight:700;color:#1B263B;margin:0 0 8px;">참여 설명회</p><table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #EAECEF;border-radius:8px;overflow:hidden;margin-bottom:20px;"><thead><tr style="background:#F0F4F8;"><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">프로그램</th><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">시간</th></tr></thead><tbody>'+sessRows+'</tbody></table>':'')+(boothRows?'<p style="font-size:13px;font-weight:700;color:#1B263B;margin:0 0 8px;">부스 상담 예약</p><table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #EAECEF;border-radius:8px;overflow:hidden;margin-bottom:20px;"><thead><tr style="background:#F0F4F8;"><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">프로그램</th><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">시간</th></tr></thead><tbody>'+boothRows+'</tbody></table>':'')+ldcNotice+'<div style="margin:16px 0;text-align:center;"><a href="https://tinyurl.com/hicmajors" style="display:inline-block;background:#1B263B;color:#fff;font-size:14px;font-weight:700;padding:12px 32px;border-radius:8px;text-decoration:none;">예약 신청 및 확인 / 변경</a><p style="font-size:12px;color:#C53030;font-weight:600;margin:10px 0 0;">※ 추가 변경 또는 취소는 위 버튼을 통해 웹페이지에서만 가능합니다.</p></div></div><div style="padding:20px 32px;border-top:1px solid #EAECEF;margin-top:20px;text-align:center;font-size:11px;color:#9AA5B4;">본 메일은 발신 전용입니다.</div></div></body></html>';
+  GmailApp.sendEmail(toEmail, subject, '', { htmlBody:html, replyTo:SENDER, name:'한양YK인터칼리지' });
 }
 
 // ─── Firestore → Sheets 1분 트리거 동기화 ────────────────────────
