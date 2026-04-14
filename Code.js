@@ -236,6 +236,41 @@ function setupSheets() {
 // ─────────────────────────────────────────────
 function doGet(e) {
   var page = e.parameter.page || 'index';
+
+  // index.html이 GAS_CONFIG_URL(?page=config)로 설정값 요청
+  if (page === 'config') {
+    var cfg = _getSettings();
+    var sessionTimes = {};
+    cfg.sessions.forEach(function(s) { sessionTimes[s.name] = s.start + '~' + s.end; });
+
+    var sessionCounts = {};
+    cfg.sessions.forEach(function(s) { sessionCounts[s.name] = 0; });
+    try {
+      var ss2 = SpreadsheetApp.getActiveSpreadsheet();
+      var sessSheet = ss2.getSheetByName('SessionPreReg');
+      if (sessSheet && sessSheet.getLastRow() > 1) {
+        sessSheet.getDataRange().getValues().slice(1).forEach(function(r) {
+          var prog = r[5] ? r[5].toString().trim() : '';
+          if (sessionCounts[prog] !== undefined) sessionCounts[prog]++;
+        });
+      }
+    } catch(e2) {}
+
+    var payload = {
+      isOpen:          cfg.isOpen,
+      eventName:       cfg.eventName,
+      eventDate:       cfg.eventDate,
+      eventPlace:      cfg.eventPlace,
+      sessions:        cfg.sessions,
+      boothPrograms:   cfg.boothPrograms,
+      sessionCapacity: SESSION_CAPACITY,
+      sessionTimes:    sessionTimes,
+      sessionCounts:   sessionCounts
+    };
+    return ContentService.createTextOutput(JSON.stringify(payload))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   if (['index','admin','staff'].indexOf(page) === -1) {
     return HtmlService.createHtmlOutput('<h3>잘못된 접근입니다.</h3>');
   }
