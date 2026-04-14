@@ -293,21 +293,7 @@
           <div style="font-size:.75rem;color:#7A8899;" id="ci-sessCountLabel">현재 세션 입장</div>
           <div style="font-size:1.3rem;font-weight:800;color:var(--navy);" id="ci-sessCountNum">—</div>
         </div>
-        <!-- 당일방문 슬롯 현황 -->
-        <div class="walkin-status" id="ci-walkStatusBox">
-          <div>
-            <div class="ws-label">당일방문 잔여</div>
-            <div class="ws-count" id="ci-walkRemaining">—</div>
-            <div class="ws-sub" id="ci-walkSub"></div>
-          </div>
-          <div class="ws-bar-wrap">
-            <div class="ws-bar-bg">
-              <div class="ws-bar-fill" id="ci-walkBar" style="width:100%;"></div>
-            </div>
-          </div>
-          <button class="ws-refresh" onclick="ciLoadStatus()" title="새로고침">🔄</button>
-        </div>
-        <div class="walkin-full-banner" id="ci-walkFullBanner">🚫 당일방문 체크인이 마감되었습니다</div>
+        <div class="walkin-full-banner" id="ci-walkFullBanner" style="display:none;">🚫 당일방문 체크인이 마감되었습니다</div>
         <div style="text-align:right;margin-top:6px;">
           <button id="btnWalkBlockCheckin" onclick="openWalkBlockModal()"
             style="font-size:.72rem;padding:4px 10px;border-radius:5px;border:1.5px solid #B0BAC9;
@@ -330,7 +316,7 @@
           <span class="sub" id="ci-walkBtnSub">정보 입력 후 체크인</span>
         </div>
       </div>
-      <button class="btn-back" style="margin-top:14px;" onclick="goScreen('scr-mode')">← 모드 선택으로</button>
+      <button class="btn-back" style="margin-top:14px;" onclick="openModeChangePwModal()">← 모드 선택으로</button>
     </div>
 
     <!-- CI-2: 사전예약자 -->
@@ -356,7 +342,8 @@
         <label class="form-label">학번 (10자리) <span style="color:#E53E3E;">*</span></label>
         <input type="text" class="form-control" id="walkSid"
           inputmode="numeric" maxlength="10" placeholder="2024000000"
-          oninput="this.value=this.value.replace(/[^\d]/g,'');">
+          oninput="this.value=this.value.replace(/[^\d]/g,''); onWalkSidInput(this.value);">
+        <div id="walkSidStatus" style="margin-top:6px;"></div>
       </div>
       <div class="mb-3">
         <label class="form-label">성명 <span style="color:#E53E3E;">*</span></label>
@@ -436,7 +423,7 @@
           onkeydown="if(event.key==='Enter'&&this.value.length===10){event.preventDefault();giLookupStudent();}">
       </div>
       <button class="btn-main" id="gi-btnLookup" onclick="giLookupStudent()">조회하기</button>
-      <button class="btn-back" style="margin-top:8px;" onclick="goScreen('scr-mode')">← 모드 선택으로</button>
+      <button class="btn-back" style="margin-top:8px;" onclick="openModeChangePwModal()">← 모드 선택으로</button>
     </div>
 
     <!-- GI-2: 조건 확인 + 부스 체크 -->
@@ -533,6 +520,29 @@
   </div>
 </div>
 
+<!-- 모드 변경 비밀번호 모달 -->
+<div id="modeChangePwModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+     z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:24px;width:88%;max-width:340px;
+              box-shadow:0 8px 32px rgba(0,0,0,.2);">
+    <div style="font-weight:800;color:var(--navy);font-size:1rem;margin-bottom:6px;">모드 변경</div>
+    <div style="font-size:.82rem;color:#5A6778;margin-bottom:14px;">관리자 비밀번호를 입력하세요.</div>
+    <input type="password" id="modeChangePwInput" placeholder="관리자 비밀번호"
+      style="width:100%;border:1.5px solid #DDE3EA;border-radius:8px;padding:9px 12px;
+             font-size:.88rem;font-family:'Pretendard',sans-serif;margin-bottom:10px;box-sizing:border-box;"
+      onkeydown="if(event.key==='Enter') confirmModeChangePw();">
+    <div id="modeChangePwMsg" style="font-size:.78rem;color:#C53030;min-height:18px;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="confirmModeChangePw()"
+        style="flex:1;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px;
+               font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Pretendard',sans-serif;">확인</button>
+      <button onclick="document.getElementById('modeChangePwModal').style.display='none';"
+        style="flex:1;background:#F0F4F8;color:#5A6778;border:none;border-radius:8px;padding:10px;
+               font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Pretendard',sans-serif;">취소</button>
+    </div>
+  </div>
+</div>
+
 <!-- 현장예약 마감 모달 -->
 <div id="walkBlockModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
      z-index:999;align-items:center;justify-content:center;">
@@ -606,14 +616,14 @@ function setModeBanner(state) {
       '</div>'+
       '<div>'+
         '<button class="btn-mode-action" onclick="openAdvanceSessionModal()" style="background:rgba(255,165,0,.25);border-color:rgba(255,165,0,.6);">다음 세션 →</button>'+
-        '<button class="btn-mode-action" onclick="goScreen(\'scr-mode\')">모드 변경</button>'+
+        '<button class="btn-mode-action" onclick="openModeChangePwModal()">모드 변경</button>'+
         '<button class="btn-mode-action" onclick="doLogout()">로그아웃</button>'+
       '</div>';
   } else if (state === 'gi') {
     b.className='mode-banner staff';
     b.innerHTML='<div class="mode-label">🎁 기념품 수령 모드</div>'+
       '<div>'+
-        '<button class="btn-mode-action" onclick="goScreen(\'scr-mode\')">모드 변경</button>'+
+        '<button class="btn-mode-action" onclick="openModeChangePwModal()">모드 변경</button>'+
         '<button class="btn-mode-action" onclick="doLogout()">로그아웃</button>'+
       '</div>';
   } else if (state === 'student') {
@@ -747,14 +757,8 @@ function ciUpdateTypeButtons(cur) {
 
 function ciRenderWalkStatus(data) {
   _walkIsFull=data.isFull;
-  var pct=Math.round(data.walkCount/data.walkCapacity*100);
-  document.getElementById('ci-walkRemaining').textContent=data.isFull?'마감':data.walkCount+'명';
-  document.getElementById('ci-walkRemaining').className='ws-count'+(data.isFull?' warn':'');
-  document.getElementById('ci-walkSub').textContent=data.isBlocked?'수동 마감 처리됨':'현장 입장 인원';
-  document.getElementById('ci-walkBar').style.width=pct+'%';
-  document.getElementById('ci-walkBar').className='ws-bar-fill'+(data.isFull?' warn':'');
-  document.getElementById('ci-walkStatusBox').className='walkin-status'+(data.isFull?' full':'');
-  document.getElementById('ci-walkFullBanner').style.display=data.isFull?'block':'none';
+  var banner=document.getElementById('ci-walkFullBanner');
+  if (banner) banner.style.display=data.isFull?'block':'none';
   var walkBtn=document.getElementById('typeWalkBtn');
   var walkSub=document.getElementById('ci-walkBtnSub');
   if (data.isFull) { walkBtn.classList.add('disabled-btn'); walkSub.textContent='마감되었습니다'; }
@@ -854,6 +858,29 @@ function openWalkBlockModal() {
   document.getElementById('walkBlockPw').value=window._adminPw||'';
   document.getElementById('walkBlockMsg').textContent='';
   document.getElementById('walkBlockModal').style.display='flex';
+}
+function openModeChangePwModal() {
+  document.getElementById('modeChangePwInput').value='';
+  document.getElementById('modeChangePwMsg').textContent='';
+  document.getElementById('modeChangePwModal').style.display='flex';
+  setTimeout(function(){ document.getElementById('modeChangePwInput').focus(); },100);
+}
+function confirmModeChangePw() {
+  var pw=document.getElementById('modeChangePwInput').value.trim();
+  if (!pw){ document.getElementById('modeChangePwMsg').textContent='비밀번호를 입력하세요.'; return; }
+  google.script.run
+    .withSuccessHandler(function(ok){
+      if (ok) {
+        document.getElementById('modeChangePwModal').style.display='none';
+        goScreen('scr-mode');
+      } else {
+        document.getElementById('modeChangePwMsg').textContent='비밀번호가 틀렸습니다.';
+        document.getElementById('modeChangePwInput').value='';
+        document.getElementById('modeChangePwInput').focus();
+      }
+    })
+    .withFailureHandler(function(){ document.getElementById('modeChangePwMsg').textContent='오류가 발생했습니다.'; })
+    .verifyAdminPassword(pw);
 }
 function closeWalkBlockModal(){ document.getElementById('walkBlockModal').style.display='none'; }
 function confirmWalkBlock() {
@@ -1008,6 +1035,66 @@ function onWalkICCheck(chk) {
   }
 }
 
+var _walkSidDebounce=null, _walkSidValid=true;
+function onWalkSidInput(sid) {
+  var st=document.getElementById('walkSidStatus');
+  var btn=document.getElementById('btnWalkCheckin');
+  if (_walkSidDebounce) clearTimeout(_walkSidDebounce);
+  if (sid.length<10){ st.innerHTML=''; _walkSidValid=true; btn.disabled=false; return; }
+  st.innerHTML='<div class="loading-inline"><div class="spinner"></div>조회 중...</div>';
+  btn.disabled=true;
+  _walkSidDebounce=setTimeout(function(){
+    google.script.run
+      .withSuccessHandler(function(d){
+        // 이미 체크인
+        if (d.checkIn) {
+          _walkSidValid=false;
+          st.innerHTML='<div class="result-card already" style="margin:0;">⚠️ <strong>'+esc(d.checkIn.name)+'</strong>님은 이미 체크인됨 ('+fmtTime(d.checkIn.checkedAt)+')</div>';
+          btn.disabled=true; return;
+        }
+        // 사전예약자
+        if (d.preData || (d.fsData)) {
+          var pd = d.preData || d.fsData;
+          _walkSidValid=false;
+          var sessHtml=(pd.sessions||[]).map(function(s){return '<span class="sess-badge">'+esc(s)+'</span>';}).join('');
+          st.innerHTML='<div class="result-card found" style="margin:0;">📋 <strong>'+esc(pd.name)+'</strong>님은 <u>사전예약자</u>입니다.'+
+            (sessHtml?'<div class="sess-badges" style="margin-top:4px;">'+sessHtml+'</div>':'')+
+            '</div>'+
+            '<button class="btn-main green" style="margin-top:6px;padding:8px;" onclick="switchToPreCheckin(\''+esc(sid)+'\','+esc(JSON.stringify(pd))+')">📋 사전예약 체크인으로 전환</button>';
+          btn.disabled=true; return;
+        }
+        // Sheets에 없으면 Firestore 확인
+        if (!d.preData) {
+          getPreDataFromFirestore(sid).then(function(fsData){
+            if (fsData) {
+              _walkSidValid=false;
+              var sessHtml2=(fsData.sessions||[]).map(function(s){return '<span class="sess-badge">'+esc(s)+'</span>';}).join('');
+              st.innerHTML='<div class="result-card found" style="margin:0;">📋 <strong>'+esc(fsData.name)+'</strong>님은 <u>사전예약자</u>입니다.'+
+                (sessHtml2?'<div class="sess-badges" style="margin-top:4px;">'+sessHtml2+'</div>':'')+
+                '</div>'+
+                '<button class="btn-main green" style="margin-top:6px;padding:8px;" onclick="switchToPreCheckin(\''+esc(sid)+'\','+esc(JSON.stringify(fsData))+')">📋 사전예약 체크인으로 전환</button>';
+              btn.disabled=true;
+            } else {
+              _walkSidValid=true; st.innerHTML=''; btn.disabled=false;
+            }
+          });
+          return;
+        }
+        _walkSidValid=true; st.innerHTML=''; btn.disabled=false;
+      })
+      .withFailureHandler(function(){ _walkSidValid=true; st.innerHTML=''; btn.disabled=false; })
+      .getPreCheckinData(sid);
+  },400);
+}
+
+function switchToPreCheckin(sid, preData) {
+  goScreen('scr-ci-pre');
+  var inp=document.getElementById('preSid');
+  inp.value=sid;
+  var area=document.getElementById('preResultArea');
+  ciRenderPreResult(sid, null, preData, area);
+}
+
 function doWalkCheckin() {
   var sid=document.getElementById('walkSid').value.trim();
   var name=document.getElementById('walkName').value.trim();
@@ -1015,6 +1102,7 @@ function doWalkCheckin() {
   var phone=document.getElementById('walkPhone').value.trim();
   var eid=document.getElementById('walkEmail').value.trim();
   if (!/^\d{10}$/.test(sid)){ alert('학번은 숫자 10자리여야 합니다.'); return; }
+  if (!_walkSidValid){ alert('학번 조회 결과를 확인해주세요.'); return; }
   if (!name){ alert('성명을 입력해주세요.'); return; }
   if (!dept){ alert('학과를 입력해주세요.'); return; }
   if (!eid){ alert('한양 이메일 ID를 입력해주세요.'); return; }
@@ -1061,6 +1149,9 @@ function clearWalkForm() {
   var icChk=document.getElementById('walkIsIC'); if(icChk) icChk.checked=false;
   var deptEl=document.getElementById('walkDept'); if(deptEl){ deptEl.readOnly=false; deptEl.style.background=''; deptEl.style.color=''; }
   var priv=document.getElementById('walkPrivacy'); if(priv) priv.checked=false;
+  var st=document.getElementById('walkSidStatus'); if(st) st.innerHTML='';
+  var btn=document.getElementById('btnWalkCheckin'); if(btn) btn.disabled=false;
+  _walkSidValid=true;
 }
 
 // ══════════════════════════════════════════════

@@ -247,6 +247,114 @@ function doGet(e) {
 
 
 // ─────────────────────────────────────────────
+// doPost: index.html → GAS 예약 데이터 수신
+// Sheets 기록 + 메일 발송
+// ─────────────────────────────────────────────
+function doPost(e) {
+  var result = { ok: false };
+  try {
+    var payload = JSON.parse(e.postData.contents);
+    var action  = payload.action; // 'reserve' | 'cancel' | 'change'
+    var ss      = SpreadsheetApp.getActiveSpreadsheet();
+    var now     = new Date();
+
+    if (action === 'reserve' || action === 'change') {
+      var name    = payload.name    || '';
+      var sid     = payload.studentId || '';
+      var dept    = payload.dept    || '';
+      var email   = payload.email   || ''; // 이미 @hanyang.ac.kr 포함
+      var phone   = payload.phone   || '';
+      var sessions  = payload.sessions  || []; // ['설명회명', ...]
+      var booths    = payload.booths    || []; // [{program, time, memo}]
+
+      // ── SessionPreReg 시트에 기록 ──
+      var sessSheet = _getOrCreateSheet(ss, 'SessionPreReg', ['이름','학번','학과','연락처','이메일','설명회명','등록일시']);
+      var existSessKeys = {};
+      if (sessSheet.getLastRow() > 1) {
+        sessSheet.getDataRange().getValues().slice(1).forEach(function(r) {
+          existSessKeys[r[1].toString().trim() + '|' + r[5].toString().trim()] = true;
+        });
+      }
+      sessions.forEach(function(sessName) {
+        var key = sid + '|' + sessName;
+        if (!existSessKeys[key]) {
+          sessSheet.appendRow([name, sid, dept, phone, email, sessName, now]);
+          existSessKeys[key] = true;
+        }
+      });
+
+      // ── BoothReservations 시트에 기록 ──
+      var boothSheet = _getOrCreateSheet(ss, 'BoothReservations', ['이름','학번','학과','이메일','연락처','프로그램','시간','문의내용','서명','상태','코멘트','예약일시']);
+      var existBoothKeys = {};
+      if (boothSheet.getLastRow() > 1) {
+        boothSheet.getDataRange().getValues().slice(1).forEach(function(r) {
+          var st = r[9] ? r[9].toString().trim() : '';
+          if (st !== '취소') existBoothKeys[r[1].toString().trim() + '|' + r[5].toString().trim()] = true;
+        });
+      }
+      booths.forEach(function(b) {
+        var key = sid + '|' + b.program;
+        if (!existBoothKeys[key]) {
+          boothSheet.appendRow([name, sid, dept, email, phone, b.program, b.time, b.memo||'', '', '예약완료', '', now]);
+          existBoothKeys[key] = true;
+        }
+      });
+
+      // ── 확인 메일 발송 ──
+      if (email) {
+        var hasLdc = booths.some(function(b){ return b.program === '라이프디자인센터'; });
+        var boothsForMail = booths.map(function(b){ return {program: b.program, time: b.time}; });
+        try {
+          if (action === 'change') sendChangeMail(email, name, sessions, boothsForMail, hasLdc);
+          else                     sendConfirmMail(email, name, sessions, boothsForMail, hasLdc);
+        } catch(mailErr) { Logger.log('메일 오류: ' + mailErr.message); }
+      }
+
+    } else if (action === 'cancel') {
+      var sid2     = payload.studentId || '';
+      var email2   = payload.email     || '';
+      var name2    = payload.name      || '';
+      var cBooths  = payload.booths    || [];
+      var cSessions= payload.sessions  || [];
+
+      // BoothReservations → 상태 '취소' 처리
+      var bSheet = ss.getSheetByName('BoothReservations');
+      if (bSheet && bSheet.getLastRow() > 1) {
+        var bRows = bSheet.getDataRange().getValues();
+        for (var i = 1; i < bRows.length; i++) {
+          if (bRows[i][1].toString().trim() !== sid2) continue;
+          var bProg = bRows[i][5].toString().trim();
+          if (cBooths.some(function(b){ return b.program === bProg; })) {
+            bSheet.getRange(i+1, 10).setValue('취소');
+          }
+        }
+      }
+      // SessionPreReg → 행 삭제
+      var sSheet = ss.getSheetByName('SessionPreReg');
+      if (sSheet && sSheet.getLastRow() > 1) {
+        var sRows = sSheet.getDataRange().getValues();
+        for (var j = sRows.length - 1; j >= 1; j--) {
+          if (sRows[j][1].toString().trim() !== sid2) continue;
+          var sName = sRows[j][5].toString().trim();
+          if (cSessions.indexOf(sName) !== -1) sSheet.deleteRow(j+1);
+        }
+      }
+      // 취소 메일
+      if (email2) {
+        try { sendCancelMail(email2, name2, cBooths, cSessions); } catch(e2) {}
+      }
+    }
+
+    result.ok = true;
+  } catch(err) {
+    result.error = err.message;
+    Logger.log('doPost 오류: ' + err.message);
+  }
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ─────────────────────────────────────────────
 // 초기 데이터 (설명회 선착순 현황 포함)
 // ─────────────────────────────────────────────
 function getInitialData() {
@@ -356,6 +464,20 @@ function getCheckinPageData() {
 // ─────────────────────────────────────────────
 // 당일방문 수동 마감/해제 (admin용)
 // ─────────────────────────────────────────────
+// 모드 변경 비밀번호 검증 (AdminUsers 시트의 어떤 계정이든 일치하면 허용)
+function verifyAdminPassword(password) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();
+    for (var i = 1; i < admins.length; i++) {
+      if (admins[i][3] && admins[i][3].toString().trim() === password.toString().trim()) {
+        return true;
+      }
+    }
+    return false;
+  } catch(e) { return false; }
+}
+
 function setWalkInBlock(password, block) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();
@@ -469,29 +591,12 @@ function checkInStudent(data) {
     // CheckIns에 참석설명회별 1행씩 저장
     var sessionsToRecord = [];
     if (data.type === 'pre') {
-      try {
-        var sessSheet = ss.getSheetByName('SessionPreReg');
-        if (sessSheet && sessSheet.getLastRow() > 1) {
-          var sRows = sessSheet.getDataRange().getValues();
-          for (var k = 1; k < sRows.length; k++) {
-            if (sRows[k][1].toString().trim() === sid) {
-              sessionsToRecord.push(sRows[k][5].toString().trim());
-            }
-          }
-        }
-      } catch(e) {}
-      // Sheets에 없는 학생(Firestore 등록자)은 클라이언트가 전달한 programs 사용
-      if (sessionsToRecord.length === 0 && data.programs && data.programs.length) {
-        sessionsToRecord = data.programs.map(function(p){ return p.toString().trim(); });
-      }
+      // 사전예약자도 체크인 시점 세션부터 나머지 전체 기록 (당일방문과 동일)
       var curIdx3 = checkinableSession.idx;
       var _sched = _getSessionSchedule();
-      sessionsToRecord = sessionsToRecord.filter(function(sessName) {
-        for (var si = 0; si < _sched.length; si++) {
-          if (_sched[si].name === sessName) return si >= curIdx3;
-        }
-        return false;
-      });
+      for (var si = curIdx3; si < _sched.length; si++) {
+        sessionsToRecord.push(_sched[si].name);
+      }
     } else {
       var _sched2 = _getSessionSchedule();
       var curIdxW = checkinableSession.idx;
@@ -1591,7 +1696,7 @@ function sendConfirmMail(toEmail, name, sessions, reservations, hasLdcTest) {
   var boothRows='';
   if (reservations&&reservations.length) reservations.forEach(function(r){ boothRows+='<tr><td style="padding:8px 14px;border-bottom:1px solid #EAECEF;">'+r.program+'</td><td style="padding:8px 14px;border-bottom:1px solid #EAECEF;color:#5A6778;">'+r.time+'</td></tr>'; });
   var ldcNotice=hasLdcTest?'<div style="margin:16px 0;padding:12px 16px;background:#EBF4FF;border-left:4px solid #2B6CB0;border-radius:6px;font-size:14px;color:#2B6CB0;">[진로적성검사] <strong>응시 희망</strong>으로 등록되었습니다.<br>예약하신 상담 시간보다 <strong>15분 일찍</strong> 라이프디자인센터 부스에 도착해 주세요.</div>':'';
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#F4F7F9;font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',sans-serif;"><div style="max-width:600px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);"><div style="background:#1B263B;padding:28px 32px;text-align:center;"><div style="color:#fff;font-size:11px;letter-spacing:0.1em;margin-bottom:6px;opacity:0.7;">HANYANG YK INTERCOLLEGE</div><div style="color:#fff;font-size:20px;font-weight:800;">2026 융합전공 소개행사</div><div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:4px;">예약 확인 안내</div></div><div style="padding:28px 32px 0;"><p style="font-size:15px;color:#1B263B;margin:0 0 6px;"><strong>'+name+'</strong>님, 안녕하세요!</p><p style="font-size:14px;color:#5A6778;margin:0 0 20px;line-height:1.7;">2026 융합전공 소개행사 예약이 완료되었습니다.</p><div style="background:#F8FAFC;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#5A6778;line-height:1.8;"><strong style="color:#1B263B;">일시</strong> &nbsp; 2026. 5. 8.(금) 09:30 ~ 17:00<br><strong style="color:#1B263B;">장소</strong> &nbsp; 한양종합기술원(HIT) 1층 양민용 커리어라운지</div>'+(sessRows?'<p style="font-size:13px;font-weight:700;color:#1B263B;margin:0 0 8px;">참여 설명회</p><table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #EAECEF;border-radius:8px;overflow:hidden;margin-bottom:20px;"><thead><tr style="background:#F0F4F8;"><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">프로그램</th><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">시간</th></tr></thead><tbody>'+sessRows+'</tbody></table>':'')+(boothRows?'<p style="font-size:13px;font-weight:700;color:#1B263B;margin:0 0 8px;">부스 상담 예약</p><table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #EAECEF;border-radius:8px;overflow:hidden;margin-bottom:20px;"><thead><tr style="background:#F0F4F8;"><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">프로그램</th><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">시간</th></tr></thead><tbody>'+boothRows+'</tbody></table>':'')+ldcNotice+'<div style="margin:16px 0;text-align:center;"><a href="https://tinyurl.com/hicmajors-booking" style="display:inline-block;background:#1B263B;color:#fff;font-size:14px;font-weight:700;padding:12px 32px;border-radius:8px;text-decoration:none;">예약 신청 및 확인 / 변경</a><p style="font-size:12px;color:#C53030;font-weight:600;margin:10px 0 0;">※ 예약 취소 및 변경은 위 버튼을 통해 웹페이지에서만 가능합니다.</p></div></div><div style="padding:20px 32px;border-top:1px solid #EAECEF;margin-top:20px;text-align:center;font-size:11px;color:#9AA5B4;">본 메일은 발신 전용입니다.</div></div></body></html>';
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#F4F7F9;font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',sans-serif;"><div style="max-width:600px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);"><div style="background:#1B263B;padding:28px 32px;text-align:center;"><div style="color:#fff;font-size:11px;letter-spacing:0.1em;margin-bottom:6px;opacity:0.7;">HANYANG YK INTERCOLLEGE</div><div style="color:#fff;font-size:20px;font-weight:800;">2026 융합전공 소개행사</div><div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:4px;">예약 확인 안내</div></div><div style="padding:28px 32px 0;"><p style="font-size:15px;color:#1B263B;margin:0 0 6px;"><strong>'+name+'</strong>님, 안녕하세요!</p><p style="font-size:14px;color:#5A6778;margin:0 0 20px;line-height:1.7;">2026 융합전공 소개행사 예약이 완료되었습니다.</p><div style="background:#F8FAFC;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#5A6778;line-height:1.8;"><strong style="color:#1B263B;">일시</strong> &nbsp; 2026. 5. 8.(금) 09:30 ~ 17:00<br><strong style="color:#1B263B;">장소</strong> &nbsp; 한양종합기술원(HIT) 1층 양민용 커리어라운지</div>'+(sessRows?'<p style="font-size:13px;font-weight:700;color:#1B263B;margin:0 0 8px;">참여 설명회</p><table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #EAECEF;border-radius:8px;overflow:hidden;margin-bottom:20px;"><thead><tr style="background:#F0F4F8;"><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">프로그램</th><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">시간</th></tr></thead><tbody>'+sessRows+'</tbody></table>':'')+(boothRows?'<p style="font-size:13px;font-weight:700;color:#1B263B;margin:0 0 8px;">부스 상담 예약</p><table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #EAECEF;border-radius:8px;overflow:hidden;margin-bottom:20px;"><thead><tr style="background:#F0F4F8;"><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">프로그램</th><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">시간</th></tr></thead><tbody>'+boothRows+'</tbody></table>':'')+ldcNotice+'<div style="margin:16px 0;text-align:center;"><a href="https://tinyurl.com/hicmajors" style="display:inline-block;background:#1B263B;color:#fff;font-size:14px;font-weight:700;padding:12px 32px;border-radius:8px;text-decoration:none;">예약 신청 및 확인 / 변경</a><p style="font-size:12px;color:#C53030;font-weight:600;margin:10px 0 0;">※ 예약 취소 및 변경은 위 버튼을 통해 웹페이지에서만 가능합니다.</p></div></div><div style="padding:20px 32px;border-top:1px solid #EAECEF;margin-top:20px;text-align:center;font-size:11px;color:#9AA5B4;">본 메일은 발신 전용입니다.</div></div></body></html>';
   GmailApp.sendEmail(toEmail, subject, '', { htmlBody:html, replyTo:SENDER, name:'한양YK인터칼리지' });
 }
 

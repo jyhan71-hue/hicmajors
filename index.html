@@ -304,7 +304,20 @@ const firebaseConfig = {
 };
 
 // ─── GAS 웹앱 URL ────────────────────────────────────────────────
-const GAS_CONFIG_URL = 'https://script.google.com/macros/s/AKfycbxFZIxpeUyl_nLcBAWXToTi5LDTaW1eIGaXHuFP2aHTZFCeUdHhWKLFC7-ryl1tTaXwMQ/exec?page=config';
+const GAS_CONFIG_URL  = 'https://script.google.com/macros/s/AKfycbxFZIxpeUyl_nLcBAWXToTi5LDTaW1eIGaXHuFP2aHTZFCeUdHhWKLFC7-ryl1tTaXwMQ/exec?page=config';
+const GAS_POST_URL    = 'https://script.google.com/macros/s/AKfycbxFZIxpeUyl_nLcBAWXToTi5LDTaW1eIGaXHuFP2aHTZFCeUdHhWKLFC7-ryl1tTaXwMQ/exec';
+
+// Firestore 저장 후 GAS에 데이터 push (Sheets 기록 + 메일 발송)
+async function gasNotify(payload) {
+  try {
+    await fetch(GAS_POST_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch(e) { console.warn('GAS notify 실패 (무시):', e.message); }
+}
 
 // ─── 설정값 (GAS API 로드 전 기본값) ────────────────────────────
 let SITE_CONFIG = {
@@ -776,6 +789,13 @@ window.cancelAllReservations = async function() {
       if(!s.docId) continue;
       await db.collection('sessionPreReg').doc(s.docId).delete();
     }
+    gasNotify({action:'cancel',
+      name: _pendingEditData.name||'',
+      studentId: _pendingEditSid,
+      email: (_pendingEditData.email||'')+'@hanyang.ac.kr',
+      booths: (_pendingEditData.booths||[]).map(b=>({program:b.program})),
+      sessions: (_pendingEditData.sessions||[]).map(s=>s.time||'')
+    });
     alert('예약이 취소되었습니다.');
     clearMainSearch();
     resetPage();
@@ -842,6 +862,7 @@ async function submitSessionOnly(data) {
       signature:data.signature, createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
   }
+  gasNotify({action:'reserve', name:data.name, studentId:data.studentId, dept:data.dept, email, phone:data.phone, sessions:added, booths:[]});
   return added.length+'개 설명회 참여 등록이 완료되었습니다.';
 }
 
@@ -926,15 +947,64 @@ async function submitReservation(data) {
   const parts=[];
   if(sc>0)parts.push('설명회 '+sc+'개');
   if(bc>0)parts.push('부스 상담 '+bc+'개');
+  gasNotify({action:'reserve', name:data.name, studentId:sid, dept:data.dept, email, phone:data.phone,
+    sessions:data.sessions||[], booths:(data.reservations||[]).map(r=>({program:r.program,time:r.time,memo:r.memo||''}))});
   return parts.join(', ')+' 예약이 완료되었습니다.';
 }
 
 // ─── Firestore: 예약 변경 ─────────────────────────────────────────
 async function changeReservation(data) {
   const sid=data.studentId;
+  const email=data.email+'@hanyang.ac.kr';
+  const newBooths=data.newBooths||[];
+
   if(!data.newSessions?.length) throw new Error('설명회를 1개 이상 선택해야 합니다.');
 
-  // 기존 삭제
+  // ── 규칙4: LDC는 한양인터칼리지학부만 ──
+  for(const b of newBooths){
+    if(b.program==='라이프디자인센터'&&data.dept!==INTERCOLLEGE_DEPT)
+      throw new Error('라이프디자인센터 부스는 한양인터칼리지학부 재학생만 예약 가능합니다.');
+  }
+
+  // ── 규칙1: 동일 부스 중복 선택 ──
+  const progSet=new Set();
+  for(const b of newBooths){
+    if(progSet.has(b.program)) throw new Error(`[${b.program}] 동일 프로그램을 중복 선택했습니다.`);
+    progSet.add(b.program);
+  }
+
+  // ── 규칙3: 새 부스들끼리 시간 겹침 ──
+  for(let i=0;i<newBooths.length;i++){
+    for(let j=i+1;j<newBooths.length;j++){
+      if(timesOverlap(newBooths[i].time,15,newBooths[j].time,15))
+        throw new Error(`[${newBooths[i].program} / ${newBooths[j].program}] 선택한 시간대가 서로 겹칩니다.`);
+    }
+  }
+
+  // ── 규칙5: 설명회 중복 선택 + 선착순 확인 ──
+  const sessSet=new Set();
+  for(const sessName of data.newSessions){
+    if(sessSet.has(sessName)) throw new Error(`[${sessName}] 동일 설명회를 중복 선택했습니다.`);
+    sessSet.add(sessName);
+    const cntSnap=await db.collection('sessionPreReg').where('sessionName','==',sessName).get();
+    let cnt=0;
+    cntSnap.forEach(d=>{if(d.data().studentId!==sid) cnt++;});
+    if(cnt>=SITE_CONFIG.sessionCapacity) throw new Error(`[${sessName}] 설명회 예약이 마감되었습니다.`);
+  }
+
+  // ── 부스 슬롯 선착순 확인 (자신의 기존 예약 제외) ──
+  for(const b of newBooths){
+    const slotSnap=await db.collection('boothReservations').where('program','==',b.program).where('time','==',b.time).get();
+    let taken=0;
+    slotSnap.forEach(d=>{
+      if(d.data().studentId===sid) return;
+      const st=d.data().status||'';
+      if(st!==''&&st!=='취소'&&st!=='상담취소'&&st!=='상담완료') taken++;
+    });
+    if(taken>0) throw new Error(`[${b.program}] ${b.time} 시간은 이미 마감되었습니다.`);
+  }
+
+  // ── 검증 통과 후 기존 삭제 ──
   for(const item of (data.oldBoothDocIds||[])){
     try{ await db.collection('boothReservations').doc(item.docId).delete(); }catch(e){}
   }
@@ -942,18 +1012,16 @@ async function changeReservation(data) {
     try{ await db.collection('sessionPreReg').doc(item.docId).delete(); }catch(e){}
   }
 
-  const email=data.email+'@hanyang.ac.kr';
   const ts=firebase.firestore.FieldValue.serverTimestamp();
 
-  // 삭제 후 재검증: 같은 학번의 활성 부스예약 재조회하여 중복/겹침 방지
-  if(data.newBooths&&data.newBooths.length){
+  // ── 삭제 후 재검증 (race condition 방지) ──
+  if(newBooths.length){
     const reCheckSnap=await db.collection('boothReservations').where('studentId','==',sid).get();
     const activeBooth=[];
     reCheckSnap.forEach(d=>{const r=d.data(),st=r.status||'';if(st!==''&&st!=='취소'&&st!=='상담취소')activeBooth.push({program:r.program,time:r.time});});
-    for(const b of data.newBooths){
-      const prog=b.program,timeVal=b.time;
-      if(activeBooth.some(a=>a.program===prog))throw new Error('['+prog+'] 이미 예약하신 부스입니다.');
-      if(activeBooth.some(a=>timesOverlap(timeVal,15,a.time,15)))throw new Error('['+prog+'] 선택한 시간이 기존 예약과 겹칩니다.');
+    for(const b of newBooths){
+      if(activeBooth.some(a=>a.program===b.program))throw new Error('['+b.program+'] 이미 예약하신 부스입니다.');
+      if(activeBooth.some(a=>timesOverlap(b.time,15,a.time,15)))throw new Error('['+b.program+'] 선택한 시간이 기존 예약과 겹칩니다.');
     }
   }
 
@@ -971,6 +1039,8 @@ async function changeReservation(data) {
       sessionName:sessName,createdAt:ts
     });
   }
+  gasNotify({action:'change', name:data.name, studentId:sid, dept:data.dept, email, phone:data.phone,
+    sessions:data.newSessions||[], booths:(data.newBooths||[]).map(b=>({program:b.program,time:b.time,memo:b.memo||''}))});
   return '변경이 완료되었습니다.';
 }
 
