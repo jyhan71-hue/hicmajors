@@ -250,9 +250,9 @@ function doGet(e) {
 // 테스트: GAS 편집기에서 직접 실행 → 메일 발송 + doPost 시뮬레이션 확인
 // ─────────────────────────────────────────────
 function testMailAndPost() {
+  var me = Session.getEffectiveUser().getEmail();
   // 1) 메일 발송 테스트
   try {
-    var me = Session.getActiveUser().getEmail();
     GmailApp.sendEmail(me, '[테스트] GAS 메일 발송 확인', '이 메일이 오면 GmailApp 정상 작동 중입니다.');
     Logger.log('메일 발송 성공: ' + me);
   } catch(e) {
@@ -263,7 +263,7 @@ function testMailAndPost() {
     var dummy = {
       action: 'change',
       name: '테스트', studentId: '0000000000', dept: '한양인터칼리지학부',
-      email: Session.getActiveUser().getEmail(),
+      email: me,
       phone: '010-0000-0000', sessions: [], booths: []
     };
     var fakeE = { postData: { contents: JSON.stringify(dummy) } };
@@ -1798,30 +1798,36 @@ function sendChangeMail(toEmail, name, sessions, reservations, hasLdcTest) {
   GmailApp.sendEmail(toEmail, subject, '', { htmlBody:html, replyTo:SENDER, name:'한양YK인터칼리지' });
 }
 
-// ─── 불필요한 트리거 전체 정리 ──────────────────────────────────
-// GAS 편집기에서 수동 실행: 남은 autoSyncFirebaseToSheets 트리거 삭제
-function cleanupAllTriggers() {
+// ─── 트리거 전체 초기화 (불필요한 것 제거 + 필요한 것 복구) ──────────
+// GAS 편집기에서 fixAllTriggers() 한 번만 실행하면 됨
+function fixAllTriggers() {
+  // 1. 모든 트리거 제거
+  ScriptApp.getProjectTriggers().forEach(function(t) { ScriptApp.deleteTrigger(t); });
+
+  // 2. warmup 트리거 등록 (30분마다 콜드스타트 방지, 행사 후 자동 삭제)
+  ScriptApp.newTrigger('warmup').timeBased().everyMinutes(30).create();
+
+  // 3. 리마인드 메일 트리거 등록 (2026-05-07 09:00 KST 1회 발송)
+  ScriptApp.newTrigger('sendRemindMails').timeBased().at(new Date('2026-05-07T09:00:00+09:00')).create();
+
+  Logger.log('트리거 설정 완료: warmup(30분), sendRemindMails(2026-05-07 09:00)');
+  Logger.log('제거된 불필요 트리거: autoSyncFirebaseToSheets, syncFirestoreToSheets');
+}
+
+// ─── Firestore → Sheets 1분 트리거 동기화 (폐기됨 — Firebase IAM 403 오류) ──
+// 현재 아키텍처: doPost 방식 사용, 이 트리거는 사용하지 않음
+function removeSyncTrigger() {
   var removed = [];
   ScriptApp.getProjectTriggers().forEach(function(t) {
-    var fn = t.getHandlerFunction();
-    if (fn === 'autoSyncFirebaseToSheets' || fn === 'syncFirestoreToSheets') {
+    if (t.getHandlerFunction() === 'syncFirestoreToSheets') {
       ScriptApp.deleteTrigger(t);
-      removed.push(fn);
+      removed.push('syncFirestoreToSheets');
     }
   });
   Logger.log('삭제된 트리거: ' + (removed.length ? removed.join(', ') : '없음'));
 }
-
-// ─── Firestore → Sheets 1분 트리거 동기화 ────────────────────────
-// GAS 편집기에서 최초 1회 setupSyncTrigger() 실행하여 트리거 등록
 function setupSyncTrigger() {
-  // 기존 syncFirestoreToSheets 트리거 제거 후 재등록
-  ScriptApp.getProjectTriggers().forEach(function(t) {
-    if (t.getHandlerFunction() === 'syncFirestoreToSheets') ScriptApp.deleteTrigger(t);
-  });
-  ScriptApp.newTrigger('syncFirestoreToSheets')
-    .timeBased().everyMinutes(1).create();
-  Logger.log('트리거 등록 완료: syncFirestoreToSheets (1분마다)');
+  Logger.log('이 함수는 사용하지 않습니다. 현재 아키텍처는 doPost 방식입니다.');
 }
 
 function syncFirestoreToSheets() {

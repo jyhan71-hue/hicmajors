@@ -311,23 +311,22 @@ const GAS_POST_URL    = 'https://script.google.com/macros/s/AKfycbwpA2kcwjN53DEg
 function gasNotify(payload) {
   const body = JSON.stringify(payload);
   console.log('[GAS] 알림 전송:', payload.action, payload.email || '');
-  // sendBeacon: CORS 없이 신뢰성 있게 POST 전송 (text/plain Blob)
-  if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-    const blob = new Blob([body], { type: 'text/plain;charset=UTF-8' });
-    const ok = navigator.sendBeacon(GAS_POST_URL, blob);
-    console.log('[GAS] sendBeacon 결과:', ok);
-    if (ok) return;
-  }
-  // fallback: fetch (no-cors + text/plain)
+  // fetch로 POST 전송 (GAS ANYONE_ANONYMOUS는 CORS 허용)
   fetch(GAS_POST_URL, {
     method: 'POST',
-    mode: 'no-cors',
     headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
     body: body
-  }).then(function() {
-    console.log('[GAS] fetch 전송 완료');
+  }).then(function(r) {
+    return r.text();
+  }).then(function(t) {
+    console.log('[GAS] 응답:', t);
   }).catch(function(e) {
-    console.warn('[GAS] fetch 실패:', e.message);
+    // CORS 오류 등: sendBeacon 폴백
+    console.warn('[GAS] fetch 실패, sendBeacon 시도:', e.message);
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      const blob = new Blob([body], { type: 'text/plain;charset=UTF-8' });
+      console.log('[GAS] sendBeacon 결과:', navigator.sendBeacon(GAS_POST_URL, blob));
+    }
   });
 }
 
