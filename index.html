@@ -308,17 +308,27 @@ const GAS_CONFIG_URL  = 'https://script.google.com/macros/s/AKfycbxFZIxpeUyl_nLc
 const GAS_POST_URL    = 'https://script.google.com/macros/s/AKfycbxFZIxpeUyl_nLcBAWXToTi5LDTaW1eIGaXHuFP2aHTZFCeUdHhWKLFC7-ryl1tTaXwMQ/exec';
 
 // Firestore 저장 후 GAS에 데이터 push (Sheets 기록 + 메일 발송)
-// no-cors 모드에서는 Content-Type을 text/plain만 허용 (application/json 쓰면 TypeError 발생)
-// GAS는 e.postData.contents로 body 문자열을 그대로 받으므로 JSON.parse는 정상 작동
-async function gasNotify(payload) {
-  try {
-    await fetch(GAS_POST_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify(payload)
-    });
-  } catch(e) { console.warn('GAS notify 실패:', e.message); }
+function gasNotify(payload) {
+  const body = JSON.stringify(payload);
+  console.log('[GAS] 알림 전송:', payload.action, payload.email || '');
+  // sendBeacon: CORS 없이 신뢰성 있게 POST 전송 (text/plain Blob)
+  if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+    const blob = new Blob([body], { type: 'text/plain;charset=UTF-8' });
+    const ok = navigator.sendBeacon(GAS_POST_URL, blob);
+    console.log('[GAS] sendBeacon 결과:', ok);
+    if (ok) return;
+  }
+  // fallback: fetch (no-cors + text/plain)
+  fetch(GAS_POST_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: body
+  }).then(function() {
+    console.log('[GAS] fetch 전송 완료');
+  }).catch(function(e) {
+    console.warn('[GAS] fetch 실패:', e.message);
+  });
 }
 
 // ─── 설정값 (GAS API 로드 전 기본값) ────────────────────────────
