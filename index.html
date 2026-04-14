@@ -1194,7 +1194,7 @@ window.addEditBoothBlock = async function(prog,rawTime,docId,memo){
         ${allPrograms.map(p=>`<option value="${escHtml(p)}"${p===prog?' selected':''}>${escHtml(p)}</option>`).join('')}
       </select></div>
     <div class="mb-3"><label class="form-label">상담 시간</label>
-      <select class="form-select edit-time-sel"${prog?'':' disabled'}><option value="">프로그램을 먼저 선택하세요</option></select></div>
+      <select class="form-select edit-time-sel" onchange="refreshOtherEditBlockSlots(this)"${prog?'':' disabled'}><option value="">프로그램을 먼저 선택하세요</option></select></div>
     <div class="mb-3"><label class="form-label">문의 내용</label>
       <textarea class="form-control edit-block-memo" rows="2">${escHtml(pureMemo)}</textarea></div>`;
   document.getElementById('editBoothBlocks').appendChild(div);
@@ -1223,11 +1223,46 @@ window.loadEditSlots = async function(sel){
   timeSel.disabled=true;timeSel.innerHTML='<option>불러오는 중...</option>';
   const docId=block.dataset.docId||null;
   try{
-    const slots=await getAvailableSlots(prog,docId);
+    let slots=await getAvailableSlots(prog,docId);
+    // 다른 편집 블록에서 선택된 시간과 겹치는 슬롯 제외
+    const otherTimes=[];
+    document.querySelectorAll('#editBoothBlocks .prog-block').forEach(function(otherBlock){
+      if(otherBlock===block) return;
+      const otherTimeSel=otherBlock.querySelector('.edit-time-sel');
+      if(otherTimeSel&&otherTimeSel.value) otherTimes.push(otherTimeSel.value);
+    });
+    if(otherTimes.length) slots=slots.filter(s=>!otherTimes.some(t=>timesOverlap(s.value,15,t,15)));
     timeSel.innerHTML='<option value="">시간을 선택하세요</option>';
     slots.forEach(s=>timeSel.appendChild(new Option(s.label,s.value)));
     timeSel.disabled=false;
   }catch(e){timeSel.innerHTML='<option>불러오기 실패</option>';}
+};
+
+window.refreshOtherEditBlockSlots = async function(changedTimeSel){
+  const changedBlock=changedTimeSel.closest('.prog-block');
+  const allBlocks=document.querySelectorAll('#editBoothBlocks .prog-block');
+  for(const block of allBlocks){
+    if(block===changedBlock) continue;
+    const progSel=block.querySelector('.edit-prog-sel');
+    const timeSel=block.querySelector('.edit-time-sel');
+    if(!progSel||!progSel.value||!timeSel) continue;
+    const currentVal=timeSel.value;
+    const docId=block.dataset.docId||null;
+    try{
+      let slots=await getAvailableSlots(progSel.value,docId);
+      const otherTimes=[];
+      document.querySelectorAll('#editBoothBlocks .prog-block').forEach(function(otherBlock){
+        if(otherBlock===block) return;
+        const otherTS=otherBlock.querySelector('.edit-time-sel');
+        if(otherTS&&otherTS.value) otherTimes.push(otherTS.value);
+      });
+      if(otherTimes.length) slots=slots.filter(s=>!otherTimes.some(t=>timesOverlap(s.value,15,t,15)));
+      timeSel.innerHTML='<option value="">시간을 선택하세요</option>';
+      slots.forEach(s=>timeSel.appendChild(new Option(s.label,s.value)));
+      if(currentVal&&slots.find(s=>s.value===currentVal)) timeSel.value=currentVal;
+      timeSel.disabled=false;
+    }catch(e){}
+  }
 };
 
 window.submitChange = async function(){
