@@ -1180,7 +1180,31 @@ window.openEditView = function(sid,data) {
 
   panel.style.display='block';
   editBoothCount=0;
-  if(data.booths?.length){data.booths.forEach(b=>addEditBoothBlock(b.program,b.rawTime||b.time,b.docId,b.memo||''));}
+  if(data.booths?.length){
+    (async()=>{
+      // 순차 로드: 각 블록이 완료된 후 다음 블록 로드 (동시 로드 시 타이밍 문제 방지)
+      for(const b of data.booths) await addEditBoothBlock(b.program,b.rawTime||b.time,b.docId,b.memo||'');
+      // 전체 로드 후 블록 간 시간 충돌 필터링 (초기 렌더링 시 적용)
+      const allBlocks=[...document.querySelectorAll('#editBoothBlocks .prog-block')];
+      for(const block of allBlocks){
+        const progSel=block.querySelector('.edit-prog-sel');
+        const timeSel=block.querySelector('.edit-time-sel');
+        if(!progSel||!progSel.value||!timeSel) continue;
+        const rawTime=timeSel.value;
+        const docId=block.dataset.docId||null;
+        try{
+          let slots=await getAvailableSlots(progSel.value,docId);
+          const otherTimes=[];
+          allBlocks.forEach(ob=>{if(ob===block)return;const ots=ob.querySelector('.edit-time-sel');if(ots&&ots.value)otherTimes.push(ots.value);});
+          if(otherTimes.length)slots=slots.filter(s=>!otherTimes.some(t=>timesOverlap(s.value,15,t,15)));
+          if(rawTime&&!slots.find(s=>s.value===rawTime))slots.unshift({value:rawTime,label:rawTime+' ~ '+addMinutes(rawTime,15)+' (현재 예약)'});
+          timeSel.innerHTML='<option value="">시간을 선택하세요</option>';
+          slots.forEach(s=>{const opt=new Option(s.label,s.value);if(s.value===rawTime)opt.selected=true;timeSel.appendChild(opt);});
+          timeSel.disabled=false;
+        }catch(e){}
+      }
+    })();
+  }
 };
 
 window.closeEditPanel = function(){
