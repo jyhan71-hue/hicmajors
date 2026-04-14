@@ -247,12 +247,43 @@ function doGet(e) {
 
 
 // ─────────────────────────────────────────────
+// 테스트: GAS 편집기에서 직접 실행 → 메일 발송 + doPost 시뮬레이션 확인
+// ─────────────────────────────────────────────
+function testMailAndPost() {
+  // 1) 메일 발송 테스트
+  try {
+    var me = Session.getActiveUser().getEmail();
+    GmailApp.sendEmail(me, '[테스트] GAS 메일 발송 확인', '이 메일이 오면 GmailApp 정상 작동 중입니다.');
+    Logger.log('메일 발송 성공: ' + me);
+  } catch(e) {
+    Logger.log('메일 발송 실패: ' + e.message);
+  }
+  // 2) doPost 시뮬레이션 (더미 페이로드)
+  try {
+    var dummy = {
+      action: 'change',
+      name: '테스트', studentId: '0000000000', dept: '한양인터칼리지학부',
+      email: Session.getActiveUser().getEmail(),
+      phone: '010-0000-0000', sessions: [], booths: []
+    };
+    var fakeE = { postData: { contents: JSON.stringify(dummy) } };
+    var res = doPost(fakeE);
+    Logger.log('doPost 시뮬레이션 결과: ' + res.getContent());
+  } catch(e) {
+    Logger.log('doPost 시뮬레이션 실패: ' + e.message);
+  }
+}
+
+// ─────────────────────────────────────────────
 // doPost: index.html → GAS 예약 데이터 수신
 // Sheets 기록 + 메일 발송
 // ─────────────────────────────────────────────
 function doPost(e) {
   var result = { ok: false };
   try {
+    if (!e || !e.postData || !e.postData.contents) {
+      throw new Error('postData 없음 — GET 요청이거나 body 누락');
+    }
     var payload = JSON.parse(e.postData.contents);
     var action  = payload.action; // 'reserve' | 'cancel' | 'change'
     var ss      = SpreadsheetApp.getActiveSpreadsheet();
@@ -1765,6 +1796,20 @@ function sendChangeMail(toEmail, name, sessions, reservations, hasLdcTest) {
   var ldcNotice=hasLdcTest?'<div style="margin:16px 0;padding:12px 16px;background:#EBF4FF;border-left:4px solid #2B6CB0;border-radius:6px;font-size:14px;color:#2B6CB0;">[진로적성검사] <strong>응시 희망</strong>으로 등록되었습니다.<br>예약하신 상담 시간보다 <strong>15분 일찍</strong> 라이프디자인센터 부스에 도착해 주세요.</div>':'';
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#F4F7F9;font-family:\'Apple SD Gothic Neo\',\'Malgun Gothic\',sans-serif;"><div style="max-width:600px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);"><div style="background:#1B263B;padding:28px 32px;text-align:center;"><div style="color:#fff;font-size:11px;letter-spacing:0.1em;margin-bottom:6px;opacity:0.7;">HANYANG YK INTERCOLLEGE</div><div style="color:#fff;font-size:20px;font-weight:800;">2026 융합전공 소개행사</div><div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:4px;">예약 변경 완료 안내</div></div><div style="padding:28px 32px 0;"><p style="font-size:15px;color:#1B263B;margin:0 0 6px;"><strong>'+name+'</strong>님, 안녕하세요!</p><p style="font-size:14px;color:#5A6778;margin:0 0 20px;line-height:1.7;">2026 융합전공 소개행사 예약이 <strong style="color:#1B263B;">변경</strong>되었습니다. 아래 내용을 확인해 주세요.</p><div style="background:#F8FAFC;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#5A6778;line-height:1.8;"><strong style="color:#1B263B;">일시</strong> &nbsp; 2026. 5. 8.(금) 09:30 ~ 17:00<br><strong style="color:#1B263B;">장소</strong> &nbsp; 한양종합기술원(HIT) 1층 양민용 커리어라운지</div>'+(sessRows?'<p style="font-size:13px;font-weight:700;color:#1B263B;margin:0 0 8px;">참여 설명회</p><table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #EAECEF;border-radius:8px;overflow:hidden;margin-bottom:20px;"><thead><tr style="background:#F0F4F8;"><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">프로그램</th><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">시간</th></tr></thead><tbody>'+sessRows+'</tbody></table>':'')+(boothRows?'<p style="font-size:13px;font-weight:700;color:#1B263B;margin:0 0 8px;">부스 상담 예약</p><table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #EAECEF;border-radius:8px;overflow:hidden;margin-bottom:20px;"><thead><tr style="background:#F0F4F8;"><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">프로그램</th><th style="padding:8px 14px;text-align:left;font-weight:600;color:#1B263B;">시간</th></tr></thead><tbody>'+boothRows+'</tbody></table>':'')+ldcNotice+'<div style="margin:16px 0;text-align:center;"><a href="https://tinyurl.com/hicmajors" style="display:inline-block;background:#1B263B;color:#fff;font-size:14px;font-weight:700;padding:12px 32px;border-radius:8px;text-decoration:none;">예약 신청 및 확인 / 변경</a><p style="font-size:12px;color:#C53030;font-weight:600;margin:10px 0 0;">※ 추가 변경 또는 취소는 위 버튼을 통해 웹페이지에서만 가능합니다.</p></div></div><div style="padding:20px 32px;border-top:1px solid #EAECEF;margin-top:20px;text-align:center;font-size:11px;color:#9AA5B4;">본 메일은 발신 전용입니다.</div></div></body></html>';
   GmailApp.sendEmail(toEmail, subject, '', { htmlBody:html, replyTo:SENDER, name:'한양YK인터칼리지' });
+}
+
+// ─── 불필요한 트리거 전체 정리 ──────────────────────────────────
+// GAS 편집기에서 수동 실행: 남은 autoSyncFirebaseToSheets 트리거 삭제
+function cleanupAllTriggers() {
+  var removed = [];
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    var fn = t.getHandlerFunction();
+    if (fn === 'autoSyncFirebaseToSheets' || fn === 'syncFirestoreToSheets') {
+      ScriptApp.deleteTrigger(t);
+      removed.push(fn);
+    }
+  });
+  Logger.log('삭제된 트리거: ' + (removed.length ? removed.join(', ') : '없음'));
 }
 
 // ─── Firestore → Sheets 1분 트리거 동기화 ────────────────────────
