@@ -874,11 +874,12 @@ function blockCheckinDirect() {
   google.script.run
     .withSuccessHandler(function(){
       _isBlocked=true;
-      _blockActionPending=false;
       btn.dataset.blocked='true';
       btn.textContent='✅ 현장예약 재개'; btn.style.borderColor='#276749'; btn.style.color='#276749';
       btn.disabled=false;
       ciUpdateTypeButtons(getCurrentSession());
+      // in-flight ciLoadStatus 응답이 도착해 isBlocked를 덮어쓰지 못하도록 10초 후 해제
+      setTimeout(function(){ _blockActionPending=false; }, 10000);
     })
     .withFailureHandler(function(err){
       _blockActionPending=false;
@@ -920,7 +921,6 @@ function confirmWalkBlock() {
   google.script.run
     .withSuccessHandler(function(res){
       _isBlocked=false;
-      _blockActionPending=false;
       var btn=document.getElementById('btnWalkBlockCheckin');
       btn.dataset.blocked='false';
       btn.textContent='현장예약 마감'; btn.style.borderColor='#B0BAC9'; btn.style.color='#7A8899';
@@ -928,6 +928,8 @@ function confirmWalkBlock() {
       closeWalkBlockModal();
       alert(res);
       ciLoadStatus();
+      // in-flight ciLoadStatus 응답 덮어쓰기 방지 (10초 후 해제)
+      setTimeout(function(){ _blockActionPending=false; }, 10000);
     })
     .withFailureHandler(function(err){
       _blockActionPending=false;
