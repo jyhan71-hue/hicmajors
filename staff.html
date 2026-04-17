@@ -714,6 +714,7 @@ function selectMode(mode) {
 // ══════════════════════════════════════════════
 var SESSION_LIST = <?!= getSettingsData() ?>.sessions;
 var _walkIsFull=false, _isBlocked=false, _ciCountdownTimer=null, _preDebounce=null;
+var _allowServerUnblock=false; // 세션 전환 직후에만 서버의 isBlocked:false로 _isBlocked 갱신 허용
 var _currentSessionIdx=0; // 서버에서 동기화됨
 
 // 세션 인덱스 기반 종료 여부
@@ -771,15 +772,16 @@ function ciRenderWalkStatus(data) {
   _walkIsFull=data.isFull;
   var bb=document.getElementById('btnWalkBlockCheckin');
   if (data.isBlocked) {
-    // 서버가 마감 상태 → 항상 반영 (로그인 후 상태 복원 포함)
+    // 서버가 마감 상태 → 항상 반영 (로그인 후 복원, 세션 복귀 포함)
     _isBlocked=true;
     if (bb) { bb.dataset.blocked='true'; bb.textContent='✅ 현장예약 재개'; bb.style.borderColor='#276749'; bb.style.color='#276749'; }
-  } else if (!_isBlocked) {
-    // 서버도 미마감 + 로컬도 미마감 → 버튼 정상 표시
+  } else if (!_isBlocked || _allowServerUnblock) {
+    // 서버도 미마감이거나, 세션 전환 후 허용된 경우 → 미마감으로 갱신
+    _isBlocked=false;
+    _allowServerUnblock=false; // 플래그 소모 (else if 분기에서만 소모)
     if (bb) { bb.dataset.blocked='false'; bb.textContent='현장예약 마감'; bb.style.borderColor='#B0BAC9'; bb.style.color='#7A8899'; }
   }
-  // 서버는 미마감이지만 _isBlocked=true → 무시 (방금 마감했는데 stale 응답이 온 경우)
-  // _isBlocked=false로 되돌리는 건 오직 confirmWalkBlock(재개) 성공 핸들러만 가능
+  // _isBlocked=true + 서버=false + _allowServerUnblock=false → 무시 (stale 응답)
   var banner=document.getElementById('ci-walkFullBanner');
   if (banner) banner.style.display=data.isFull?'block':'none';
   _currentSessionIdx=typeof data.currentSessionIdx==='number'?data.currentSessionIdx:0;
@@ -850,10 +852,9 @@ function confirmAdvanceSession() {
   google.script.run
     .withSuccessHandler(function(newIdx){
       _currentSessionIdx=newIdx;
-      // 세션 전환: 마감 상태 초기화 후 서버에서 새 세션 실제 상태 조회
-      _isBlocked=false;
-      var bb=document.getElementById('btnWalkBlockCheckin');
-      if (bb) { bb.dataset.blocked='false'; bb.textContent='현장예약 마감'; bb.style.borderColor='#B0BAC9'; bb.style.color='#7A8899'; }
+      // 세션 전환: _allowServerUnblock=true 설정 후 ciLoadStatus로 새 세션 실제 상태 조회
+      // (마감된 세션으로 복귀 시 isBlocked:true, 미마감 세션으로 이동 시 isBlocked:false 정상 반영)
+      _allowServerUnblock=true;
       closeAdvanceSessModal();
       ciRenderSessStatus();
       ciUpdateTypeButtons(getCurrentSession());

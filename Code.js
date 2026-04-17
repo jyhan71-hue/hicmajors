@@ -548,19 +548,23 @@ function getCheckinPageData() {
     }
     for (var sn in seenSess) sessionCounts[sn] = Object.keys(seenSess[sn]).length;
   }
-  var blockedSessions = [], currentSessionIdx = 0;
+  var blockedSessions = [], currentSessionIdx = 0, legacyBlocked = false;
   var stSheet = ss.getSheetByName('Settings');
   if (stSheet) {
     var sRows = stSheet.getDataRange().getValues();
     for (var s = 0; s < sRows.length; s++) {
       var key = sRows[s][0] ? sRows[s][0].toString().trim() : '';
       if (key === 'walkInBlocked') {
-        try { blockedSessions = JSON.parse(sRows[s][1].toString()) || []; } catch(e) { blockedSessions = []; }
+        var raw = sRows[s][1] ? sRows[s][1].toString().trim() : '';
+        if (raw === 'TRUE') { legacyBlocked = true; } // 구버전 전역 차단
+        else if (raw !== 'FALSE' && raw !== '') {
+          try { blockedSessions = JSON.parse(raw) || []; } catch(e) { blockedSessions = []; }
+        }
       }
       if (key === 'currentSessionIdx') currentSessionIdx = parseInt(sRows[s][1]) || 0;
     }
   }
-  var isBlocked = blockedSessions.indexOf(currentSessionIdx) >= 0;
+  var isBlocked = legacyBlocked || blockedSessions.indexOf(currentSessionIdx) >= 0;
   return {
     walkCount:         walkCount,
     preCount:          preCount,
@@ -709,15 +713,19 @@ function checkInStudent(data) {
     var stSheet = ss.getSheetByName('Settings');
     if (stSheet) {
       var stRows = stSheet.getDataRange().getValues();
-      var stCurIdx = 0, stBlockedSessions = [];
+      var stCurIdx = 0, stBlockedSessions = [], stLegacyBlocked = false;
       for (var st = 0; st < stRows.length; st++) {
         var stKey = stRows[st][0] ? stRows[st][0].toString().trim() : '';
         if (stKey === 'currentSessionIdx') stCurIdx = parseInt(stRows[st][1]) || 0;
         if (stKey === 'walkInBlocked') {
-          try { stBlockedSessions = JSON.parse(stRows[st][1].toString()) || []; } catch(e) { stBlockedSessions = []; }
+          var stRaw = stRows[st][1] ? stRows[st][1].toString().trim() : '';
+          if (stRaw === 'TRUE') { stLegacyBlocked = true; }
+          else if (stRaw !== 'FALSE' && stRaw !== '') {
+            try { stBlockedSessions = JSON.parse(stRaw) || []; } catch(e) { stBlockedSessions = []; }
+          }
         }
       }
-      if (stBlockedSessions.indexOf(stCurIdx) >= 0) {
+      if (stLegacyBlocked || stBlockedSessions.indexOf(stCurIdx) >= 0) {
         throw new Error('체크인이 마감되었습니다.');
       }
     }
