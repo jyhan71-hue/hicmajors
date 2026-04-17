@@ -709,7 +709,7 @@ function selectMode(mode) {
 // 체크인
 // ══════════════════════════════════════════════
 var SESSION_LIST = <?!= getSettingsData() ?>.sessions;
-var _walkIsFull=false, _ciCountdownTimer=null, _preDebounce=null;
+var _walkIsFull=false, _isBlocked=false, _ciCountdownTimer=null, _preDebounce=null;
 var _currentSessionIdx=0; // 서버에서 동기화됨
 
 // 세션 인덱스 기반 종료 여부
@@ -757,12 +757,17 @@ function ciUpdateTypeButtons(cur) {
 
 function ciRenderWalkStatus(data) {
   _walkIsFull=data.isFull;
+  _isBlocked=!!data.isBlocked;
   var banner=document.getElementById('ci-walkFullBanner');
   if (banner) banner.style.display=data.isFull?'block':'none';
   var walkBtn=document.getElementById('typeWalkBtn');
   var walkSub=document.getElementById('ci-walkBtnSub');
+  var preBtn=document.getElementById('typePreBtn');
   if (data.isFull) { walkBtn.classList.add('disabled-btn'); walkSub.textContent='마감되었습니다'; }
   else { walkBtn.classList.remove('disabled-btn'); walkSub.textContent='현장 입장'; }
+  // 수동 마감 시 사전예약 버튼도 비활성화
+  if (_isBlocked) { preBtn.classList.add('disabled-btn'); preBtn.querySelector('.sub').textContent='체크인 마감'; }
+  else { if (!preBtn.classList.contains('disabled-btn')||preBtn.querySelector('.sub').textContent==='체크인 마감') { preBtn.classList.remove('disabled-btn'); preBtn.querySelector('.sub').textContent='학번 조회 후 체크인'; } }
   _currentSessionIdx=typeof data.currentSessionIdx==='number'?data.currentSessionIdx:0;
   // 현재 세션 체크인 인원 표시
   var scBox=document.getElementById('ci-sessCountBox');
@@ -853,11 +858,12 @@ function openWalkBlockModal() {
   _walkBlockIsBlocked=document.getElementById('btnWalkBlockCheckin').dataset.blocked==='true';
   document.getElementById('walkBlockModalTitle').textContent=_walkBlockIsBlocked?'현장예약 재개':'현장예약 마감';
   document.getElementById('walkBlockModalDesc').textContent=_walkBlockIsBlocked
-    ?'관리자 비밀번호를 입력하면 당일방문 체크인이 재개됩니다.'
-    :'관리자 비밀번호를 입력하면 당일방문 체크인이 마감됩니다.';
-  document.getElementById('walkBlockPw').value=window._adminPw||'';
+    ?'관리자 비밀번호를 입력하면 사전예약 · 당일방문 체크인이 모두 재개됩니다.'
+    :'관리자 비밀번호를 입력하면 사전예약 · 당일방문 체크인이 모두 마감됩니다.';
+  document.getElementById('walkBlockPw').value='';
   document.getElementById('walkBlockMsg').textContent='';
   document.getElementById('walkBlockModal').style.display='flex';
+  setTimeout(function(){ document.getElementById('walkBlockPw').focus(); },100);
 }
 function openModeChangePwModal() {
   document.getElementById('modeChangePwInput').value='';
@@ -897,6 +903,9 @@ function confirmWalkBlock() {
 // 유형 선택
 function ciSelectType(type) {
   if (!isCheckinAllowed()){ alert('모든 설명회가 종료되어 체크인이 불가합니다.'); return; }
+  if (type==='pre') {
+    if (_isBlocked){ alert('체크인이 마감되었습니다.'); return; }
+  }
   if (type==='walk') {
     if (_walkIsFull){ alert('당일방문 체크인이 마감되었습니다.'); return; }
     clearWalkForm();

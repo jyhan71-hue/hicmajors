@@ -666,18 +666,20 @@ function checkInStudent(data) {
       }
     }
 
-    // 당일방문 선착순 + 수동 마감 체크
-    if (data.type === 'walk') {
-      var stSheet = ss.getSheetByName('Settings');
-      if (stSheet) {
-        var stRows = stSheet.getDataRange().getValues();
-        for (var st = 0; st < stRows.length; st++) {
-          if (stRows[st][0] && stRows[st][0].toString().trim() === 'walkInBlocked' &&
-              stRows[st][1] && stRows[st][1].toString().trim() === 'TRUE') {
-            throw new Error('당일방문 체크인이 마감되었습니다.');
-          }
+    // 수동 마감 체크 (당일방문 + 사전예약 모두 차단)
+    var stSheet = ss.getSheetByName('Settings');
+    if (stSheet) {
+      var stRows = stSheet.getDataRange().getValues();
+      for (var st = 0; st < stRows.length; st++) {
+        if (stRows[st][0] && stRows[st][0].toString().trim() === 'walkInBlocked' &&
+            stRows[st][1] && stRows[st][1].toString().trim() === 'TRUE') {
+          throw new Error('체크인이 마감되었습니다.');
         }
       }
+    }
+
+    // 당일방문 선착순 체크
+    if (data.type === 'walk') {
       var walkCount = 0, seen2 = {};
       for (var j = 1; j < rows.length; j++) {
         var jSid = rows[j][1] ? rows[j][1].toString().trim() : '';
