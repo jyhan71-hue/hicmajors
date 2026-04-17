@@ -749,9 +749,13 @@ function ciUpdateTypeButtons(cur) {
   if (!allowed) {
     preBtn.classList.add('disabled-btn'); preBtn.querySelector('.sub').textContent='체크인 불가';
     walkBtn.classList.add('disabled-btn'); if(walkSub) walkSub.textContent='체크인 불가';
+  } else if (_isBlocked) {
+    preBtn.classList.add('disabled-btn'); preBtn.querySelector('.sub').textContent='체크인 마감';
+    walkBtn.classList.add('disabled-btn'); if(walkSub) walkSub.textContent='마감되었습니다';
   } else {
     preBtn.classList.remove('disabled-btn'); preBtn.querySelector('.sub').textContent='학번 조회 후 체크인';
-    if (!_walkIsFull) walkBtn.classList.remove('disabled-btn');
+    if (!_walkIsFull) { walkBtn.classList.remove('disabled-btn'); if(walkSub) walkSub.textContent='현장 입장'; }
+    else { walkBtn.classList.add('disabled-btn'); if(walkSub) walkSub.textContent='마감되었습니다'; }
   }
 }
 
@@ -762,12 +766,8 @@ function ciRenderWalkStatus(data) {
   if (banner) banner.style.display=data.isFull?'block':'none';
   var walkBtn=document.getElementById('typeWalkBtn');
   var walkSub=document.getElementById('ci-walkBtnSub');
-  var preBtn=document.getElementById('typePreBtn');
-  if (data.isFull) { walkBtn.classList.add('disabled-btn'); walkSub.textContent='마감되었습니다'; }
-  else { walkBtn.classList.remove('disabled-btn'); walkSub.textContent='현장 입장'; }
-  // 수동 마감 시 사전예약 버튼도 비활성화
-  if (_isBlocked) { preBtn.classList.add('disabled-btn'); preBtn.querySelector('.sub').textContent='체크인 마감'; }
-  else { if (!preBtn.classList.contains('disabled-btn')||preBtn.querySelector('.sub').textContent==='체크인 마감') { preBtn.classList.remove('disabled-btn'); preBtn.querySelector('.sub').textContent='학번 조회 후 체크인'; } }
+  if (data.isFull) { walkBtn.classList.add('disabled-btn'); if(walkSub) walkSub.textContent='마감되었습니다'; }
+  else { walkBtn.classList.remove('disabled-btn'); if(walkSub) walkSub.textContent='현장 입장'; }
   _currentSessionIdx=typeof data.currentSessionIdx==='number'?data.currentSessionIdx:0;
   // 현재 세션 체크인 인원 표시
   var scBox=document.getElementById('ci-sessCountBox');
