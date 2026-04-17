@@ -710,6 +710,7 @@ function selectMode(mode) {
 // ══════════════════════════════════════════════
 var SESSION_LIST = <?!= getSettingsData() ?>.sessions;
 var _walkIsFull=false, _isBlocked=false, _ciCountdownTimer=null, _preDebounce=null;
+var _blockActionPending=false; // 마감/재개 GAS 호출 중 stale ciLoadStatus 응답이 상태 덮어쓰기 방지
 var _currentSessionIdx=0; // 서버에서 동기화됨
 
 // 세션 인덱스 기반 종료 여부
@@ -761,13 +762,18 @@ function ciUpdateTypeButtons(cur) {
 
 function ciRenderWalkStatus(data) {
   _walkIsFull=data.isFull;
-  _isBlocked=!!data.isBlocked;
+  // 마감/재개 GAS 호출이 진행 중이면 isBlocked 상태 덮어쓰기 금지 (stale 응답 경쟁 방지)
+  if (!_blockActionPending) {
+    _isBlocked=!!data.isBlocked;
+    var bb=document.getElementById('btnWalkBlockCheckin');
+    if (bb) {
+      bb.dataset.blocked=data.isBlocked?'true':'false';
+      if (data.isBlocked) { bb.textContent='✅ 현장예약 재개'; bb.style.borderColor='#276749'; bb.style.color='#276749'; }
+      else { bb.textContent='현장예약 마감'; bb.style.borderColor='#B0BAC9'; bb.style.color='#7A8899'; }
+    }
+  }
   var banner=document.getElementById('ci-walkFullBanner');
   if (banner) banner.style.display=data.isFull?'block':'none';
-  var walkBtn=document.getElementById('typeWalkBtn');
-  var walkSub=document.getElementById('ci-walkBtnSub');
-  if (data.isFull) { walkBtn.classList.add('disabled-btn'); if(walkSub) walkSub.textContent='마감되었습니다'; }
-  else { walkBtn.classList.remove('disabled-btn'); if(walkSub) walkSub.textContent='현장 입장'; }
   _currentSessionIdx=typeof data.currentSessionIdx==='number'?data.currentSessionIdx:0;
   // 현재 세션 체크인 인원 표시
   var scBox=document.getElementById('ci-sessCountBox');
@@ -783,12 +789,6 @@ function ciRenderWalkStatus(data) {
   // 모드 배너 인원 수 업데이트 (학생 비공개)
   var bc=document.getElementById('banner-counts');
   if (bc) bc.textContent='전체 '+(data.totalCount||0)+'명 (사전 '+(data.preCount||0)+' · 당일 '+(data.walkCount||0)+')';
-  var bb=document.getElementById('btnWalkBlockCheckin');
-  if (bb) {
-    bb.dataset.blocked=data.isBlocked?'true':'false';
-    if (data.isBlocked) { bb.textContent='✅ 현장예약 재개'; bb.style.borderColor='#276749'; bb.style.color='#276749'; }
-    else { bb.textContent='현장예약 마감'; bb.style.borderColor='#B0BAC9'; bb.style.color='#7A8899'; }
-  }
 }
 
 function ciLoadStatus() {
@@ -870,16 +870,18 @@ function openWalkBlockModal() {
 function blockCheckinDirect() {
   var btn=document.getElementById('btnWalkBlockCheckin');
   btn.disabled=true; btn.textContent='처리 중...';
+  _blockActionPending=true;
   google.script.run
     .withSuccessHandler(function(){
       _isBlocked=true;
+      _blockActionPending=false;
       btn.dataset.blocked='true';
       btn.textContent='✅ 현장예약 재개'; btn.style.borderColor='#276749'; btn.style.color='#276749';
       btn.disabled=false;
       ciUpdateTypeButtons(getCurrentSession());
-      ciLoadStatus();
     })
     .withFailureHandler(function(err){
+      _blockActionPending=false;
       alert('마감 처리 실패: '+err.message);
       btn.disabled=false; btn.textContent='현장예약 마감';
     })
@@ -914,9 +916,11 @@ function confirmWalkBlock() {
   if (!pw){ document.getElementById('walkBlockMsg').textContent='비밀번호를 입력하세요.'; return; }
   var msg=document.getElementById('walkBlockMsg');
   msg.style.color='#9AA5B4'; msg.textContent='처리 중...';
+  _blockActionPending=true;
   google.script.run
     .withSuccessHandler(function(res){
       _isBlocked=false;
+      _blockActionPending=false;
       var btn=document.getElementById('btnWalkBlockCheckin');
       btn.dataset.blocked='false';
       btn.textContent='현장예약 마감'; btn.style.borderColor='#B0BAC9'; btn.style.color='#7A8899';
@@ -925,7 +929,10 @@ function confirmWalkBlock() {
       alert(res);
       ciLoadStatus();
     })
-    .withFailureHandler(function(err){ msg.style.color='#C53030'; msg.textContent=err.message; })
+    .withFailureHandler(function(err){
+      _blockActionPending=false;
+      msg.style.color='#C53030'; msg.textContent=err.message;
+    })
     .setWalkInBlock(pw, false);
 }
 
