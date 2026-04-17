@@ -895,7 +895,13 @@ function confirmWalkBlock() {
   var msg=document.getElementById('walkBlockMsg');
   msg.style.color='#9AA5B4'; msg.textContent='처리 중...';
   google.script.run
-    .withSuccessHandler(function(res){ closeWalkBlockModal(); alert(res); ciLoadStatus(); })
+    .withSuccessHandler(function(res){
+      _isBlocked = !_walkBlockIsBlocked;
+      ciUpdateTypeButtons(getCurrentSession());
+      closeWalkBlockModal();
+      alert(res);
+      ciLoadStatus();
+    })
     .withFailureHandler(function(err){ msg.style.color='#C53030'; msg.textContent=err.message; })
     .setWalkInBlock(pw, !_walkBlockIsBlocked);
 }
