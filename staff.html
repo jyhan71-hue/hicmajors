@@ -549,9 +549,9 @@
   <div style="background:#fff;border-radius:14px;padding:24px;width:88%;max-width:340px;
               box-shadow:0 8px 32px rgba(0,0,0,.2);">
     <div style="font-weight:800;color:var(--navy);font-size:1rem;margin-bottom:6px;"
-         id="walkBlockModalTitle">현장예약 마감</div>
+         id="walkBlockModalTitle">현장예약 재개</div>
     <div style="font-size:.82rem;color:#5A6778;margin-bottom:14px;"
-         id="walkBlockModalDesc">관리자 비밀번호를 입력하면 당일방문 체크인이 마감됩니다.</div>
+         id="walkBlockModalDesc">관리자 비밀번호를 입력하면 사전예약 · 당일방문 체크인이 모두 재개됩니다.</div>
     <input type="password" id="walkBlockPw" placeholder="관리자 비밀번호"
       style="width:100%;border:1.5px solid #DDE3EA;border-radius:8px;padding:9px 12px;
              font-size:.88rem;font-family:'Pretendard',sans-serif;margin-bottom:10px;box-sizing:border-box;"
@@ -856,14 +856,34 @@ function confirmAdvanceSession() {
 var _walkBlockIsBlocked=false;
 function openWalkBlockModal() {
   _walkBlockIsBlocked=document.getElementById('btnWalkBlockCheckin').dataset.blocked==='true';
-  document.getElementById('walkBlockModalTitle').textContent=_walkBlockIsBlocked?'현장예약 재개':'현장예약 마감';
-  document.getElementById('walkBlockModalDesc').textContent=_walkBlockIsBlocked
-    ?'관리자 비밀번호를 입력하면 사전예약 · 당일방문 체크인이 모두 재개됩니다.'
-    :'관리자 비밀번호를 입력하면 사전예약 · 당일방문 체크인이 모두 마감됩니다.';
+  if (!_walkBlockIsBlocked) {
+    // 마감: 비번 없이 바로 실행
+    blockCheckinDirect();
+    return;
+  }
+  // 재개: 비번 모달
   document.getElementById('walkBlockPw').value='';
   document.getElementById('walkBlockMsg').textContent='';
   document.getElementById('walkBlockModal').style.display='flex';
   setTimeout(function(){ document.getElementById('walkBlockPw').focus(); },100);
+}
+function blockCheckinDirect() {
+  var btn=document.getElementById('btnWalkBlockCheckin');
+  btn.disabled=true; btn.textContent='처리 중...';
+  google.script.run
+    .withSuccessHandler(function(){
+      _isBlocked=true;
+      btn.dataset.blocked='true';
+      btn.textContent='✅ 현장예약 재개'; btn.style.borderColor='#276749'; btn.style.color='#276749';
+      btn.disabled=false;
+      ciUpdateTypeButtons(getCurrentSession());
+      ciLoadStatus();
+    })
+    .withFailureHandler(function(err){
+      alert('마감 처리 실패: '+err.message);
+      btn.disabled=false; btn.textContent='현장예약 마감';
+    })
+    .blockWalkIn();
 }
 function openModeChangePwModal() {
   document.getElementById('modeChangePwInput').value='';
@@ -896,14 +916,17 @@ function confirmWalkBlock() {
   msg.style.color='#9AA5B4'; msg.textContent='처리 중...';
   google.script.run
     .withSuccessHandler(function(res){
-      _isBlocked = !_walkBlockIsBlocked;
+      _isBlocked=false;
+      var btn=document.getElementById('btnWalkBlockCheckin');
+      btn.dataset.blocked='false';
+      btn.textContent='현장예약 마감'; btn.style.borderColor='#B0BAC9'; btn.style.color='#7A8899';
       ciUpdateTypeButtons(getCurrentSession());
       closeWalkBlockModal();
       alert(res);
       ciLoadStatus();
     })
     .withFailureHandler(function(err){ msg.style.color='#C53030'; msg.textContent=err.message; })
-    .setWalkInBlock(pw, !_walkBlockIsBlocked);
+    .setWalkInBlock(pw, false);
 }
 
 // 유형 선택

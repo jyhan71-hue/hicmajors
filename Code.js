@@ -587,6 +587,22 @@ function verifyAdminPassword(password) {
   } catch(e) { return false; }
 }
 
+// 비밀번호 없이 마감 (스태프용) — 재개는 setWalkInBlock(password, false) 사용
+function blockWalkIn() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Settings');
+  if (!sheet) throw new Error('Settings 시트가 없습니다.');
+  var rows = sheet.getDataRange().getValues();
+  for (var j = 0; j < rows.length; j++) {
+    if (rows[j][0] && rows[j][0].toString().trim() === 'walkInBlocked') {
+      sheet.getRange(j+1, 2).setValue('TRUE');
+      return '체크인이 마감되었습니다.';
+    }
+  }
+  sheet.appendRow(['walkInBlocked', 'TRUE']);
+  return '체크인이 마감되었습니다.';
+}
+
 function setWalkInBlock(password, block) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();
