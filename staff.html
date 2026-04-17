@@ -714,7 +714,6 @@ function selectMode(mode) {
 // ══════════════════════════════════════════════
 var SESSION_LIST = <?!= getSettingsData() ?>.sessions;
 var _walkIsFull=false, _isBlocked=false, _ciCountdownTimer=null, _preDebounce=null;
-var _blockActionPending=false; // 마감/재개 GAS 호출 중 stale ciLoadStatus 응답이 상태 덮어쓰기 방지
 var _currentSessionIdx=0; // 서버에서 동기화됨
 
 // 세션 인덱스 기반 종료 여부
@@ -770,16 +769,17 @@ function ciUpdateTypeButtons(cur) {
 
 function ciRenderWalkStatus(data) {
   _walkIsFull=data.isFull;
-  // 마감/재개 GAS 호출이 진행 중이면 isBlocked 상태 덮어쓰기 금지 (stale 응답 경쟁 방지)
-  if (!_blockActionPending) {
-    _isBlocked=!!data.isBlocked;
-    var bb=document.getElementById('btnWalkBlockCheckin');
-    if (bb) {
-      bb.dataset.blocked=data.isBlocked?'true':'false';
-      if (data.isBlocked) { bb.textContent='✅ 현장예약 재개'; bb.style.borderColor='#276749'; bb.style.color='#276749'; }
-      else { bb.textContent='현장예약 마감'; bb.style.borderColor='#B0BAC9'; bb.style.color='#7A8899'; }
-    }
+  var bb=document.getElementById('btnWalkBlockCheckin');
+  if (data.isBlocked) {
+    // 서버가 마감 상태 → 항상 반영 (로그인 후 상태 복원 포함)
+    _isBlocked=true;
+    if (bb) { bb.dataset.blocked='true'; bb.textContent='✅ 현장예약 재개'; bb.style.borderColor='#276749'; bb.style.color='#276749'; }
+  } else if (!_isBlocked) {
+    // 서버도 미마감 + 로컬도 미마감 → 버튼 정상 표시
+    if (bb) { bb.dataset.blocked='false'; bb.textContent='현장예약 마감'; bb.style.borderColor='#B0BAC9'; bb.style.color='#7A8899'; }
   }
+  // 서버는 미마감이지만 _isBlocked=true → 무시 (방금 마감했는데 stale 응답이 온 경우)
+  // _isBlocked=false로 되돌리는 건 오직 confirmWalkBlock(재개) 성공 핸들러만 가능
   var banner=document.getElementById('ci-walkFullBanner');
   if (banner) banner.style.display=data.isFull?'block':'none';
   _currentSessionIdx=typeof data.currentSessionIdx==='number'?data.currentSessionIdx:0;
@@ -878,7 +878,6 @@ function openWalkBlockModal() {
 function blockCheckinDirect() {
   var btn=document.getElementById('btnWalkBlockCheckin');
   btn.disabled=true; btn.textContent='처리 중...';
-  _blockActionPending=true;
   google.script.run
     .withSuccessHandler(function(){
       _isBlocked=true;
@@ -886,11 +885,8 @@ function blockCheckinDirect() {
       btn.textContent='✅ 현장예약 재개'; btn.style.borderColor='#276749'; btn.style.color='#276749';
       btn.disabled=false;
       ciUpdateTypeButtons(getCurrentSession());
-      // in-flight ciLoadStatus 응답이 도착해 isBlocked를 덮어쓰지 못하도록 10초 후 해제
-      setTimeout(function(){ _blockActionPending=false; }, 10000);
     })
     .withFailureHandler(function(err){
-      _blockActionPending=false;
       alert('마감 처리 실패: '+err.message);
       btn.disabled=false; btn.textContent='현장예약 마감';
     })
@@ -925,7 +921,6 @@ function confirmWalkBlock() {
   if (!pw){ document.getElementById('walkBlockMsg').textContent='비밀번호를 입력하세요.'; return; }
   var msg=document.getElementById('walkBlockMsg');
   msg.style.color='#9AA5B4'; msg.textContent='처리 중...';
-  _blockActionPending=true;
   google.script.run
     .withSuccessHandler(function(res){
       _isBlocked=false;
@@ -936,11 +931,8 @@ function confirmWalkBlock() {
       closeWalkBlockModal();
       alert(res);
       ciLoadStatus();
-      // in-flight ciLoadStatus 응답 덮어쓰기 방지 (10초 후 해제)
-      setTimeout(function(){ _blockActionPending=false; }, 10000);
     })
     .withFailureHandler(function(err){
-      _blockActionPending=false;
       msg.style.color='#C53030'; msg.textContent=err.message;
     })
     .setWalkInBlock(pw, false);
