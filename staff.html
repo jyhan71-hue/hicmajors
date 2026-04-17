@@ -94,6 +94,9 @@
     .walkin-full-banner{background:#FFF5F5;border:1.5px solid #FEB2B2;border-radius:8px;
                         padding:9px 13px;text-align:center;font-size:.8rem;font-weight:700;
                         color:#C53030;margin-top:8px;display:none;}
+    .checkin-blocked-banner{background:#C53030;border-radius:10px;padding:14px 16px;
+                            text-align:center;font-size:.95rem;font-weight:800;
+                            color:#fff;margin-bottom:14px;display:none;letter-spacing:-.01em;}
 
     /* 체크인: 유형 버튼 */
     .type-btns{display:flex;gap:10px;}
@@ -302,6 +305,7 @@
           </button>
         </div>
       </div>
+      <div class="checkin-blocked-banner" id="ci-blockedBanner">⛔ 체크인이 마감되었습니다</div>
       <div class="screen-title">참석 유형 선택</div>
       <div class="screen-desc">참석 형태를 선택하세요</div>
       <div class="type-btns">
@@ -747,16 +751,20 @@ function ciUpdateTypeButtons(cur) {
   var preBtn=document.getElementById('typePreBtn');
   var walkBtn=document.getElementById('typeWalkBtn');
   var walkSub=document.getElementById('ci-walkBtnSub');
+  var blockedBanner=document.getElementById('ci-blockedBanner');
   if (!allowed) {
     preBtn.classList.add('disabled-btn'); preBtn.querySelector('.sub').textContent='체크인 불가';
     walkBtn.classList.add('disabled-btn'); if(walkSub) walkSub.textContent='체크인 불가';
+    if(blockedBanner) blockedBanner.style.display='none';
   } else if (_isBlocked) {
     preBtn.classList.add('disabled-btn'); preBtn.querySelector('.sub').textContent='체크인 마감';
     walkBtn.classList.add('disabled-btn'); if(walkSub) walkSub.textContent='마감되었습니다';
+    if(blockedBanner) blockedBanner.style.display='block';
   } else {
     preBtn.classList.remove('disabled-btn'); preBtn.querySelector('.sub').textContent='학번 조회 후 체크인';
     if (!_walkIsFull) { walkBtn.classList.remove('disabled-btn'); if(walkSub) walkSub.textContent='현장 입장'; }
     else { walkBtn.classList.add('disabled-btn'); if(walkSub) walkSub.textContent='마감되었습니다'; }
+    if(blockedBanner) blockedBanner.style.display='none';
   }
 }
 
