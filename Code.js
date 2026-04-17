@@ -548,16 +548,19 @@ function getCheckinPageData() {
     }
     for (var sn in seenSess) sessionCounts[sn] = Object.keys(seenSess[sn]).length;
   }
-  var isBlocked = false, currentSessionIdx = 0;
+  var blockedSessions = [], currentSessionIdx = 0;
   var stSheet = ss.getSheetByName('Settings');
   if (stSheet) {
     var sRows = stSheet.getDataRange().getValues();
     for (var s = 0; s < sRows.length; s++) {
       var key = sRows[s][0] ? sRows[s][0].toString().trim() : '';
-      if (key === 'walkInBlocked') isBlocked = sRows[s][1] && sRows[s][1].toString().trim() === 'TRUE';
+      if (key === 'walkInBlocked') {
+        try { blockedSessions = JSON.parse(sRows[s][1].toString()) || []; } catch(e) { blockedSessions = []; }
+      }
       if (key === 'currentSessionIdx') currentSessionIdx = parseInt(sRows[s][1]) || 0;
     }
   }
+  var isBlocked = blockedSessions.indexOf(currentSessionIdx) >= 0;
   return {
     walkCount:         walkCount,
     preCount:          preCount,
@@ -587,19 +590,26 @@ function verifyAdminPassword(password) {
   } catch(e) { return false; }
 }
 
-// 비밀번호 없이 마감 (스태프용) — 재개는 setWalkInBlock(password, false) 사용
+// 비밀번호 없이 현재 세션 마감 (스태프용) — 재개는 setWalkInBlock(password, false) 사용
 function blockWalkIn() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Settings');
   if (!sheet) throw new Error('Settings 시트가 없습니다.');
   var rows = sheet.getDataRange().getValues();
-  for (var j = 0; j < rows.length; j++) {
-    if (rows[j][0] && rows[j][0].toString().trim() === 'walkInBlocked') {
-      sheet.getRange(j+1, 2).setValue('TRUE');
-      return '체크인이 마감되었습니다.';
-    }
+  var currentSessionIdx = 0, walkInBlockedRow = -1;
+  for (var i = 0; i < rows.length; i++) {
+    var k = rows[i][0] ? rows[i][0].toString().trim() : '';
+    if (k === 'currentSessionIdx') currentSessionIdx = parseInt(rows[i][1]) || 0;
+    if (k === 'walkInBlocked') walkInBlockedRow = i;
   }
-  sheet.appendRow(['walkInBlocked', 'TRUE']);
+  var blocked = [];
+  if (walkInBlockedRow >= 0) {
+    try { blocked = JSON.parse(rows[walkInBlockedRow][1].toString()) || []; } catch(e) { blocked = []; }
+    if (blocked.indexOf(currentSessionIdx) === -1) blocked.push(currentSessionIdx);
+    sheet.getRange(walkInBlockedRow+1, 2).setValue(JSON.stringify(blocked));
+  } else {
+    sheet.appendRow(['walkInBlocked', JSON.stringify([currentSessionIdx])]);
+  }
   return '체크인이 마감되었습니다.';
 }
 
@@ -617,13 +627,26 @@ function setWalkInBlock(password, block) {
   var sheet = ss.getSheetByName('Settings');
   if (!sheet) throw new Error('Settings 시트가 없습니다.');
   var rows = sheet.getDataRange().getValues();
+  var currentSessionIdx = 0, walkInBlockedRow = -1;
   for (var j = 0; j < rows.length; j++) {
-    if (rows[j][0] && rows[j][0].toString().trim() === 'walkInBlocked') {
-      sheet.getRange(j+1, 2).setValue(block ? 'TRUE' : 'FALSE');
-      return block ? '당일방문이 수동 마감되었습니다.' : '당일방문이 재개되었습니다.';
-    }
+    var k = rows[j][0] ? rows[j][0].toString().trim() : '';
+    if (k === 'currentSessionIdx') currentSessionIdx = parseInt(rows[j][1]) || 0;
+    if (k === 'walkInBlocked') walkInBlockedRow = j;
   }
-  sheet.appendRow(['walkInBlocked', block ? 'TRUE' : 'FALSE']);
+  var blocked = [];
+  if (walkInBlockedRow >= 0) {
+    try { blocked = JSON.parse(rows[walkInBlockedRow][1].toString()) || []; } catch(e) { blocked = []; }
+  }
+  if (block) {
+    if (blocked.indexOf(currentSessionIdx) === -1) blocked.push(currentSessionIdx);
+  } else {
+    blocked = blocked.filter(function(idx) { return idx !== currentSessionIdx; });
+  }
+  if (walkInBlockedRow >= 0) {
+    sheet.getRange(walkInBlockedRow+1, 2).setValue(JSON.stringify(blocked));
+  } else {
+    sheet.appendRow(['walkInBlocked', JSON.stringify(blocked)]);
+  }
   return block ? '당일방문이 수동 마감되었습니다.' : '당일방문이 재개되었습니다.';
 }
 
@@ -682,15 +705,20 @@ function checkInStudent(data) {
       }
     }
 
-    // 수동 마감 체크 (당일방문 + 사전예약 모두 차단)
+    // 수동 마감 체크 (세션별, 당일방문 + 사전예약 모두 차단)
     var stSheet = ss.getSheetByName('Settings');
     if (stSheet) {
       var stRows = stSheet.getDataRange().getValues();
+      var stCurIdx = 0, stBlockedSessions = [];
       for (var st = 0; st < stRows.length; st++) {
-        if (stRows[st][0] && stRows[st][0].toString().trim() === 'walkInBlocked' &&
-            stRows[st][1] && stRows[st][1].toString().trim() === 'TRUE') {
-          throw new Error('체크인이 마감되었습니다.');
+        var stKey = stRows[st][0] ? stRows[st][0].toString().trim() : '';
+        if (stKey === 'currentSessionIdx') stCurIdx = parseInt(stRows[st][1]) || 0;
+        if (stKey === 'walkInBlocked') {
+          try { stBlockedSessions = JSON.parse(stRows[st][1].toString()) || []; } catch(e) { stBlockedSessions = []; }
         }
+      }
+      if (stBlockedSessions.indexOf(stCurIdx) >= 0) {
+        throw new Error('체크인이 마감되었습니다.');
       }
     }
 

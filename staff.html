@@ -850,9 +850,14 @@ function confirmAdvanceSession() {
   google.script.run
     .withSuccessHandler(function(newIdx){
       _currentSessionIdx=newIdx;
+      // 세션 전환: 마감 상태 초기화 후 서버에서 새 세션 실제 상태 조회
+      _isBlocked=false;
+      var bb=document.getElementById('btnWalkBlockCheckin');
+      if (bb) { bb.dataset.blocked='false'; bb.textContent='현장예약 마감'; bb.style.borderColor='#B0BAC9'; bb.style.color='#7A8899'; }
       closeAdvanceSessModal();
       ciRenderSessStatus();
       ciUpdateTypeButtons(getCurrentSession());
+      ciLoadStatus();
       if (newIdx>=SESSION_LIST.length) alert('행사가 종료되었습니다. 체크인이 마감됩니다.');
       else alert('세션이 변경되었습니다: '+SESSION_LIST[newIdx].name);
     })
