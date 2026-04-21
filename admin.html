@@ -185,6 +185,13 @@
     </div>
   </div>
   <div class="office-body">
+    <!-- 사전예약 현황 -->
+    <div class="dash-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div class="dash-section-title" style="margin:0;">📝 사전예약 현황</div><button class="dash-refresh" onclick="loadPreReservationStats()">🔄 새로고침</button></div>
+      <div id="preResSummary"><div style="text-align:center;padding:20px;color:#9AA5B4;font-size:.83rem;">불러오는 중...</div></div>
+    </div>
+    <hr style="border:none;border-top:1px solid #EAECEF;margin:18px 0;">
+    <!-- 참석 현황 -->
     <div class="dash-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div class="dash-section-title" style="margin:0;">📊 전체 참석 현황</div><button class="dash-refresh" onclick="loadOverallStats()">🔄 새로고침</button></div>
       <div class="dash-summary" id="dashSummary"><div style="text-align:center;padding:20px;color:#9AA5B4;font-size:.83rem;width:100%;">불러오는 중...</div></div>
@@ -423,7 +430,7 @@ function toggleAllSlots(c){document.querySelectorAll('.slot-chk:not(:disabled)')
 function onSlotCheck(){var a=document.querySelectorAll('.slot-chk:not(:disabled)'),c=document.querySelectorAll('.slot-chk:not(:disabled):checked');document.getElementById('chkAllSlots').checked=(a.length>0&&c.length===a.length);updateSlotSelCount();}
 function updateSlotSelCount(){var n=document.querySelectorAll('.slot-chk:not(:disabled):checked').length;document.getElementById('slotSelCount').textContent=n>0?n+'개 선택됨':'';document.getElementById('btnBlockSel').disabled=(n===0);document.getElementById('btnOpenSel').disabled=(n===0);}
 function batchToggleSlots(block){var c=Array.from(document.querySelectorAll('.slot-chk:not(:disabled):checked'));if(!c.length){alert('선택된 슬롯이 없습니다.');return;}var times=c.map(function(x){return x.value;});var b1=document.getElementById('btnBlockSel'),b2=document.getElementById('btnOpenSel');b1.disabled=true;b2.disabled=true;b1.textContent='처리 중...';b2.textContent='처리 중...';function next(i){if(i>=times.length){showToast('✅ '+times.length+'개 슬롯 '+(block?'차단':'해제')+' 완료');b1.textContent='🔒 선택 차단';b2.textContent='🔓 선택 해제';loadSlotStatus();return;}google.script.run.withSuccessHandler(function(){next(i+1);}).withFailureHandler(function(e){alert('오류('+times[i]+'): '+e.message);b1.textContent='🔒 선택 차단';b2.textContent='🔓 선택 해제';loadSlotStatus();}).toggleSlotBlock(_prog,_pw,times[i],block);}next(0);}
-function loadOfficePrograms(){var g=document.getElementById('officeProgGrid');g.innerHTML=SESS_LIST.map(function(p){return'<div class="prog-chip" onclick="selectOfficeProg(\''+ea(p)+'\')" id="chip-'+p.replace(/\//g,'-')+'"><div style="font-weight:700;">'+eh(p)+'</div><div style="font-size:.72rem;color:#9AA5B4;margin-top:2px;">'+(SESS_TIMES[p]||'')+'</div></div>';}).join('');loadOverallStats();buildBoothProgChips();}
+function loadOfficePrograms(){var g=document.getElementById('officeProgGrid');g.innerHTML=SESS_LIST.map(function(p){return'<div class="prog-chip" onclick="selectOfficeProg(\''+ea(p)+'\')" id="chip-'+p.replace(/\//g,'-')+'"><div style="font-weight:700;">'+eh(p)+'</div><div style="font-size:.72rem;color:#9AA5B4;margin-top:2px;">'+(SESS_TIMES[p]||'')+'</div></div>';}).join('');loadPreReservationStats();loadOverallStats();buildBoothProgChips();}
 function switchOfficeTab(tab){['sign','booth','gift'].forEach(function(t){document.getElementById('off-pane-'+t).style.display=t===tab?'block':'none';document.getElementById('off-tab-'+t).classList.toggle('active',t===tab);});if(tab==='gift')loadGiftList();}
 function selectOfficeProg(p){_currentOffProg=p;document.querySelectorAll('#officeProgGrid .prog-chip').forEach(function(el){el.classList.remove('active');});var c=document.getElementById('chip-'+p.replace(/\//g,'-'));if(c)c.classList.add('active');loadStatus(p);}
 function refreshStatus(){if(_currentOffProg)loadStatus(_currentOffProg);}
@@ -498,6 +505,53 @@ function buildBoothProgChips(){document.getElementById('boothProgGrid').innerHTM
 function selectBoothProg(p){_currentBoothProg=p;document.querySelectorAll('#boothProgGrid .prog-chip').forEach(function(el){el.classList.remove('active');});var c=document.getElementById('bchip-'+p.replace(/\//g,'-'));if(c)c.classList.add('active');loadBoothStatus();}
 function loadBoothStatus(){if(!_currentBoothProg){alert('프로그램을 선택하세요.');return;}document.getElementById('boothStatSection').style.display='block';document.getElementById('boothBody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:#9AA5B4;">불러오는 중...</td></tr>';document.getElementById('boothStat').innerHTML='';google.script.run.withSuccessHandler(renderBoothStatus).withFailureHandler(function(e){alert(e.message);}).getAdminDataForOffice(_pw,_currentBoothProg);}
 function renderBoothStatus(data){var list=data.reservations||[],t=list.length,dn=list.filter(function(r){return r.status==='상담완료';}).length,cn=list.filter(function(r){return r.status==='상담취소';}).length,w=t-dn-cn;document.getElementById('boothStat').innerHTML='<div class="stat-box"><div class="num">'+t+'</div><div class="lbl">전체 예약</div></div><div class="stat-box"><div class="num" style="color:#2B6CB0;">'+w+'</div><div class="lbl">대기</div></div><div class="stat-box"><div class="num" style="color:#276749;">'+dn+'</div><div class="lbl">상담완료</div></div><div class="stat-box"><div class="num" style="color:#C53030;">'+cn+'</div><div class="lbl">상담취소</div></div>';var tb=document.getElementById('boothBody'),em=document.getElementById('boothEmpty');if(!list.length){tb.innerHTML='';em.style.display='block';return;}em.style.display='none';tb.innerHTML=list.map(function(item,i){var sc=item.status==='상담완료'?'#276749':item.status==='상담취소'?'#C53030':'#2B6CB0';var sb=item.status==='상담완료'?'#E6FFED':item.status==='상담취소'?'#FFF5F5':'#EBF4FF';return'<tr><td style="text-align:center;color:#888;">'+(i+1)+'</td><td style="font-weight:700;white-space:nowrap;">'+eh(item.time)+'</td><td style="font-weight:600;">'+eh(item.name)+'</td><td style="font-size:.79rem;color:#7A8899;">'+eh(String(item.id))+'</td><td>'+eh(item.dept)+'</td><td style="text-align:center;"><span style="background:'+sb+';color:'+sc+';border-radius:99px;padding:2px 10px;font-size:.77rem;font-weight:700;">'+eh(item.status)+'</span></td></tr>';}).join('');}
+function loadPreReservationStats(){
+  document.getElementById('preResSummary').innerHTML='<div style="text-align:center;padding:16px;color:#9AA5B4;font-size:.83rem;">불러오는 중...</div>';
+  google.script.run
+    .withSuccessHandler(renderPreResStat)
+    .withFailureHandler(function(e){ document.getElementById('preResSummary').innerHTML='<div style="color:#C53030;font-size:.82rem;">오류: '+eh(e.message)+'</div>'; })
+    .getPreReservationStats(_pw);
+}
+function renderPreResStat(data) {
+  var sessRows = (data.sessByProg||[]).map(function(r) {
+    return '<tr><td style="padding:5px 10px;font-weight:600;">'+eh(r.program)+'</td>'+
+           '<td style="padding:5px 10px;text-align:right;font-weight:700;color:var(--navy);">'+r.count+'명</td></tr>';
+  }).join('');
+  var boothRows = (data.boothByProg||[]).map(function(r) {
+    return '<tr><td style="padding:5px 10px;font-weight:600;">'+eh(r.program)+'</td>'+
+           '<td style="padding:5px 10px;text-align:right;font-weight:700;color:var(--navy);">'+r.count+'명</td></tr>';
+  }).join('');
+  var tblStyle = 'width:100%;border-collapse:collapse;font-size:.83rem;';
+  var thStyle  = 'background:#EEF2F7;color:var(--navy);font-size:.72rem;font-weight:700;padding:6px 10px;text-align:left;letter-spacing:.04em;';
+  var totStyle = 'background:#F4F7F9;border-top:2px solid #DDE3EA;';
+  document.getElementById('preResSummary').innerHTML =
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;">'+
+      '<div style="flex:1;min-width:220px;">'+
+        '<div style="font-size:.78rem;font-weight:700;color:#5A6778;margin-bottom:6px;">📋 설명회 사전예약</div>'+
+        '<table style="'+tblStyle+'">'+
+          '<thead><tr><th style="'+thStyle+'">프로그램</th><th style="'+thStyle+';text-align:right;">예약인원</th></tr></thead>'+
+          '<tbody>'+sessRows+
+            '<tr style="'+totStyle+'">'+
+              '<td style="padding:6px 10px;font-weight:700;font-size:.8rem;">총 인원 <span style="font-size:.7rem;color:#9AA5B4;">(중복 제거)</span></td>'+
+              '<td style="padding:6px 10px;text-align:right;font-weight:800;font-size:1rem;color:var(--navy);">'+(data.sessTotal||0)+'명</td>'+
+            '</tr>'+
+          '</tbody>'+
+        '</table>'+
+      '</div>'+
+      '<div style="flex:1;min-width:220px;">'+
+        '<div style="font-size:.78rem;font-weight:700;color:#5A6778;margin-bottom:6px;">🗂️ 부스 사전예약</div>'+
+        '<table style="'+tblStyle+'">'+
+          '<thead><tr><th style="'+thStyle+'">프로그램</th><th style="'+thStyle+';text-align:right;">예약인원</th></tr></thead>'+
+          '<tbody>'+boothRows+
+            '<tr style="'+totStyle+'">'+
+              '<td style="padding:6px 10px;font-weight:700;font-size:.8rem;">총 인원 <span style="font-size:.7rem;color:#9AA5B4;">(중복 제거)</span></td>'+
+              '<td style="padding:6px 10px;text-align:right;font-weight:800;font-size:1rem;color:var(--navy);">'+(data.boothTotal||0)+'명</td>'+
+            '</tr>'+
+          '</tbody>'+
+        '</table>'+
+      '</div>'+
+    '</div>';
+}
 function loadOverallStats(){document.getElementById('dashSummary').innerHTML='<div style="text-align:center;padding:16px;color:#9AA5B4;font-size:.83rem;width:100%;">불러오는 중...</div>';document.getElementById('dashProgGrid').innerHTML='';google.script.run.withSuccessHandler(renderDashboard).withFailureHandler(function(e){document.getElementById('dashSummary').innerHTML='<div style="color:#C53030;font-size:.82rem;">오류: '+eh(e.message)+'</div>';}).getOverallStats(_pw);}
 function renderDashboard(data) {
   var tp  = data.totalPre    || 0;  // 사전예약 총 건수

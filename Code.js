@@ -1614,6 +1614,67 @@ function getSessionStatus(password, program) {
   };
 }
 
+// ─────────────────────────────────────────────
+// 사전예약 현황 집계 (admin.html 상단 섹션용)
+// ─────────────────────────────────────────────
+function getPreReservationStats(password) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();
+  var authorized = false;
+  for (var i=1; i<admins.length; i++) {
+    if (admins[i][2].toString().trim()==='전체관리' && admins[i][3].toString().trim()===password.toString().trim()) { authorized=true; break; }
+  }
+  if (!authorized) throw new Error('권한이 없습니다.');
+
+  var cfg = _getSettings();
+  var SESSION_PROGS = cfg.sessions.map(function(s){ return s.name; });
+  var BOOTH_PROGS = cfg.boothPrograms;
+
+  // 설명회 사전예약 (SessionPreReg: col[1]=학번, col[5]=설명회명)
+  var sessMap = {};
+  SESSION_PROGS.forEach(function(p){ sessMap[p] = {}; });
+  var sessSheet = ss.getSheetByName('SessionPreReg');
+  if (sessSheet && sessSheet.getLastRow() > 1) {
+    var sessRows = sessSheet.getDataRange().getValues();
+    for (var j=1; j<sessRows.length; j++) {
+      var sid = sessRows[j][1] ? sessRows[j][1].toString().trim() : '';
+      var prog = sessRows[j][5] ? sessRows[j][5].toString().trim() : '';
+      if (sid && sessMap[prog] !== undefined) sessMap[prog][sid] = true;
+    }
+  }
+  var sessUniqueAll = {};
+  var sessByProg = SESSION_PROGS.map(function(p) {
+    Object.keys(sessMap[p]||{}).forEach(function(id){ sessUniqueAll[id]=true; });
+    return { program: p, count: Object.keys(sessMap[p]||{}).length };
+  });
+
+  // 부스 사전예약 (BoothReservations: col[1]=학번, col[5]=프로그램, col[9]=상태, 취소 제외)
+  var boothMap = {};
+  BOOTH_PROGS.forEach(function(p){ boothMap[p] = {}; });
+  var boothSheet = ss.getSheetByName('BoothReservations');
+  if (boothSheet && boothSheet.getLastRow() > 1) {
+    var boothRows = boothSheet.getDataRange().getValues();
+    for (var k=1; k<boothRows.length; k++) {
+      var bSid = boothRows[k][1] ? boothRows[k][1].toString().trim() : '';
+      var bProg = boothRows[k][5] ? boothRows[k][5].toString().trim() : '';
+      var bStatus = boothRows[k][9] ? boothRows[k][9].toString().trim() : '';
+      if (bSid && bStatus !== '취소' && boothMap[bProg] !== undefined) boothMap[bProg][bSid] = true;
+    }
+  }
+  var boothUniqueAll = {};
+  var boothByProg = BOOTH_PROGS.map(function(p) {
+    Object.keys(boothMap[p]||{}).forEach(function(id){ boothUniqueAll[id]=true; });
+    return { program: p, count: Object.keys(boothMap[p]||{}).length };
+  });
+
+  return {
+    sessByProg: sessByProg,
+    sessTotal:  Object.keys(sessUniqueAll).length,
+    boothByProg: boothByProg,
+    boothTotal:  Object.keys(boothUniqueAll).length
+  };
+}
+
 function getOverallStats(password) {
   var ss=SpreadsheetApp.getActiveSpreadsheet();
   var admins=ss.getSheetByName('AdminUsers').getDataRange().getValues();
