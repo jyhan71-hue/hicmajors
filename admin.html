@@ -1131,22 +1131,37 @@ function loadSessPreReg() {
   google.script.run
     .withSuccessHandler(function(rows) {
       var badge = document.getElementById('sessPreRegBadge');
-      if (badge) badge.textContent = (rows ? rows.length : 0) + '명 사전예약';
+      var total = rows ? rows.length : 0;
+      if (badge) badge.textContent = '총 ' + total + '명';
       if (!rows || rows.length === 0) {
         listEl.innerHTML = '<div style="color:#9AA5B4;font-size:.8rem;">사전예약자 없음</div>';
         return;
       }
+      var ic = 0, other = 0;
+      rows.forEach(function(r){ (r.dept==='한양인터칼리지학부' ? ic++ : other++); });
+      var statHtml = '<div style="display:flex;gap:10px;margin-bottom:10px;">'+
+        '<div style="flex:1;background:rgba(255,255,255,.7);border-radius:7px;padding:8px 12px;text-align:center;">'+
+          '<div style="font-size:1.1rem;font-weight:800;color:var(--navy);">'+ic+'</div>'+
+          '<div style="font-size:.7rem;color:#5A6778;margin-top:1px;">인터칼리지학부</div>'+
+        '</div>'+
+        '<div style="flex:1;background:rgba(255,255,255,.7);border-radius:7px;padding:8px 12px;text-align:center;">'+
+          '<div style="font-size:1.1rem;font-weight:800;color:#5A6778;">'+other+'</div>'+
+          '<div style="font-size:.7rem;color:#5A6778;margin-top:1px;">타과생</div>'+
+        '</div>'+
+      '</div>';
       var thS = 'background:rgba(27,38,59,.08);color:var(--navy);font-size:.72rem;font-weight:700;padding:5px 10px;text-align:left;';
       var tdS = 'padding:5px 10px;font-size:.82rem;border-bottom:1px solid rgba(27,38,59,.07);';
       var body = rows.map(function(r, i) {
         var bg = i%2===1 ? 'background:rgba(255,255,255,.6);' : '';
+        var isIc = r.dept === '한양인터칼리지학부';
         return '<tr style="'+bg+'">'+
           '<td style="'+tdS+';font-weight:600;">'+eh(r.name)+'</td>'+
           '<td style="'+tdS+'">'+eh(r.sid)+'</td>'+
-          '<td style="'+tdS+'">'+eh(r.dept)+'</td>'+
+          '<td style="'+tdS+';color:'+(isIc?'var(--navy)':'#5A6778')+';font-weight:'+(isIc?'600':'400')+';">'+eh(r.dept)+'</td>'+
           '</tr>';
       }).join('');
-      listEl.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:.82rem;border-radius:6px;overflow:hidden;">'+
+      listEl.innerHTML = statHtml +
+        '<table style="width:100%;border-collapse:collapse;font-size:.82rem;border-radius:6px;overflow:hidden;">'+
         '<thead><tr><th style="'+thS+'">성명</th><th style="'+thS+'">학번</th><th style="'+thS+'">학과</th></tr></thead>'+
         '<tbody>'+body+'</tbody></table>';
     })
