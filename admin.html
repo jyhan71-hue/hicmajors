@@ -1161,9 +1161,12 @@ function loadSessPreReg() {
           '</tr>';
       }).join('');
       listEl.innerHTML = statHtml +
-        '<table style="width:100%;border-collapse:collapse;font-size:.82rem;border-radius:6px;overflow:hidden;">'+
-        '<thead><tr><th style="'+thS+'">성명</th><th style="'+thS+'">학번</th><th style="'+thS+'">학과</th></tr></thead>'+
-        '<tbody>'+body+'</tbody></table>';
+        '<div style="max-height:220px;overflow-y:auto;border-radius:6px;">'+
+          '<table style="width:100%;border-collapse:collapse;font-size:.82rem;">'+
+            '<thead><tr><th style="'+thS+';position:sticky;top:0;z-index:1;">성명</th><th style="'+thS+';position:sticky;top:0;z-index:1;">학번</th><th style="'+thS+';position:sticky;top:0;z-index:1;">학과</th></tr></thead>'+
+            '<tbody>'+body+'</tbody>'+
+          '</table>'+
+        '</div>';
     })
     .withFailureHandler(function(e) {
       listEl.innerHTML = '<div style="color:#C53030;font-size:.8rem;">오류: '+eh(e.message)+'</div>';
