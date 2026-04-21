@@ -123,6 +123,10 @@ function _getSettings() {
         end:   rows[i][3] ? toTimeStr(rows[i][3]) : ''
       });
     }
+    else if (key === '설명회정원' && val) {
+      var cap = parseInt(val, 10);
+      if (!isNaN(cap) && cap > 0) SESSION_CAPACITY = cap;
+    }
     else if (key === '부스프로그램' && val) result.boothPrograms.push(val);
   }
   return result;
