@@ -1696,11 +1696,12 @@ function getPreReservationDetail(password, type, program) {
     if (isBooth) {
       var rowStatus = String(data[i][9] || '').trim();
       if (rowStatus === '취소') continue;
+      var st = toTimeStr(data[i][6]);
       result.push({
         name: String(data[i][0] || ''),
         sid:  String(data[i][1] || ''),
         dept: String(data[i][2] || ''),
-        time: String(data[i][6] || ''),
+        time: st ? (st + ' ~ ' + addMinutes(st, 15)) : '',
         inquiry: String(data[i][7] || '')
       });
     } else {
