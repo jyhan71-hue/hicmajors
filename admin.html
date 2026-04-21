@@ -529,7 +529,7 @@ function renderPreResStat(data) {
     }).join('');
   }
 
-  var sessRows  = makeRows(data.sessByProg||[], 'sess');
+  var sessRows  = makeRows(data.sessByProg||[], 'session');
   var boothRows = makeRows(data.boothByProg||[], 'booth');
 
   document.getElementById('preResSummary').innerHTML =
