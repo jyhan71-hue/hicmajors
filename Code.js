@@ -1684,30 +1684,31 @@ function getPreReservationDetail(password, type, program) {
   }
   if (!authorized) throw new Error('권한이 없습니다.');
 
+  var isBooth = (type === 'booth');
+  var sheetName = isBooth ? 'BoothReservations' : 'SessionPreReg';
+  var sh = ss.getSheetByName(sheetName);
   var result = [];
-  if (type === 'session') {
-    // SessionPreReg: col[0]=이름, col[1]=학번, col[2]=학과, col[3]=연락처, col[4]=이메일, col[5]=설명회명
-    var sSheet = ss.getSheetByName('SessionPreReg');
-    if (sSheet && sSheet.getLastRow() > 1) {
-      var sRows = sSheet.getDataRange().getValues();
-      for (var j = 1; j < sRows.length; j++) {
-        if ((sRows[j][5] || '').toString().trim() === program) {
-          result.push({ name: sRows[j][0], sid: sRows[j][1], dept: sRows[j][2] });
-        }
-      }
-    }
-  } else if (type === 'booth') {
-    // BoothReservations: col[0]=이름, col[1]=학번, col[2]=학과, col[3]=이메일, col[4]=연락처, col[5]=프로그램, col[6]=시간, col[7]=문의내용, col[8]=서명, col[9]=상태
-    var bSheet = ss.getSheetByName('BoothReservations');
-    if (bSheet && bSheet.getLastRow() > 1) {
-      var bRows = bSheet.getDataRange().getValues();
-      for (var k = 1; k < bRows.length; k++) {
-        var bProg = (bRows[k][5] || '').toString().trim();
-        var bStatus = (bRows[k][9] || '').toString().trim();
-        if (bProg === program && bStatus !== '취소') {
-          result.push({ name: bRows[k][0], sid: bRows[k][1], dept: bRows[k][2], time: bRows[k][6], inquiry: bRows[k][7] });
-        }
-      }
+  if (!sh || sh.getLastRow() <= 1) return result;
+  var data = sh.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    var rowProg = String(data[i][5] || '').trim();
+    if (rowProg !== program) continue;
+    if (isBooth) {
+      var rowStatus = String(data[i][9] || '').trim();
+      if (rowStatus === '취소') continue;
+      result.push({
+        name: String(data[i][0] || ''),
+        sid:  String(data[i][1] || ''),
+        dept: String(data[i][2] || ''),
+        time: String(data[i][6] || ''),
+        inquiry: String(data[i][7] || '')
+      });
+    } else {
+      result.push({
+        name: String(data[i][0] || ''),
+        sid:  String(data[i][1] || ''),
+        dept: String(data[i][2] || '')
+      });
     }
   }
   return result;
@@ -2929,4 +2930,29 @@ function getIntercollegeStudentList(password) {
   });
   result.forEach(function(r, i) { r.no = i + 1; });
   return result;
+}
+
+// ─── 임시 디버그: GAS 에디터에서 직접 실행 (배포 불필요) ───
+function debugBoothDetail() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('BoothReservations');
+  if (!sheet) { Logger.log('BoothReservations 시트 없음'); return; }
+  var rows = sheet.getDataRange().getValues();
+  Logger.log('총 행 수: ' + rows.length);
+  Logger.log('헤더: ' + JSON.stringify(rows[0]));
+  // 모든 프로그램명 목록 수집
+  var progs = {};
+  for (var i = 1; i < rows.length; i++) {
+    var p = (rows[i][5] || '').toString().trim();
+    var st = (rows[i][9] || '').toString().trim();
+    if (!progs[p]) progs[p] = 0;
+    if (st !== '취소') progs[p]++;
+  }
+  Logger.log('프로그램별 비취소 건수: ' + JSON.stringify(progs));
+  // Settings boothPrograms 와 비교
+  var cfg = _getSettings();
+  Logger.log('Settings boothPrograms: ' + JSON.stringify(cfg.boothPrograms));
+  cfg.boothPrograms.forEach(function(name) {
+    Logger.log('매칭 [' + name + '] → ' + (progs[name] || 0) + '건');
+  });
 }
