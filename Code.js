@@ -1675,6 +1675,44 @@ function getPreReservationStats(password) {
   };
 }
 
+function getPreReservationDetail(password, type, program) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();
+  var authorized = false;
+  for (var i = 1; i < admins.length; i++) {
+    if (admins[i][2].toString().trim() === '전체관리' && admins[i][3].toString().trim() === password.toString().trim()) { authorized = true; break; }
+  }
+  if (!authorized) throw new Error('권한이 없습니다.');
+
+  var result = [];
+  if (type === 'session') {
+    // SessionPreReg: col[0]=이름, col[1]=학번, col[2]=학과, col[3]=연락처, col[4]=이메일, col[5]=설명회명
+    var sheet = ss.getSheetByName('SessionPreReg');
+    if (sheet && sheet.getLastRow() > 1) {
+      var rows = sheet.getDataRange().getValues();
+      for (var j = 1; j < rows.length; j++) {
+        if ((rows[j][5] || '').toString().trim() === program) {
+          result.push({ name: rows[j][0], sid: rows[j][1], dept: rows[j][2] });
+        }
+      }
+    }
+  } else if (type === 'booth') {
+    // BoothReservations: col[0]=이름, col[1]=학번, col[2]=학과, col[3]=이메일, col[4]=연락처, col[5]=프로그램, col[6]=시간, col[7]=문의내용, col[8]=서명, col[9]=상태
+    var sheet = ss.getSheetByName('BoothReservations');
+    if (sheet && sheet.getLastRow() > 1) {
+      var rows = sheet.getDataRange().getValues();
+      for (var k = 1; k < rows.length; k++) {
+        var bProg = (rows[k][5] || '').toString().trim();
+        var bStatus = (rows[k][9] || '').toString().trim();
+        if (bProg === program && bStatus !== '취소') {
+          result.push({ name: rows[k][0], sid: rows[k][1], dept: rows[k][2], time: rows[k][6], inquiry: rows[k][7] });
+        }
+      }
+    }
+  }
+  return result;
+}
+
 function getOverallStats(password) {
   var ss=SpreadsheetApp.getActiveSpreadsheet();
   var admins=ss.getSheetByName('AdminUsers').getDataRange().getValues();

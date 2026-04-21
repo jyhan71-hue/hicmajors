@@ -513,17 +513,25 @@ function loadPreReservationStats(){
     .getPreReservationStats(_pw);
 }
 function renderPreResStat(data) {
-  var sessRows = (data.sessByProg||[]).map(function(r) {
-    return '<tr><td style="padding:5px 10px;font-weight:600;">'+eh(r.program)+'</td>'+
-           '<td style="padding:5px 10px;text-align:right;font-weight:700;color:var(--navy);">'+r.count+'명</td></tr>';
-  }).join('');
-  var boothRows = (data.boothByProg||[]).map(function(r) {
-    return '<tr><td style="padding:5px 10px;font-weight:600;">'+eh(r.program)+'</td>'+
-           '<td style="padding:5px 10px;text-align:right;font-weight:700;color:var(--navy);">'+r.count+'명</td></tr>';
-  }).join('');
   var tblStyle = 'width:100%;border-collapse:collapse;font-size:.83rem;';
   var thStyle  = 'background:#EEF2F7;color:var(--navy);font-size:.72rem;font-weight:700;padding:6px 10px;text-align:left;letter-spacing:.04em;';
   var totStyle = 'background:#F4F7F9;border-top:2px solid #DDE3EA;';
+  var rowStyle = 'cursor:pointer;transition:background .12s;';
+
+  function makeRows(list, type) {
+    return list.map(function(r, i) {
+      var key = type+'-'+i;
+      return '<tr id="prerow-'+key+'" onclick="togglePreDetail(\''+key+'\',\''+type+'\',\''+ea(r.program)+'\')" style="'+rowStyle+'"'+
+             ' onmouseover="this.style.background=\'#F0F4F8\'" onmouseout="this.style.background=\'\'">'+
+             '<td style="padding:5px 10px;font-weight:600;">'+eh(r.program)+' <span style="font-size:.7rem;color:#9AA5B4;" id="prearrow-'+key+'">▶</span></td>'+
+             '<td style="padding:5px 10px;text-align:right;font-weight:700;color:var(--navy);">'+r.count+'명</td></tr>'+
+             '<tr id="predetail-'+key+'" style="display:none;"><td colspan="2" style="padding:0;"></td></tr>';
+    }).join('');
+  }
+
+  var sessRows  = makeRows(data.sessByProg||[], 'sess');
+  var boothRows = makeRows(data.boothByProg||[], 'booth');
+
   document.getElementById('preResSummary').innerHTML =
     '<div style="display:flex;gap:16px;flex-wrap:wrap;">'+
       '<div style="flex:1;min-width:220px;">'+
@@ -550,6 +558,63 @@ function renderPreResStat(data) {
           '</tbody>'+
         '</table>'+
       '</div>'+
+    '</div>';
+}
+
+function togglePreDetail(key, type, program) {
+  var detailRow = document.getElementById('predetail-'+key);
+  var arrow = document.getElementById('prearrow-'+key);
+  if (!detailRow) return;
+  var isOpen = detailRow.style.display !== 'none';
+  if (isOpen) {
+    detailRow.style.display = 'none';
+    if (arrow) arrow.textContent = '▶';
+    return;
+  }
+  // 로딩 표시
+  detailRow.style.display = '';
+  detailRow.querySelector('td').innerHTML = '<div style="padding:10px 14px;color:#9AA5B4;font-size:.8rem;">불러오는 중...</div>';
+  if (arrow) arrow.textContent = '▼';
+  google.script.run
+    .withSuccessHandler(function(rows) { renderPreDetail(key, type, rows); })
+    .withFailureHandler(function(e) {
+      detailRow.querySelector('td').innerHTML = '<div style="padding:8px 14px;color:#C53030;font-size:.8rem;">오류: '+eh(e.message)+'</div>';
+    })
+    .getPreReservationDetail(_pw, type, program);
+}
+
+function renderPreDetail(key, type, rows) {
+  var detailRow = document.getElementById('predetail-'+key);
+  if (!detailRow) return;
+  if (!rows || rows.length === 0) {
+    detailRow.querySelector('td').innerHTML = '<div style="padding:8px 14px;color:#9AA5B4;font-size:.8rem;">예약자 없음</div>';
+    return;
+  }
+  var isBooth = type === 'booth';
+  var thS = 'background:#F4F7F9;color:#5A6778;font-size:.72rem;font-weight:700;padding:5px 10px;border-bottom:1px solid #DDE3EA;';
+  var tdS = 'padding:5px 10px;font-size:.81rem;border-bottom:1px solid #F0F4F8;';
+  var header = '<tr>'+
+    (isBooth ? '<th style="'+thS+'">예약시간</th>' : '')+
+    '<th style="'+thS+'">성명</th>'+
+    '<th style="'+thS+'">학번</th>'+
+    '<th style="'+thS+'">학과</th>'+
+    (isBooth ? '<th style="'+thS+'">문의내용</th>' : '')+
+    '</tr>';
+  var body = rows.map(function(r, idx) {
+    var bg = idx%2===1 ? 'background:#FAFBFC;' : '';
+    return '<tr style="'+bg+'">'+
+      (isBooth ? '<td style="'+tdS+'">'+(r.time||'-')+'</td>' : '')+
+      '<td style="'+tdS+';font-weight:600;">'+eh(r.name||'')+'</td>'+
+      '<td style="'+tdS+'">'+eh(r.sid||'')+'</td>'+
+      '<td style="'+tdS+'">'+eh(r.dept||'')+'</td>'+
+      (isBooth ? '<td style="'+tdS+';color:#5A6778;">'+eh(r.inquiry||'-')+'</td>' : '')+
+      '</tr>';
+  }).join('');
+  detailRow.querySelector('td').innerHTML =
+    '<div style="padding:8px 12px 12px;background:#FAFBFC;border-top:1px solid #EEF2F7;">'+
+      '<table style="width:100%;border-collapse:collapse;font-size:.82rem;">'+
+        '<thead>'+header+'</thead><tbody>'+body+'</tbody>'+
+      '</table>'+
     '</div>';
 }
 function loadOverallStats(){document.getElementById('dashSummary').innerHTML='<div style="text-align:center;padding:16px;color:#9AA5B4;font-size:.83rem;width:100%;">불러오는 중...</div>';document.getElementById('dashProgGrid').innerHTML='';google.script.run.withSuccessHandler(renderDashboard).withFailureHandler(function(e){document.getElementById('dashSummary').innerHTML='<div style="color:#C53030;font-size:.82rem;">오류: '+eh(e.message)+'</div>';}).getOverallStats(_pw);}
