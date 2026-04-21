@@ -305,6 +305,14 @@
     <div class="right"><button class="btn-ghost" onclick="refresh()">🔄 새로고침</button><button class="btn-ghost" onclick="openManual()">📖 매뉴얼</button><button class="btn-ghost" onclick="resetAdmin()">로그아웃</button></div>
   </div>
   <div class="admin-body">
+    <!-- 설명회 사전예약 현황 (본인 담당 프로그램) -->
+    <div id="sessPreRegSection" style="display:none;background:#EBF4FF;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:.88rem;font-weight:800;color:var(--navy);">📋 설명회 사전예약 현황</div>
+        <span id="sessPreRegBadge" style="background:var(--navy);color:#fff;font-size:.78rem;font-weight:700;padding:2px 10px;border-radius:12px;"></span>
+      </div>
+      <div id="sessPreRegList"></div>
+    </div>
     <div class="stat-row" id="statRow"></div>
     <div class="admin-tabs" style="max-width:360px;">
       <button class="admin-tab active" id="tab-btn-resv"  onclick="switchAdminTab('resv')"> <span class="tab-icon">📋</span><span class="tab-label">예약 현황</span></button>
@@ -390,7 +398,7 @@ function login(){
       document.getElementById('adminCard').style.display='block';
       document.getElementById('dispProg').textContent=d.programName;
       document.getElementById('dispProf').textContent=d.profName+' '+d.title+'님';
-      renderAll(d.reservations);loadSlotStatus();
+      renderAll(d.reservations);loadSlotStatus();loadSessPreReg();
     })
     .withFailureHandler(function(e){rb();alert(e.message);})
     .getAdminData(progVal,pwVal);
@@ -1110,6 +1118,42 @@ function toggleWalkBlock(){
     })
     .withFailureHandler(function(e){btn.disabled=false;alert(e.message);})
     .setWalkInBlock(_pw, isBlocking);
+}
+
+function loadSessPreReg() {
+  var sec = document.getElementById('sessPreRegSection');
+  var listEl = document.getElementById('sessPreRegList');
+  if (!sec || !listEl) return;
+  // 설명회 세션에 없는 프로그램이면 숨김
+  if (SESS_LIST.indexOf(_prog) === -1) { sec.style.display='none'; return; }
+  sec.style.display='block';
+  listEl.innerHTML='<div style="color:#9AA5B4;font-size:.8rem;">불러오는 중...</div>';
+  google.script.run
+    .withSuccessHandler(function(rows) {
+      var badge = document.getElementById('sessPreRegBadge');
+      if (badge) badge.textContent = (rows ? rows.length : 0) + '명 사전예약';
+      if (!rows || rows.length === 0) {
+        listEl.innerHTML = '<div style="color:#9AA5B4;font-size:.8rem;">사전예약자 없음</div>';
+        return;
+      }
+      var thS = 'background:rgba(27,38,59,.08);color:var(--navy);font-size:.72rem;font-weight:700;padding:5px 10px;text-align:left;';
+      var tdS = 'padding:5px 10px;font-size:.82rem;border-bottom:1px solid rgba(27,38,59,.07);';
+      var body = rows.map(function(r, i) {
+        var bg = i%2===1 ? 'background:rgba(255,255,255,.6);' : '';
+        return '<tr style="'+bg+'">'+
+          '<td style="'+tdS+';font-weight:600;">'+eh(r.name)+'</td>'+
+          '<td style="'+tdS+'">'+eh(r.sid)+'</td>'+
+          '<td style="'+tdS+'">'+eh(r.dept)+'</td>'+
+          '</tr>';
+      }).join('');
+      listEl.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:.82rem;border-radius:6px;overflow:hidden;">'+
+        '<thead><tr><th style="'+thS+'">성명</th><th style="'+thS+'">학번</th><th style="'+thS+'">학과</th></tr></thead>'+
+        '<tbody>'+body+'</tbody></table>';
+    })
+    .withFailureHandler(function(e) {
+      listEl.innerHTML = '<div style="color:#C53030;font-size:.8rem;">오류: '+eh(e.message)+'</div>';
+    })
+    .getSessionPreRegForProgram(_pw, _prog);
 }
 
 function resetAdmin(){_prog='';_pw='';document.getElementById('adminCard').style.display='none';document.getElementById('officeCard').style.display='none';document.getElementById('loginCard').style.display='block';document.getElementById('loginProg').value='';document.getElementById('pw').value='';document.getElementById('listBody').innerHTML='';document.getElementById('statRow').innerHTML='';document.getElementById('selCount').textContent='';document.getElementById('btnBatchSave').disabled=true;document.getElementById('chkAll').checked=false;window.scrollTo(0,0);}

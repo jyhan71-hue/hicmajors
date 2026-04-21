@@ -2933,6 +2933,33 @@ function getIntercollegeStudentList(password) {
   return result;
 }
 
+// ─────────────────────────────────────────────
+// 프로그램별 설명회 사전예약 현황 (부스 담당 교수용)
+// ─────────────────────────────────────────────
+function getSessionPreRegForProgram(password, program) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();
+  var authorized = false;
+  for (var i = 1; i < admins.length; i++) {
+    var role = admins[i][2] ? admins[i][2].toString().trim() : '';
+    var pw   = admins[i][3] ? admins[i][3].toString().trim() : '';
+    if (pw === password.toString().trim() && (role === '전체관리' || role === program.toString().trim())) {
+      authorized = true; break;
+    }
+  }
+  if (!authorized) throw new Error('권한이 없습니다.');
+  var sheet = ss.getSheetByName('SessionPreReg');
+  var result = [];
+  if (!sheet || sheet.getLastRow() <= 1) return result;
+  var rows = sheet.getDataRange().getValues();
+  for (var j = 1; j < rows.length; j++) {
+    if (String(rows[j][5] || '').trim() === program.toString().trim()) {
+      result.push({ name: String(rows[j][0] || ''), sid: String(rows[j][1] || ''), dept: String(rows[j][2] || '') });
+    }
+  }
+  return result;
+}
+
 // ─── 임시 디버그: GAS 에디터에서 직접 실행 (배포 불필요) ───
 function debugBoothDetail() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
