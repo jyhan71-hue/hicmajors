@@ -1149,10 +1149,10 @@ function loadSessPreReg() {
           '<div style="font-size:.7rem;color:#5A6778;margin-top:1px;">타과생</div>'+
         '</div>'+
       '</div>';
-      var thS = 'background:rgba(27,38,59,.08);color:var(--navy);font-size:.72rem;font-weight:700;padding:5px 10px;text-align:left;';
-      var tdS = 'padding:5px 10px;font-size:.82rem;border-bottom:1px solid rgba(27,38,59,.07);';
+      var thS = 'background:#C8DCF5;color:var(--navy);font-size:.72rem;font-weight:700;padding:5px 10px;text-align:left;';
+      var tdS = 'padding:5px 10px;font-size:.82rem;border-bottom:1px solid #D6E8FF;';
       var body = rows.map(function(r, i) {
-        var bg = i%2===1 ? 'background:rgba(255,255,255,.6);' : '';
+        var bg = i%2===1 ? 'background:#EEF5FF;' : 'background:#F5F9FF;';
         var isIc = r.dept === '한양인터칼리지학부';
         return '<tr style="'+bg+'">'+
           '<td style="'+tdS+';font-weight:600;">'+eh(r.name)+'</td>'+
