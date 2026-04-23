@@ -552,7 +552,7 @@ function renderPreResStat(data) {
           '<tbody>'+sessRows+
             '<tr style="'+totStyle+'">'+
               '<td style="padding:6px 10px;font-weight:700;font-size:.8rem;">총 인원 <span style="font-size:.7rem;color:#9AA5B4;">(중복 제거)</span></td>'+
-              '<td style="padding:6px 10px;text-align:right;font-weight:800;font-size:1rem;color:var(--navy);">'+(data.sessTotal||0)+'명</td>'+
+              '<td style="padding:6px 10px;text-align:right;font-weight:800;font-size:1rem;color:var(--navy);">'+(data.sessTotal||0)+'명<div style="font-size:.69rem;font-weight:400;color:#7A8899;margin-top:2px;">HIC '+(data.sessTotalIc||0)+' · 타과 '+(data.sessTotalOther||0)+'</div></td>'+
             '</tr>'+
           '</tbody>'+
         '</table>'+
@@ -564,7 +564,7 @@ function renderPreResStat(data) {
           '<tbody>'+boothRows+
             '<tr style="'+totStyle+'">'+
               '<td style="padding:6px 10px;font-weight:700;font-size:.8rem;">총 인원 <span style="font-size:.7rem;color:#9AA5B4;">(중복 제거)</span></td>'+
-              '<td style="padding:6px 10px;text-align:right;font-weight:800;font-size:1rem;color:var(--navy);">'+(data.boothTotal||0)+'명</td>'+
+              '<td style="padding:6px 10px;text-align:right;font-weight:800;font-size:1rem;color:var(--navy);">'+(data.boothTotal||0)+'명<div style="font-size:.69rem;font-weight:400;color:#7A8899;margin-top:2px;">HIC '+(data.boothTotalIc||0)+' · 타과 '+(data.boothTotalOther||0)+'</div></td>'+
             '</tr>'+
           '</tbody>'+
         '</table>'+

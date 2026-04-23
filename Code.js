@@ -1651,11 +1651,13 @@ function getPreReservationStats(password) {
   var sessByProg = SESSION_PROGS.map(function(p) {
     var ic = 0, other = 0;
     Object.keys(sessMap[p]||{}).forEach(function(id){
-      sessUniqueAll[id] = true;
+      sessUniqueAll[id] = sessMap[p][id];
       if (sessMap[p][id] === INTERCOLLEGE_DEPT) ic++; else other++;
     });
     return { program: p, count: Object.keys(sessMap[p]||{}).length, ic: ic, other: other };
   });
+  var sessTotalIc = 0, sessTotalOther = 0;
+  Object.keys(sessUniqueAll).forEach(function(id){ if (sessUniqueAll[id] === INTERCOLLEGE_DEPT) sessTotalIc++; else sessTotalOther++; });
 
   // 부스 사전예약 (BoothReservations: col[1]=학번, col[2]=학과, col[5]=프로그램, col[9]=상태, 취소 제외)
   var boothMap = {};
@@ -1675,17 +1677,23 @@ function getPreReservationStats(password) {
   var boothByProg = BOOTH_PROGS.map(function(p) {
     var ic = 0, other = 0;
     Object.keys(boothMap[p]||{}).forEach(function(id){
-      boothUniqueAll[id] = true;
+      boothUniqueAll[id] = boothMap[p][id];
       if (boothMap[p][id] === INTERCOLLEGE_DEPT) ic++; else other++;
     });
     return { program: p, count: Object.keys(boothMap[p]||{}).length, ic: ic, other: other };
   });
+  var boothTotalIc = 0, boothTotalOther = 0;
+  Object.keys(boothUniqueAll).forEach(function(id){ if (boothUniqueAll[id] === INTERCOLLEGE_DEPT) boothTotalIc++; else boothTotalOther++; });
 
   return {
-    sessByProg: sessByProg,
-    sessTotal:  Object.keys(sessUniqueAll).length,
-    boothByProg: boothByProg,
-    boothTotal:  Object.keys(boothUniqueAll).length
+    sessByProg:    sessByProg,
+    sessTotal:     Object.keys(sessUniqueAll).length,
+    sessTotalIc:   sessTotalIc,
+    sessTotalOther: sessTotalOther,
+    boothByProg:   boothByProg,
+    boothTotal:    Object.keys(boothUniqueAll).length,
+    boothTotalIc:  boothTotalIc,
+    boothTotalOther: boothTotalOther
   };
 }
 
