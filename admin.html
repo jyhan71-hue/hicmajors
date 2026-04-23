@@ -529,10 +529,13 @@ function renderPreResStat(data) {
   function makeRows(list, type) {
     return list.map(function(r, i) {
       var key = type+'-'+i;
+      var breakdown = (r.count > 0)
+        ? '<div style="font-size:.69rem;font-weight:400;color:#7A8899;margin-top:2px;">인터 '+r.ic+' · 타과 '+r.other+'</div>'
+        : '';
       return '<tr id="prerow-'+key+'" onclick="togglePreDetail(\''+key+'\',\''+type+'\',\''+ea(r.program)+'\')" style="'+rowStyle+'"'+
              ' onmouseover="this.style.background=\'#F0F4F8\'" onmouseout="this.style.background=\'\'">'+
              '<td style="padding:5px 10px;font-weight:600;">'+eh(r.program)+' <span style="font-size:.7rem;color:#9AA5B4;" id="prearrow-'+key+'">▶</span></td>'+
-             '<td style="padding:5px 10px;text-align:right;font-weight:700;color:var(--navy);">'+r.count+'명</td></tr>'+
+             '<td style="padding:5px 10px;text-align:right;font-weight:700;color:var(--navy);">'+r.count+'명'+breakdown+'</td></tr>'+
              '<tr id="predetail-'+key+'" style="display:none;"><td colspan="2" style="padding:0;"></td></tr>';
     }).join('');
   }
@@ -1149,24 +1152,23 @@ function loadSessPreReg() {
           '<div style="font-size:.7rem;color:#5A6778;margin-top:1px;">타과생</div>'+
         '</div>'+
       '</div>';
-      var thS = 'background:#C8DCF5;color:var(--navy);font-size:.72rem;font-weight:700;padding:5px 10px;text-align:left;';
-      var tdS = 'padding:5px 10px;font-size:.82rem;border-bottom:1px solid #D6E8FF;';
-      var body = rows.map(function(r, i) {
-        var bg = i%2===1 ? 'background:#EEF5FF;' : 'background:#F5F9FF;';
-        var isIc = r.dept === '한양인터칼리지학부';
-        return '<tr style="'+bg+'">'+
-          '<td style="'+tdS+';font-weight:600;">'+eh(r.name)+'</td>'+
-          '<td style="'+tdS+'">'+eh(r.sid)+'</td>'+
-          '<td style="'+tdS+';color:'+(isIc?'var(--navy)':'#5A6778')+';font-weight:'+(isIc?'600':'400')+';">'+eh(r.dept)+'</td>'+
-          '</tr>';
-      }).join('');
-      listEl.innerHTML = statHtml +
-        '<div style="max-height:220px;overflow-y:auto;border-radius:6px;">'+
-          '<table style="width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;">'+
-            '<thead><tr><th style="'+thS+';position:sticky;top:0;z-index:2;">성명</th><th style="'+thS+';position:sticky;top:0;z-index:2;">학번</th><th style="'+thS+';position:sticky;top:0;z-index:2;">학과</th></tr></thead>'+
-            '<tbody>'+body+'</tbody>'+
-          '</table>'+
+      var colW = ['28%','32%','40%'];
+      var cols = ['성명','학번','학과'];
+      var thS = 'flex:0 0 '+colW[0]+';padding:5px 10px;font-size:.72rem;font-weight:700;color:var(--navy);';
+      var headerHtml = '<div style="display:flex;background:#C8DCF5;border-radius:6px 6px 0 0;">'+
+        cols.map(function(c,i){ return '<div style="flex:0 0 '+colW[i]+';padding:5px 10px;font-size:.72rem;font-weight:700;color:var(--navy);">'+c+'</div>'; }).join('')+
         '</div>';
+      var body = rows.map(function(r, i) {
+        var bg = i%2===1 ? '#EEF5FF' : '#F5F9FF';
+        var isIc = r.dept === '한양인터칼리지학부';
+        return '<div style="display:flex;background:'+bg+';border-bottom:1px solid #D6E8FF;">'+
+          '<div style="flex:0 0 '+colW[0]+';padding:5px 10px;font-size:.82rem;font-weight:600;">'+eh(r.name)+'</div>'+
+          '<div style="flex:0 0 '+colW[1]+';padding:5px 10px;font-size:.82rem;">'+eh(r.sid)+'</div>'+
+          '<div style="flex:0 0 '+colW[2]+';padding:5px 10px;font-size:.82rem;color:'+(isIc?'var(--navy)':'#5A6778')+';font-weight:'+(isIc?'600':'400')+';">'+eh(r.dept)+'</div>'+
+          '</div>';
+      }).join('');
+      listEl.innerHTML = statHtml + headerHtml +
+        '<div style="max-height:196px;overflow-y:auto;border-radius:0 0 6px 6px;">'+body+'</div>';
     })
     .withFailureHandler(function(e) {
       listEl.innerHTML = '<div style="color:#C53030;font-size:.8rem;">오류: '+eh(e.message)+'</div>';

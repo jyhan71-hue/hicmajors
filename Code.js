@@ -1634,7 +1634,7 @@ function getPreReservationStats(password) {
   var SESSION_PROGS = cfg.sessions.map(function(s){ return s.name; });
   var BOOTH_PROGS = cfg.boothPrograms;
 
-  // 설명회 사전예약 (SessionPreReg: col[1]=학번, col[5]=설명회명)
+  // 설명회 사전예약 (SessionPreReg: col[1]=학번, col[2]=학과, col[5]=설명회명)
   var sessMap = {};
   SESSION_PROGS.forEach(function(p){ sessMap[p] = {}; });
   var sessSheet = ss.getSheetByName('SessionPreReg');
@@ -1643,16 +1643,21 @@ function getPreReservationStats(password) {
     for (var j=1; j<sessRows.length; j++) {
       var sid = sessRows[j][1] ? sessRows[j][1].toString().trim() : '';
       var prog = sessRows[j][5] ? sessRows[j][5].toString().trim() : '';
-      if (sid && sessMap[prog] !== undefined) sessMap[prog][sid] = true;
+      var dept = sessRows[j][2] ? sessRows[j][2].toString().trim() : '';
+      if (sid && sessMap[prog] !== undefined) sessMap[prog][sid] = dept;
     }
   }
   var sessUniqueAll = {};
   var sessByProg = SESSION_PROGS.map(function(p) {
-    Object.keys(sessMap[p]||{}).forEach(function(id){ sessUniqueAll[id]=true; });
-    return { program: p, count: Object.keys(sessMap[p]||{}).length };
+    var ic = 0, other = 0;
+    Object.keys(sessMap[p]||{}).forEach(function(id){
+      sessUniqueAll[id] = true;
+      if (sessMap[p][id] === INTERCOLLEGE_DEPT) ic++; else other++;
+    });
+    return { program: p, count: Object.keys(sessMap[p]||{}).length, ic: ic, other: other };
   });
 
-  // 부스 사전예약 (BoothReservations: col[1]=학번, col[5]=프로그램, col[9]=상태, 취소 제외)
+  // 부스 사전예약 (BoothReservations: col[1]=학번, col[2]=학과, col[5]=프로그램, col[9]=상태, 취소 제외)
   var boothMap = {};
   BOOTH_PROGS.forEach(function(p){ boothMap[p] = {}; });
   var boothSheet = ss.getSheetByName('BoothReservations');
@@ -1662,13 +1667,18 @@ function getPreReservationStats(password) {
       var bSid = boothRows[k][1] ? boothRows[k][1].toString().trim() : '';
       var bProg = boothRows[k][5] ? boothRows[k][5].toString().trim() : '';
       var bStatus = boothRows[k][9] ? boothRows[k][9].toString().trim() : '';
-      if (bSid && bStatus !== '취소' && boothMap[bProg] !== undefined) boothMap[bProg][bSid] = true;
+      var bDept = boothRows[k][2] ? boothRows[k][2].toString().trim() : '';
+      if (bSid && bStatus !== '취소' && boothMap[bProg] !== undefined) boothMap[bProg][bSid] = bDept;
     }
   }
   var boothUniqueAll = {};
   var boothByProg = BOOTH_PROGS.map(function(p) {
-    Object.keys(boothMap[p]||{}).forEach(function(id){ boothUniqueAll[id]=true; });
-    return { program: p, count: Object.keys(boothMap[p]||{}).length };
+    var ic = 0, other = 0;
+    Object.keys(boothMap[p]||{}).forEach(function(id){
+      boothUniqueAll[id] = true;
+      if (boothMap[p][id] === INTERCOLLEGE_DEPT) ic++; else other++;
+    });
+    return { program: p, count: Object.keys(boothMap[p]||{}).length, ic: ic, other: other };
   });
 
   return {
