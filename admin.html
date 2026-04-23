@@ -530,7 +530,7 @@ function renderPreResStat(data) {
     return list.map(function(r, i) {
       var key = type+'-'+i;
       var breakdown = (r.count > 0)
-        ? '<div style="font-size:.69rem;font-weight:400;color:#7A8899;margin-top:2px;">인터 '+r.ic+' · 타과 '+r.other+'</div>'
+        ? '<div style="font-size:.69rem;font-weight:400;color:#7A8899;margin-top:2px;">HIC '+r.ic+' · 타과 '+r.other+'</div>'
         : '';
       return '<tr id="prerow-'+key+'" onclick="togglePreDetail(\''+key+'\',\''+type+'\',\''+ea(r.program)+'\')" style="'+rowStyle+'"'+
              ' onmouseover="this.style.background=\'#F0F4F8\'" onmouseout="this.style.background=\'\'">'+
