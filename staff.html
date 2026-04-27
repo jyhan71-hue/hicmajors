@@ -1294,18 +1294,31 @@ function giUpdateBoothCount(){
 
 
 function giUpdateSignRequest(){
-  var ok=_checkedBooths.length>=BOOTH_REQUIRED;
-  document.getElementById('gi-stampWarnBox').style.display=ok?'none':'block';
-  document.getElementById('gi-signRequestSection').style.display=ok?'block':'none';
-  if(!ok) document.getElementById('gi-stampWarnMsg').textContent=
-    '부스 스탬프가 '+BOOTH_REQUIRED+'개 이상이어야 합니다. (현재 '+_checkedBooths.length+'개)';
+  var n=_checkedBooths.length;
+  var warnBox=document.getElementById('gi-stampWarnBox');
+  var signSec=document.getElementById('gi-signRequestSection');
+  if(n===0){
+    warnBox.style.display='block';
+    document.getElementById('gi-stampWarnMsg').textContent='방문한 부스를 1개 이상 선택해야 합니다.';
+    signSec.style.display='none';
+  } else if(n<BOOTH_REQUIRED){
+    warnBox.style.display='block';
+    document.getElementById('gi-stampWarnMsg').textContent='선택한 부스가 '+n+'개입니다. (권장 '+BOOTH_REQUIRED+'개 이상) — 확인 후 서명 진행하세요.';
+    signSec.style.display='block';
+  } else {
+    warnBox.style.display='none';
+    signSec.style.display='block';
+  }
 }
 
 function giGoToStudentSign(){
   if(!_giCurrentStatus) return;
-  if(_checkedBooths.length < BOOTH_REQUIRED){
-    alert('부스 스탬프가 '+BOOTH_REQUIRED+'개 이상이어야 합니다. (현재 '+_checkedBooths.length+'개)');
+  if(_checkedBooths.length===0){
+    alert('방문한 부스를 1개 이상 선택해야 합니다.');
     return;
+  }
+  if(_checkedBooths.length<BOOTH_REQUIRED){
+    if(!confirm('선택한 부스가 '+_checkedBooths.length+'개입니다. 기념품을 지급하시겠습니까?')) return;
   }
   var st=_giCurrentStatus;
   var icBadge=st.isIntercollege?'<span class="badge badge-ic">인터칼리지</span>':'';
@@ -1334,7 +1347,7 @@ function clearSig(){ if(sigPad) sigPad.clear(); }
 
 function giSubmitGift(){
   if(!sigPad||sigPad.isEmpty()){ alert('서명을 해주세요.'); return; }
-  if(_checkedBooths.length < BOOTH_REQUIRED){ alert('부스 스탬프가 '+BOOTH_REQUIRED+'개 이상이어야 합니다.'); return; }
+  if(_checkedBooths.length===0){ alert('방문한 부스를 1개 이상 선택해야 합니다.'); return; }
   var btn=document.getElementById('btnSubmitSign');
   btn.disabled=true; btn.textContent='저장 중...';
   google.script.run

@@ -915,7 +915,7 @@ function getGiftList(password) {
   var result = [];
   Object.keys(byStudent).forEach(function(sid2) {
     var s = byStudent[sid2];
-    if (!ciMap[sid2] || s.stampCount < BOOTH_STAMP_REQUIRED) return; // 자격 미달 제외
+    if (!ciMap[sid2] || s.stampCount < 1) return; // 자격 미달 제외 (부스 1개 이상)
     result.push({
       no:             0,
       receivedAt:     s.receivedAt,
@@ -1820,6 +1820,41 @@ function getOverallStats(password) {
   };
 }
 
+function getBoothAttendees(password) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();
+  var authorized = false;
+  for (var i = 1; i < admins.length; i++) {
+    if (admins[i][2].toString().trim() === '전체관리' && admins[i][3].toString().trim() === password.toString().trim()) { authorized = true; break; }
+  }
+  if (!authorized) throw new Error('권한이 없습니다.');
+  var cfg = _getSettings();
+  var result = {};
+  cfg.boothPrograms.forEach(function(p) { result[p] = []; });
+  var sheet = ss.getSheetByName('BoothReservations');
+  if (sheet && sheet.getLastRow() > 1) {
+    var rows = sheet.getDataRange().getValues();
+    for (var j = 1; j < rows.length; j++) {
+      var status = rows[j][9] ? rows[j][9].toString().trim() : '';
+      if (status !== '상담완료') continue;
+      var prog = rows[j][5] ? rows[j][5].toString().trim() : '';
+      if (!result[prog]) continue;
+      var ts = toTimeStr(rows[j][6]);
+      result[prog].push({
+        name:      String(rows[j][0] || ''),
+        studentId: String(rows[j][1] || ''),
+        dept:      String(rows[j][2] || ''),
+        time:      ts ? (ts + ' ~ ' + addMinutes(ts, 15)) : '',
+        signature: String(rows[j][8] || '')
+      });
+    }
+    cfg.boothPrograms.forEach(function(p) {
+      result[p].sort(function(a, b) { return a.time < b.time ? -1 : 1; });
+    });
+  }
+  return result;
+}
+
 function getAdminDataForOffice(password, selectedProg) {
   var ss=SpreadsheetApp.getActiveSpreadsheet();
   var admins=ss.getSheetByName('AdminUsers').getDataRange().getValues();
@@ -2354,8 +2389,8 @@ function saveGiftReceiptV2(data) {
   var status = getStudentFullStatus(sid);
   if (!status.checkedIn)     throw new Error('설명회 체크인 기록이 없습니다.');
   var incomingCount = (data.booths && data.booths.length) ? data.booths.length : (data.stampCount || 0);
-  if (incomingCount < BOOTH_STAMP_REQUIRED)
-    throw new Error('부스 스탬프가 ' + BOOTH_STAMP_REQUIRED + '개 이상이어야 합니다. (현재 ' + incomingCount + '개)');
+  if (incomingCount < 1)
+    throw new Error('방문한 부스가 없습니다.');
   if (status.alreadyReceived) throw new Error('이미 기념품을 수령하셨습니다.');
 
   var sheet = ss.getSheetByName('GiftReceipts');
@@ -2594,8 +2629,8 @@ function getCertificateHtmlForStudent(password, studentId) {
     throw new Error('설명회 체크인 기록이 없습니다. 참여확인서를 발급할 수 없습니다.');
   if (!data.giftInfo)
     throw new Error('기념품 수령 기록이 없습니다. 참여확인서를 발급할 수 없습니다.');
-  if (data.giftInfo.stampCount < BOOTH_STAMP_REQUIRED)
-    throw new Error('부스 스탬프가 ' + BOOTH_STAMP_REQUIRED + '개 미만입니다.');
+  if (data.giftInfo.stampCount < 1)
+    throw new Error('부스 방문 기록이 없습니다.');
   // 부스 목록이 비어있으면 GiftReceipts 재조회 경고
   if (!data.giftInfo.booths || data.giftInfo.booths.trim() === '')
     Logger.log('[WARN] 학번 ' + studentId + ': GiftReceipts에 방문부스(E열) 데이터 없음');

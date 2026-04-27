@@ -200,9 +200,10 @@
     </div>
     <hr style="border:none;border-top:1px solid #EAECEF;margin:18px 0;">
     <div class="admin-tabs">
-      <button class="admin-tab active" id="off-tab-sign"    onclick="switchOfficeTab('sign')">   <span class="tab-icon">✍️</span><span class="tab-label">설명회 체크인</span></button>
-      <button class="admin-tab"        id="off-tab-booth"   onclick="switchOfficeTab('booth')">  <span class="tab-icon">📋</span><span class="tab-label">부스 예약</span></button>
-      <button class="admin-tab"        id="off-tab-gift"    onclick="switchOfficeTab('gift')">   <span class="tab-icon">🎁</span><span class="tab-label">참여확인서</span></button>
+      <button class="admin-tab active" id="off-tab-sign"         onclick="switchOfficeTab('sign')">        <span class="tab-icon">✍️</span><span class="tab-label">설명회 체크인</span></button>
+      <button class="admin-tab"        id="off-tab-booth"        onclick="switchOfficeTab('booth')">       <span class="tab-icon">📋</span><span class="tab-label">부스 예약</span></button>
+      <button class="admin-tab"        id="off-tab-boothattend"  onclick="switchOfficeTab('boothattend')"><span class="tab-icon">👥</span><span class="tab-label">부스 참석자</span></button>
+      <button class="admin-tab"        id="off-tab-gift"         onclick="switchOfficeTab('gift')">        <span class="tab-icon">🎁</span><span class="tab-label">참여확인서</span></button>
     </div>
     <!-- 설명회 체크인 -->
     <div id="off-pane-sign">
@@ -223,6 +224,35 @@
         <div id="boothStat" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;"></div>
         <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.84rem;"><thead style="background:var(--navy);color:#fff;"><tr><th style="padding:9px 10px;width:36px;">번호</th><th style="padding:9px 10px;">시간</th><th style="padding:9px 10px;">이름</th><th style="padding:9px 10px;">학번</th><th style="padding:9px 10px;">학과</th><th style="padding:9px 10px;width:80px;">상태</th></tr></thead><tbody id="boothBody"></tbody></table></div>
         <p id="boothEmpty" style="text-align:center;color:#9AA5B4;padding:20px;display:none;">예약 내역이 없습니다.</p>
+      </div>
+    </div>
+    <!-- 부스 참석자 -->
+    <div id="off-pane-boothattend" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div class="dash-section-title" style="margin:0;">👥 부스 참석자 현황</div>
+        <button class="dash-refresh" onclick="loadBoothAttendees()">🔄 새로고침</button>
+      </div>
+      <div class="prog-grid" id="boothAttendProgGrid" style="margin-bottom:16px;"></div>
+      <div id="boothAttendSection" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div id="boothAttendStat" style="font-size:.88rem;font-weight:700;color:var(--navy);"></div>
+          <button class="btn-navy" onclick="generateBoothAttendPdf()" style="padding:8px 16px;font-size:.84rem;">📄 서명부 PDF</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:.84rem;">
+            <thead style="background:var(--navy);color:#fff;">
+              <tr>
+                <th style="padding:9px 10px;width:36px;">번호</th>
+                <th style="padding:9px 10px;">시간</th>
+                <th style="padding:9px 10px;">이름</th>
+                <th style="padding:9px 10px;">학번</th>
+                <th style="padding:9px 10px;">학과</th>
+              </tr>
+            </thead>
+            <tbody id="boothAttendBody"></tbody>
+          </table>
+        </div>
+        <p id="boothAttendEmpty" style="text-align:center;color:#9AA5B4;padding:20px;display:none;">참석자가 없습니다.</p>
       </div>
     </div>
     <!-- 기념품 명단 -->
@@ -439,7 +469,7 @@ function onSlotCheck(){var a=document.querySelectorAll('.slot-chk:not(:disabled)
 function updateSlotSelCount(){var n=document.querySelectorAll('.slot-chk:not(:disabled):checked').length;document.getElementById('slotSelCount').textContent=n>0?n+'개 선택됨':'';document.getElementById('btnBlockSel').disabled=(n===0);document.getElementById('btnOpenSel').disabled=(n===0);}
 function batchToggleSlots(block){var c=Array.from(document.querySelectorAll('.slot-chk:not(:disabled):checked'));if(!c.length){alert('선택된 슬롯이 없습니다.');return;}var times=c.map(function(x){return x.value;});var b1=document.getElementById('btnBlockSel'),b2=document.getElementById('btnOpenSel');b1.disabled=true;b2.disabled=true;b1.textContent='처리 중...';b2.textContent='처리 중...';function next(i){if(i>=times.length){showToast('✅ '+times.length+'개 슬롯 '+(block?'차단':'해제')+' 완료');b1.textContent='🔒 선택 차단';b2.textContent='🔓 선택 해제';loadSlotStatus();return;}google.script.run.withSuccessHandler(function(){next(i+1);}).withFailureHandler(function(e){alert('오류('+times[i]+'): '+e.message);b1.textContent='🔒 선택 차단';b2.textContent='🔓 선택 해제';loadSlotStatus();}).toggleSlotBlock(_prog,_pw,times[i],block);}next(0);}
 function loadOfficePrograms(){var g=document.getElementById('officeProgGrid');g.innerHTML=SESS_LIST.map(function(p){return'<div class="prog-chip" onclick="selectOfficeProg(\''+ea(p)+'\')" id="chip-'+p.replace(/\//g,'-')+'"><div style="font-weight:700;">'+eh(p)+'</div><div style="font-size:.72rem;color:#9AA5B4;margin-top:2px;">'+(SESS_TIMES[p]||'')+'</div></div>';}).join('');loadPreReservationStats();loadOverallStats();buildBoothProgChips();}
-function switchOfficeTab(tab){['sign','booth','gift'].forEach(function(t){document.getElementById('off-pane-'+t).style.display=t===tab?'block':'none';document.getElementById('off-tab-'+t).classList.toggle('active',t===tab);});if(tab==='gift')loadGiftList();}
+function switchOfficeTab(tab){['sign','booth','boothattend','gift'].forEach(function(t){document.getElementById('off-pane-'+t).style.display=t===tab?'block':'none';document.getElementById('off-tab-'+t).classList.toggle('active',t===tab);});if(tab==='gift')loadGiftList();if(tab==='boothattend')loadBoothAttendees();}
 function selectOfficeProg(p){_currentOffProg=p;document.querySelectorAll('#officeProgGrid .prog-chip').forEach(function(el){el.classList.remove('active');});var c=document.getElementById('chip-'+p.replace(/\//g,'-'));if(c)c.classList.add('active');loadStatus(p);}
 function refreshStatus(){if(_currentOffProg)loadStatus(_currentOffProg);}
 function loadStatus(p){document.getElementById('attendeeSection').style.display='block';document.getElementById('attendeeBody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:#9AA5B4;">불러오는 중...</td></tr>';document.getElementById('officeStat').innerHTML='';google.script.run.withSuccessHandler(function(d){_currentStatus=d;renderStatusTable(d);}).withFailureHandler(function(e){alert(e.message);}).getSessionStatus(_pw,p);}
@@ -694,6 +724,92 @@ function renderDashboard(data) {
       '</div>'+
     '</div>';
   }).join('');
+}
+var _boothAttendData = {};
+var _boothAttendProg = '';
+function loadBoothAttendees(){
+  var grid = document.getElementById('boothAttendProgGrid');
+  var sec  = document.getElementById('boothAttendSection');
+  grid.innerHTML = '<span style="color:#9AA5B4;font-size:.82rem;">불러오는 중...</span>';
+  sec.style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(data){
+      _boothAttendData = data;
+      _boothAttendProg = '';
+      grid.innerHTML = ALL_PROGS.map(function(p){
+        var cnt = (data[p]||[]).length;
+        return '<button class="prog-chip" id="battchip-'+eh(p)+'" onclick="showBoothAttendees(\''+ea(p)+'\')">'+eh(p)+' <span style="font-size:.7rem;color:#9AA5B4;">'+cnt+'명</span></button>';
+      }).join('');
+    })
+    .withFailureHandler(function(e){ grid.innerHTML='<span style="color:#C53030;font-size:.82rem;">오류: '+eh(e.message)+'</span>'; })
+    .getBoothAttendees(_pw);
+}
+function showBoothAttendees(prog){
+  _boothAttendProg = prog;
+  document.querySelectorAll('#boothAttendProgGrid .prog-chip').forEach(function(c){ c.classList.toggle('active', c.id==='battchip-'+prog); });
+  var list = _boothAttendData[prog] || [];
+  var sec  = document.getElementById('boothAttendSection');
+  var body = document.getElementById('boothAttendBody');
+  var empty= document.getElementById('boothAttendEmpty');
+  document.getElementById('boothAttendStat').textContent = eh(prog) + ' — ' + list.length + '명 참석';
+  sec.style.display = 'block';
+  if (!list.length){ body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+  body.innerHTML = list.map(function(r,i){
+    var bg = i%2===1?'background:#F8FBFF;':'';
+    return '<tr style="'+bg+'border-bottom:1px solid #EAECEF;">'+
+      '<td style="padding:7px 10px;text-align:center;color:#9AA5B4;">'+(i+1)+'</td>'+
+      '<td style="padding:7px 10px;font-weight:600;white-space:nowrap;">'+eh(r.time)+'</td>'+
+      '<td style="padding:7px 10px;font-weight:700;">'+eh(r.name)+'</td>'+
+      '<td style="padding:7px 10px;font-size:.79rem;color:#7A8899;">'+eh(r.studentId)+'</td>'+
+      '<td style="padding:7px 10px;font-size:.82rem;">'+eh(r.dept)+'</td>'+
+    '</tr>';
+  }).join('');
+}
+function generateBoothAttendPdf(){
+  var prog = _boothAttendProg;
+  if (!prog){ alert('프로그램을 먼저 선택하세요.'); return; }
+  var list = _boothAttendData[prog] || [];
+  if (!list.length){ alert('참석자가 없습니다.'); return; }
+  var logo = 'https://drive.google.com/thumbnail?id=1gAd8LC2fRzr7reuiJV2FHSQCbqbz5DoR&sz=w200';
+  var rows = list.map(function(r,i){
+    var bg = i%2===1?'background:#F8F8F8;':'';
+    var sig = r.signature && r.signature.startsWith('data:')
+      ? '<img src="'+r.signature+'" style="max-width:120px;max-height:40px;object-fit:contain;display:block;margin:0 auto;">'
+      : '<div style="height:40px;border-bottom:1px solid #DDD;"></div>';
+    return '<tr style="'+bg+'">'
+      +'<td class="td-no">'+(i+1)+'</td>'
+      +'<td class="td-name">'+eh(r.name)+'</td>'
+      +'<td class="td-id">'+eh(r.studentId)+'</td>'
+      +'<td class="td-dept">'+eh(r.dept)+'</td>'
+      +'<td style="white-space:nowrap;text-align:center;font-size:10px;">'+eh(r.time)+'</td>'
+      +'<td class="td-sig">'+sig+'</td>'
+      +'</tr>';
+  }).join('');
+  document.getElementById('signPrintArea').innerHTML =
+    '<div class="sign-sheet">'
+      +'<div class="sign-header">'
+        +'<div class="sign-header-left">'
+          +'<div style="font-size:9px;color:#7A8899;letter-spacing:.1em;margin-bottom:3px;">HANYANG YK INTERCOLLEGE</div>'
+          +'<div class="sign-title">2026 융합전공 소개행사 부스 참석자 서명부</div>'
+          +'<div style="font-size:10px;color:#7A8899;margin-top:2px;">Booth Attendance Sign Sheet — '+eh(prog)+'</div>'
+        +'</div>'
+        +'<img src="'+logo+'" class="sign-header-logo" alt="로고">'
+      +'</div>'
+      +'<div class="sign-meta">'
+        +'일시: '+_SITE_CFG.eventDate+' &nbsp;|&nbsp; 장소: '+_SITE_CFG.eventPlace+'<br>'
+        +'부스: '+eh(prog)+' &nbsp;|&nbsp; 참석 '+list.length+'명 &nbsp;|&nbsp; 출력: '+new Date().toLocaleString('ko-KR')
+      +'</div>'
+      +'<table class="sign-table"><thead><tr>'
+        +'<th class="td-no">No.</th>'
+        +'<th style="text-align:left;">이름</th>'
+        +'<th>학번</th>'
+        +'<th style="text-align:left;">학과</th>'
+        +'<th>시간</th>'
+        +'<th style="width:130px;text-align:center;">서명</th>'
+      +'</tr></thead><tbody>'+rows+'</tbody></table>'
+    +'</div>';
+  _waitPrint();
 }
 function loadGiftList(){
   document.getElementById('giftBody').innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:#9AA5B4;">불러오는 중...</td></tr>';
