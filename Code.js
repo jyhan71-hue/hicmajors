@@ -1820,6 +1820,7 @@ function getOverallStats(password) {
   };
 }
 
+// GiftReceipts 기반 부스별 참석자 목록 (기념품 수령자 + 서명 포함)
 function getBoothAttendees(password) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();
@@ -1831,26 +1832,25 @@ function getBoothAttendees(password) {
   var cfg = _getSettings();
   var result = {};
   cfg.boothPrograms.forEach(function(p) { result[p] = []; });
-  var sheet = ss.getSheetByName('BoothReservations');
+  var sheet = ss.getSheetByName('GiftReceipts');
+  // GiftReceipts: [0]수령시각 [1]학번 [2]이름 [3]학과 [4]방문부스(콤마구분) [5]스탬프수 [6]가산점과목 [7]서명 [8]검증코드
   if (sheet && sheet.getLastRow() > 1) {
     var rows = sheet.getDataRange().getValues();
     for (var j = 1; j < rows.length; j++) {
-      var status = rows[j][9] ? rows[j][9].toString().trim() : '';
-      if (status !== '상담완료') continue;
-      var prog = rows[j][5] ? rows[j][5].toString().trim() : '';
-      if (!result[prog]) continue;
-      var ts = toTimeStr(rows[j][6]);
-      result[prog].push({
-        name:      String(rows[j][0] || ''),
-        studentId: String(rows[j][1] || ''),
-        dept:      String(rows[j][2] || ''),
-        time:      ts ? (ts + ' ~ ' + addMinutes(ts, 15)) : '',
-        signature: String(rows[j][8] || '')
+      var sid  = String(rows[j][1] || '').trim();
+      if (!sid) continue;
+      var boothStr = String(rows[j][4] || '');
+      var booths = boothStr.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      var person = {
+        name:      String(rows[j][2] || ''),
+        studentId: sid,
+        dept:      String(rows[j][3] || ''),
+        signature: String(rows[j][7] || '')
+      };
+      booths.forEach(function(prog) {
+        if (result[prog] !== undefined) result[prog].push(person);
       });
     }
-    cfg.boothPrograms.forEach(function(p) {
-      result[p].sort(function(a, b) { return a.time < b.time ? -1 : 1; });
-    });
   }
   return result;
 }

@@ -243,10 +243,10 @@
             <thead style="background:var(--navy);color:#fff;">
               <tr>
                 <th style="padding:9px 10px;width:36px;">번호</th>
-                <th style="padding:9px 10px;">시간</th>
                 <th style="padding:9px 10px;">이름</th>
                 <th style="padding:9px 10px;">학번</th>
                 <th style="padding:9px 10px;">학과</th>
+                <th style="padding:9px 10px;width:130px;">서명</th>
               </tr>
             </thead>
             <tbody id="boothAttendBody"></tbody>
@@ -751,18 +751,21 @@ function showBoothAttendees(prog){
   var sec  = document.getElementById('boothAttendSection');
   var body = document.getElementById('boothAttendBody');
   var empty= document.getElementById('boothAttendEmpty');
-  document.getElementById('boothAttendStat').textContent = eh(prog) + ' — ' + list.length + '명 참석';
+  document.getElementById('boothAttendStat').textContent = eh(prog) + ' — 기념품 수령 ' + list.length + '명';
   sec.style.display = 'block';
   if (!list.length){ body.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display = 'none';
   body.innerHTML = list.map(function(r,i){
     var bg = i%2===1?'background:#F8FBFF;':'';
+    var sig = r.signature && r.signature.startsWith('data:')
+      ? '<img src="'+r.signature+'" style="max-width:120px;max-height:40px;object-fit:contain;display:block;margin:0 auto;">'
+      : '<span style="color:#CCC;font-size:.75rem;">서명 없음</span>';
     return '<tr style="'+bg+'border-bottom:1px solid #EAECEF;">'+
       '<td style="padding:7px 10px;text-align:center;color:#9AA5B4;">'+(i+1)+'</td>'+
-      '<td style="padding:7px 10px;font-weight:600;white-space:nowrap;">'+eh(r.time)+'</td>'+
       '<td style="padding:7px 10px;font-weight:700;">'+eh(r.name)+'</td>'+
       '<td style="padding:7px 10px;font-size:.79rem;color:#7A8899;">'+eh(r.studentId)+'</td>'+
       '<td style="padding:7px 10px;font-size:.82rem;">'+eh(r.dept)+'</td>'+
+      '<td style="padding:4px 8px;text-align:center;">'+sig+'</td>'+
     '</tr>';
   }).join('');
 }
@@ -782,7 +785,6 @@ function generateBoothAttendPdf(){
       +'<td class="td-name">'+eh(r.name)+'</td>'
       +'<td class="td-id">'+eh(r.studentId)+'</td>'
       +'<td class="td-dept">'+eh(r.dept)+'</td>'
-      +'<td style="white-space:nowrap;text-align:center;font-size:10px;">'+eh(r.time)+'</td>'
       +'<td class="td-sig">'+sig+'</td>'
       +'</tr>';
   }).join('');
@@ -805,8 +807,7 @@ function generateBoothAttendPdf(){
         +'<th style="text-align:left;">이름</th>'
         +'<th>학번</th>'
         +'<th style="text-align:left;">학과</th>'
-        +'<th>시간</th>'
-        +'<th style="width:130px;text-align:center;">서명</th>'
+        +'<th style="width:140px;text-align:center;">서명 (기념품 수령)</th>'
       +'</tr></thead><tbody>'+rows+'</tbody></table>'
     +'</div>';
   _waitPrint();
