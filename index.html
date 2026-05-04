@@ -414,6 +414,7 @@ async function init() {
     SITE_CONFIG.sessionTimes    = cfg.sessionTimes || {};
     if (cfg.boothSlotRange) SITE_CONFIG.boothSlotRange = cfg.boothSlotRange;
     SITE_CONFIG.blockedSlots    = cfg.blockedSlots || {};
+    SITE_CONFIG.icBlockRange    = cfg.icBlockRange || null;
     _sessionCounts              = cfg.sessionCounts || {};
     allPrograms                 = SITE_CONFIG.boothPrograms;
 
@@ -554,12 +555,17 @@ async function getAvailableSlots(programName, excludeDocId=null) {
   });
   const sessBlock = SITE_CONFIG.sessionBlockMap[programName] || [];
   const manualBlocked = new Set(SITE_CONFIG.blockedSlots[programName] || []);
+  const deptEl = document.getElementById('b-dept');
+  const isIC = deptEl && deptEl.value.trim() === INTERCOLLEGE_DEPT;
+  const icBlock = isIC ? SITE_CONFIG.icBlockRange : null;
+  const icS = icBlock ? toMin(icBlock.start) : -1;
+  const icE = icBlock ? toMin(icBlock.end)   : -1;
   const slots = [];
   let m = toMin(SITE_CONFIG.boothSlotRange.start);
   const endM = toMin(SITE_CONFIG.boothSlotRange.end);
   while (m < endM) {
     const t = String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-    if (!sessBlock.includes(t) && !bookedTimes.has(t) && !manualBlocked.has(t)) {
+    if (!sessBlock.includes(t) && !bookedTimes.has(t) && !manualBlocked.has(t) && !(icBlock && m >= icS && m < icE)) {
       slots.push({ value: t, label: t+' ~ '+addMinutes(t,15) });
     }
     m += 15;

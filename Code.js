@@ -129,6 +129,8 @@ function _getSettings() {
     }
     else if (key === '부스시작시간' && val) result.boothStart = val;
     else if (key === '부스종료시간' && val) result.boothEnd   = val;
+    else if (key === '인터칼리지제한시작' && val) result.icBlockStart = val;
+    else if (key === '인터칼리지제한종료' && val) result.icBlockEnd   = val;
     else if (key === '부스프로그램' && val) result.boothPrograms.push(val);
   }
   return result;
@@ -292,7 +294,8 @@ function doGet(e) {
       sessionTimes:    sessionTimes,
       sessionCounts:   sessionCounts,
       boothSlotRange:  { start: cfg.boothStart || '14:00', end: cfg.boothEnd || '17:00' },
-      blockedSlots:    blockedSlotsData
+      blockedSlots:    blockedSlotsData,
+      icBlockRange:    (cfg.icBlockStart && cfg.icBlockEnd) ? { start: cfg.icBlockStart, end: cfg.icBlockEnd } : null
     };
     return ContentService.createTextOutput(JSON.stringify(payload))
       .setMimeType(ContentService.MimeType.JSON);
@@ -382,6 +385,15 @@ function doPost(e) {
         boothSheet.getDataRange().getValues().slice(1).forEach(function(r) {
           var st = r[9] ? r[9].toString().trim() : '';
           if (st !== '취소') existBoothKeys[r[1].toString().trim() + '|' + r[5].toString().trim()] = true;
+        });
+      }
+      // ── 인터칼리지학부 시간대 제한 검증 ──
+      if (dept === INTERCOLLEGE_DEPT && cfg.icBlockStart && cfg.icBlockEnd) {
+        var icS = toMin(cfg.icBlockStart), icE = toMin(cfg.icBlockEnd);
+        booths.forEach(function(b) {
+          var bMin = toMin(b.time);
+          if (bMin >= icS && bMin < icE)
+            throw new Error('[' + b.program + '] 인터칼리지학부 학생은 ' + cfg.icBlockStart + '~' + cfg.icBlockEnd + ' 시간대 예약이 불가합니다.');
         });
       }
       booths.forEach(function(b) {
