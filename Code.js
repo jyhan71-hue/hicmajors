@@ -127,10 +127,10 @@ function _getSettings() {
       var cap = parseInt(val, 10);
       if (!isNaN(cap) && cap > 0) SESSION_CAPACITY = cap;
     }
-    else if (key === '부스시작시간' && val) result.boothStart = val;
-    else if (key === '부스종료시간' && val) result.boothEnd   = val;
-    else if (key === '인터칼리지제한시작' && val) result.icBlockStart = val;
-    else if (key === '인터칼리지제한종료' && val) result.icBlockEnd   = val;
+    else if (key === '부스시작시간')      { var bst=toTimeStr(rows[i][1])||val; if(bst) result.boothStart=bst; }
+    else if (key === '부스종료시간')      { var bet=toTimeStr(rows[i][1])||val; if(bet) result.boothEnd=bet; }
+    else if (key === '인터칼리지제한시작') { var ics=toTimeStr(rows[i][1])||val; if(ics) result.icBlockStart=ics; }
+    else if (key === '인터칼리지제한종료') { var ice=toTimeStr(rows[i][1])||val; if(ice) result.icBlockEnd=ice; }
     else if (key === '부스프로그램' && val) result.boothPrograms.push(val);
   }
   return result;
