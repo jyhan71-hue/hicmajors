@@ -262,6 +262,25 @@ function doGet(e) {
       }
     } catch(e2) {}
 
+    // BlockedSlots → 프로그램별 차단 시간 목록
+    var blockedSlotsData = {};
+    cfg.boothPrograms.forEach(function(p) { blockedSlotsData[p] = []; });
+    try {
+      var blkSh = ss2.getSheetByName('BlockedSlots');
+      if (blkSh && blkSh.getLastRow() > 1) {
+        var blkRows = blkSh.getDataRange().getValues();
+        for (var bk = 1; bk < blkRows.length; bk++) {
+          var bkProg = blkRows[bk][0] ? blkRows[bk][0].toString().trim() : '';
+          var bkTime = toTimeStr(blkRows[bk][1]) || blkRows[bk][1].toString().trim();
+          var bkAct  = blkRows[bk][2];
+          var bkBlocked = (bkAct === true || bkAct.toString().trim().toUpperCase() === 'TRUE'
+                        || bkAct.toString().trim() === 'Y' || bkAct.toString().trim() === '차단');
+          if (bkProg && bkTime && bkBlocked && blockedSlotsData[bkProg] !== undefined)
+            blockedSlotsData[bkProg].push(bkTime);
+        }
+      }
+    } catch(e3) {}
+
     var payload = {
       isOpen:          cfg.isOpen,
       eventName:       cfg.eventName,
@@ -271,7 +290,9 @@ function doGet(e) {
       boothPrograms:   cfg.boothPrograms,
       sessionCapacity: SESSION_CAPACITY,
       sessionTimes:    sessionTimes,
-      sessionCounts:   sessionCounts
+      sessionCounts:   sessionCounts,
+      boothSlotRange:  { start: cfg.boothStart || '14:00', end: cfg.boothEnd || '17:00' },
+      blockedSlots:    blockedSlotsData
     };
     return ContentService.createTextOutput(JSON.stringify(payload))
       .setMimeType(ContentService.MimeType.JSON);

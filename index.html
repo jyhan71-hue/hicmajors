@@ -412,6 +412,8 @@ async function init() {
     SITE_CONFIG.boothPrograms   = cfg.boothPrograms || [];
     SITE_CONFIG.sessionCapacity = cfg.sessionCapacity || 30;
     SITE_CONFIG.sessionTimes    = cfg.sessionTimes || {};
+    if (cfg.boothSlotRange) SITE_CONFIG.boothSlotRange = cfg.boothSlotRange;
+    SITE_CONFIG.blockedSlots    = cfg.blockedSlots || {};
     _sessionCounts              = cfg.sessionCounts || {};
     allPrograms                 = SITE_CONFIG.boothPrograms;
 
@@ -551,12 +553,13 @@ async function getAvailableSlots(programName, excludeDocId=null) {
     }
   });
   const sessBlock = SITE_CONFIG.sessionBlockMap[programName] || [];
+  const manualBlocked = new Set(SITE_CONFIG.blockedSlots[programName] || []);
   const slots = [];
   let m = toMin(SITE_CONFIG.boothSlotRange.start);
   const endM = toMin(SITE_CONFIG.boothSlotRange.end);
   while (m < endM) {
     const t = String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-    if (!sessBlock.includes(t) && !bookedTimes.has(t)) {
+    if (!sessBlock.includes(t) && !bookedTimes.has(t) && !manualBlocked.has(t)) {
       slots.push({ value: t, label: t+' ~ '+addMinutes(t,15) });
     }
     m += 15;
