@@ -1511,6 +1511,44 @@ function toggleSlotBlock(selectedProg, password, timeVal, block) {
   return block?(timeVal+' 차단되었습니다.'):(timeVal+' 차단이 해제되었습니다.');
 }
 
+// 슬롯 전체 상태 일괄 저장 (저장 버튼용)
+function saveSlotConfig(selectedProg, password, blockedTimes) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();
+  var authorized = false;
+  for (var i = 1; i < admins.length; i++) {
+    if (admins[i][2].toString().trim() === selectedProg.trim() && admins[i][3].toString().trim() === password.toString().trim()) { authorized = true; break; }
+  }
+  if (!authorized) throw new Error('권한이 없습니다.');
+  var blkSheet = ss.getSheetByName('BlockedSlots');
+  if (!blkSheet) {
+    blkSheet = ss.insertSheet('BlockedSlots');
+    blkSheet.getRange(1,1,1,3).setValues([['프로그램','시간','차단여부']]);
+  }
+  var blockedSet = {};
+  (blockedTimes || []).forEach(function(t) { blockedSet[t] = true; });
+  var cfg = _getSettings();
+  var bs = (cfg.boothStart || '14:00').split(':'), be = (cfg.boothEnd || '17:00').split(':');
+  var allSlots = [];
+  for (var m = parseInt(bs[0])*60+parseInt(bs[1]); m < parseInt(be[0])*60+parseInt(be[1]); m += 15)
+    allSlots.push(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'));
+  var rowMap = {};
+  if (blkSheet.getLastRow() > 1) {
+    var rows = blkSheet.getDataRange().getValues();
+    for (var r = 1; r < rows.length; r++) {
+      var rProg = rows[r][0] ? rows[r][0].toString().trim() : '';
+      var rTime = toTimeStr(rows[r][1]) || rows[r][1].toString().trim();
+      if (rProg === selectedProg && rTime) rowMap[rTime] = r + 1;
+    }
+  }
+  allSlots.forEach(function(t) {
+    var isBlocked = !!blockedSet[t];
+    if (rowMap[t]) blkSheet.getRange(rowMap[t], 3).setValue(isBlocked ? 'TRUE' : 'FALSE');
+    else blkSheet.appendRow([selectedProg, t, isBlocked ? 'TRUE' : 'FALSE']);
+  });
+  return '저장 완료';
+}
+
 function submitSessionOnly(data) {
   var ss=SpreadsheetApp.getActiveSpreadsheet();
   var isOpen=ss.getSheetByName('Settings').getRange('B1').getValue().toString().trim().toUpperCase()==='OPEN';
