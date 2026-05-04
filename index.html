@@ -184,7 +184,7 @@
           <div id="s-personalNotice" style="background:#FFF8E1;border:1.5px solid #F6AD55;border-radius:8px;padding:10px 14px;font-size:.82rem;color:#7B5200;margin-bottom:14px;">
             ⚠️ 성명·학번·학과·연락처·이메일을 모두 입력하면 설명회를 선택할 수 있습니다.
           </div>
-          <div id="s-selGate" style="opacity:.4;pointer-events:none;user-select:none;">
+          <div id="s-selGate" style="display:none;">
           <div class="mb-4">
             <label class="form-label">참여 설명회 선택 <span class="text-danger">*</span></label>
             <p class="hint-text">복수 선택 가능</p>
@@ -257,7 +257,7 @@
           <div id="b-personalNotice" style="background:#FFF8E1;border:1.5px solid #F6AD55;border-radius:8px;padding:10px 14px;font-size:.82rem;color:#7B5200;margin-bottom:14px;">
             ⚠️ 성명·학번·학과·연락처·이메일을 모두 입력하면 설명회·부스를 선택할 수 있습니다.
           </div>
-          <div id="b-selGate" style="opacity:.4;pointer-events:none;user-select:none;">
+          <div id="b-selGate" style="display:none;">
           <div class="mb-4">
             <label class="form-label">참여 설명회 선택 <span class="text-danger">*</span></label>
             <p class="hint-text">복수 선택 가능</p>
@@ -417,7 +417,7 @@ function checkPersonalInfo(prefix) {
   var ok = !!(name.trim() && /^\d{10}$/.test(sid.trim()) && dept.trim() && phone.trim() && email.trim());
   var gate   = document.getElementById(prefix+'-selGate');
   var notice = document.getElementById(prefix+'-personalNotice');
-  if (gate)   { gate.style.opacity = ok ? '1' : '0.4'; gate.style.pointerEvents = ok ? '' : 'none'; gate.style.userSelect = ok ? '' : 'none'; }
+  if (gate)   { gate.style.display = ok ? 'block' : 'none'; }
   if (notice) { notice.style.display = ok ? 'none' : 'block'; }
 }
 ['s-name','s-sid','s-dept','s-email'].forEach(function(id){
