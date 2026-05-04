@@ -181,10 +181,15 @@
               <span class="input-group-text">@hanyang.ac.kr</span>
             </div>
           </div>
+          <div id="s-personalNotice" style="background:#FFF8E1;border:1.5px solid #F6AD55;border-radius:8px;padding:10px 14px;font-size:.82rem;color:#7B5200;margin-bottom:14px;">
+            ⚠️ 성명·학번·학과·연락처·이메일을 모두 입력하면 설명회를 선택할 수 있습니다.
+          </div>
+          <div id="s-selGate" style="opacity:.4;pointer-events:none;user-select:none;">
           <div class="mb-4">
             <label class="form-label">참여 설명회 선택 <span class="text-danger">*</span></label>
             <p class="hint-text">복수 선택 가능</p>
             <div class="session-grid" id="s-sessionGrid"></div>
+          </div>
           </div>
           <div class="mb-3">
             <div class="privacy-box">
@@ -249,6 +254,10 @@
             </div>
           </div>
           <div class="divider"></div>
+          <div id="b-personalNotice" style="background:#FFF8E1;border:1.5px solid #F6AD55;border-radius:8px;padding:10px 14px;font-size:.82rem;color:#7B5200;margin-bottom:14px;">
+            ⚠️ 성명·학번·학과·연락처·이메일을 모두 입력하면 설명회·부스를 선택할 수 있습니다.
+          </div>
+          <div id="b-selGate" style="opacity:.4;pointer-events:none;user-select:none;">
           <div class="mb-4">
             <label class="form-label">참여 설명회 선택 <span class="text-danger">*</span></label>
             <p class="hint-text">복수 선택 가능</p>
@@ -260,6 +269,7 @@
             <div id="progBlocks"></div>
             <button type="button" class="btn-add-prog" id="btnAddProg" onclick="addProgBlock()">+ 프로그램 추가</button>
             <p class="hint-text">※ 같은 시간대에 두 개의 프로그램은 예약할 수 없습니다.</p>
+          </div>
           </div>
           <div class="mb-3">
             <div class="privacy-box">
@@ -394,8 +404,32 @@ function autoHyphen(el) {
   else if (v.length<=7)  el.value = v.slice(0,3)+'-'+v.slice(3);
   else                   el.value = v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7,11);
 }
-document.getElementById('s-phone').addEventListener('input', function(){ autoHyphen(this); });
-document.getElementById('b-phone').addEventListener('input', function(){ autoHyphen(this); });
+document.getElementById('s-phone').addEventListener('input', function(){ autoHyphen(this); checkPersonalInfo('s'); });
+document.getElementById('b-phone').addEventListener('input', function(){ autoHyphen(this); checkPersonalInfo('b'); });
+
+// ─── 인적사항 완성 여부에 따라 선택 섹션 활성화 ────────────────────
+function checkPersonalInfo(prefix) {
+  var name  = (document.getElementById(prefix+'-name') || {}).value || '';
+  var sid   = (document.getElementById(prefix+'-sid')  || {}).value || '';
+  var dept  = (document.getElementById(prefix+'-dept') || {}).value || '';
+  var phone = (document.getElementById(prefix+'-phone')|| {}).value || '';
+  var email = (document.getElementById(prefix+'-email')|| {}).value || '';
+  var ok = !!(name.trim() && /^\d{10}$/.test(sid.trim()) && dept.trim() && phone.trim() && email.trim());
+  var gate   = document.getElementById(prefix+'-selGate');
+  var notice = document.getElementById(prefix+'-personalNotice');
+  if (gate)   { gate.style.opacity = ok ? '1' : '0.4'; gate.style.pointerEvents = ok ? '' : 'none'; gate.style.userSelect = ok ? '' : 'none'; }
+  if (notice) { notice.style.display = ok ? 'none' : 'block'; }
+}
+['s-name','s-sid','s-dept','s-email'].forEach(function(id){
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('input', function(){ checkPersonalInfo('s'); });
+});
+['b-name','b-sid','b-dept','b-email'].forEach(function(id){
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('input', function(){ checkPersonalInfo('b'); });
+});
+checkPersonalInfo('s');
+checkPersonalInfo('b');
 
 // ─── 페이지 초기화 ───────────────────────────────────────────────
 async function init() {
@@ -534,12 +568,14 @@ window.onSessionICCheck = function(chk) {
   const deptEl = document.getElementById('s-dept');
   if (chk.checked) { deptEl.value=INTERCOLLEGE_DEPT; deptEl.readOnly=true; deptEl.style.background='#F0F4F8'; deptEl.style.color='#5A6778'; }
   else { deptEl.value=''; deptEl.readOnly=false; deptEl.style.background=''; deptEl.style.color=''; deptEl.focus(); }
+  checkPersonalInfo('s');
 };
 window.onBoothICCheck = function(chk) {
   const deptEl=document.getElementById('b-dept'), noticeEl=document.getElementById('b-dept-notice');
   const hasLDC=Array.from(document.querySelectorAll('.prog-sel')).some(s=>s.value==='라이프디자인센터');
   if (chk.checked) { deptEl.value=INTERCOLLEGE_DEPT; deptEl.readOnly=true; deptEl.style.background='#F0F4F8'; deptEl.style.color='#5A6778'; }
   else if (!hasLDC) { deptEl.value=''; deptEl.readOnly=false; deptEl.style.background=''; deptEl.style.color=''; if(noticeEl)noticeEl.style.display='none'; deptEl.focus(); }
+  checkPersonalInfo('b');
 };
 
 // ─── 부스 슬롯 조회 (Firestore) ──────────────────────────────────
