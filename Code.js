@@ -106,7 +106,7 @@ function timesOverlap(aStart, aDur, bStart, bDur) {
 function _getSettings() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName('Settings');
-  var result = { isOpen:true, eventName:'', eventDate:'', eventPlace:'', sessions:[], boothPrograms:[] };
+  var result = { isOpen:true, eventName:'', eventDate:'', eventPlace:'', sessions:[], boothPrograms:[], boothStart:'14:00', boothEnd:'17:00' };
   if (!sh) return result;
   var rows = sh.getDataRange().getValues();
   for (var i = 0; i < rows.length; i++) {
@@ -127,6 +127,8 @@ function _getSettings() {
       var cap = parseInt(val, 10);
       if (!isNaN(cap) && cap > 0) SESSION_CAPACITY = cap;
     }
+    else if (key === '부스시작시간' && val) result.boothStart = val;
+    else if (key === '부스종료시간' && val) result.boothEnd   = val;
     else if (key === '부스프로그램' && val) result.boothPrograms.push(val);
   }
   return result;
@@ -1047,7 +1049,9 @@ function getAvailableSlots(programName) {
 
   var slotInterval = 15;
   var slots = [];
-  var ranges = [{ start:'14:00', end:'17:00' }];
+  var _cfg0 = _getSettings();
+  var _bs = _cfg0.boothStart || '14:00', _be = _cfg0.boothEnd || '17:00';
+  var ranges = [{ start: _bs, end: _be }];
   ranges.forEach(function(range) {
     var startParts = range.start.split(':'), endParts = range.end.split(':');
     var startMin = parseInt(startParts[0])*60 + parseInt(startParts[1]);
@@ -1122,7 +1126,9 @@ function getAvailableSlotsForEdit(programName, excludeRowIdx) {
   };
   var sessBlock = SESSION_BLOCK_MAP[programName] || [];
   var allSlots = [];
-  var sm = 14*60, em = 17*60;
+  var _cfg1 = _getSettings();
+  var _bs1 = (_cfg1.boothStart||'14:00').split(':'), _be1 = (_cfg1.boothEnd||'17:00').split(':');
+  var sm = parseInt(_bs1[0])*60+parseInt(_bs1[1]), em = parseInt(_be1[0])*60+parseInt(_be1[1]);
   for (var m = sm; m < em; m += 15) {
     allSlots.push(String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'));
   }
@@ -1419,8 +1425,10 @@ function getSlotBlockStatus(selectedProg, password) {
     if (admins[i][2].toString().trim()===selectedProg.trim()&&admins[i][3].toString().trim()===password.toString().trim()) { authorized=true; break; }
   }
   if (!authorized) throw new Error('권한이 없습니다.');
+  var _cfg2=_getSettings();
+  var _bs2=(_cfg2.boothStart||'14:00').split(':'),_be2=(_cfg2.boothEnd||'17:00').split(':');
   var allSlots=[];
-  for (var m=14*60;m<17*60;m+=15) allSlots.push(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'));
+  for (var m=parseInt(_bs2[0])*60+parseInt(_bs2[1]);m<parseInt(_be2[0])*60+parseInt(_be2[1]);m+=15) allSlots.push(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'));
   var SESS_BLOCK_ADMIN={'미래반도체공학':['09:30','09:45'],'혁신공학경영':['10:00','10:15'],'융합의과학/융합의공학':['10:30','10:45'],'미래사회디자인':['11:00','11:15'],'인지융합과학':['11:30','11:45'],'라이프디자인센터':[]};
   var sessBlockSet={};
   var sbList=SESS_BLOCK_ADMIN[selectedProg]||[];
