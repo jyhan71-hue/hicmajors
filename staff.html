@@ -230,6 +230,74 @@
              border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 8px;}
     .loading-inline{text-align:center;padding:16px;color:#9AA5B4;font-size:.82rem;}
     @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── 태블릿 가로 최적화 (768px↑) ── */
+    @media (min-width: 768px) {
+      body { padding: 20px 24px 48px; }
+      .card { max-width: 740px; border-radius: 20px; border-top-width: 7px; }
+      .card-head { padding: 18px 28px 14px; }
+      .card-head img { height: 44px; max-width: 140px; margin-bottom: 6px; }
+      .card-head h2 { font-size: 1.12rem; }
+      .card-head p  { font-size: .82rem; }
+      .event-bar    { padding: 9px 20px; font-size: .84rem; }
+      .mode-banner  { padding: 10px 20px; font-size: .9rem; }
+      .btn-mode-action { padding: 5px 14px; font-size: .8rem; }
+      .card-body    { padding: 24px 28px; }
+      .screen-title { font-size: 1.12rem; }
+      .screen-desc  { font-size: .88rem; margin-bottom: 18px; }
+      .form-label   { font-size: .92rem; margin-bottom: 6px; }
+      .form-control { padding: 12px 16px; font-size: 1rem; border-radius: 10px; }
+      .hint         { font-size: .82rem; }
+      .mb-3         { margin-bottom: 16px; }
+      .mode-select-grid { gap: 16px; }
+      .mode-select-btn  { padding: 28px 14px; border-radius: 16px; }
+      .mode-select-btn .ico { font-size: 2.6rem; margin-bottom: 10px; }
+      .mode-select-btn .lbl { font-size: 1.05rem; }
+      .mode-select-btn .sub { font-size: .84rem; margin-top: 5px; }
+      .status-panel { padding: 18px 20px; margin-bottom: 20px; border-radius: 14px; }
+      .status-panel .sp-title { font-size: .84rem; margin-bottom: 12px; }
+      .current-sess { padding: 14px 18px; margin-bottom: 12px; border-radius: 12px; }
+      .cs-label     { font-size: .82rem; }
+      .cs-name      { font-size: 1.12rem; }
+      .cs-time      { font-size: .86rem; }
+      .cs-badge     { font-size: .8rem; padding: 3px 12px; }
+      .walkin-status { padding: 14px 18px; border-radius: 12px; }
+      .ws-label     { font-size: .86rem; }
+      .ws-count     { font-size: 1.55rem; }
+      .ws-sub       { font-size: .8rem; }
+      .ws-bar-bg    { height: 10px; }
+      .ws-refresh   { font-size: .86rem; }
+      .checkin-blocked-banner { padding: 18px 20px; font-size: 1.08rem; border-radius: 12px; }
+      .type-btns    { gap: 14px; }
+      .type-btn     { padding: 22px 12px; border-radius: 14px; }
+      .type-btn .ico { font-size: 2rem; margin-bottom: 8px; }
+      .type-btn .lbl { font-size: 1rem; }
+      .type-btn .sub { font-size: .8rem; margin-top: 4px; }
+      .result-card  { padding: 18px 20px; margin-bottom: 18px; font-size: .95rem; border-radius: 14px; }
+      .result-card .rc-name { font-size: 1.1rem; margin-bottom: 7px; }
+      .result-card .rc-row  { font-size: .88rem; }
+      .result-card .rc-label { width: 46px; }
+      .sess-badge   { font-size: .8rem; padding: 3px 11px; }
+      .sess-select-grid { gap: 9px; }
+      .sess-select-item { padding: 12px 16px; border-radius: 10px; gap: 13px; }
+      .sess-select-item input[type=checkbox] { width: 20px; height: 20px; }
+      .sess-item-name { font-size: .98rem; }
+      .sess-item-time { font-size: .83rem; }
+      .student-card { padding: 16px 18px; margin-bottom: 16px; border-radius: 12px; }
+      .student-card .sname { font-size: 1.1rem; }
+      .student-card .srow  { font-size: .88rem; }
+      .student-card .slabel { width: 50px; }
+      .booth-section .bs-title { font-size: .96rem; }
+      .booth-grid   { gap: 9px; }
+      .booth-chk-item { padding: 12px 16px; border-radius: 10px; gap: 13px; }
+      .booth-chk-item input[type=checkbox] { width: 20px; height: 20px; }
+      .booth-chk-item label { font-size: .98rem; }
+      .not-eligible { padding: 16px 18px; font-size: .92rem; border-radius: 12px; }
+      #sig-wrapper  { height: 200px; }
+      .btn-main     { padding: 14px; font-size: 1rem; border-radius: 12px; }
+      .btn-back     { padding: 13px; font-size: .98rem; border-radius: 12px; margin-top: 9px; }
+      .divider      { margin: 18px 0; }
+    }
   </style>
 </head>
 <body>
