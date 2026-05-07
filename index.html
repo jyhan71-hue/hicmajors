@@ -1161,6 +1161,17 @@ document.getElementById('boothForm').onsubmit = async function(e) {
     else reservations.push({program:prog,time,memo,ldcTest});
   });
   if(!valid){alert('모든 부스의 프로그램, 시간, 문의 내용을 입력해 주세요.');return;}
+  // ── IC 시간대 제한 검증 ──
+  if(dept===INTERCOLLEGE_DEPT && SITE_CONFIG.icBlockRange){
+    const icS=toMin(SITE_CONFIG.icBlockRange.start), icE=toMin(SITE_CONFIG.icBlockRange.end);
+    for(const r of reservations){
+      const bMin=toMin(r.time);
+      if(bMin>=icS && bMin<icE){
+        alert('['+r.program+'] 인터칼리지학부 학생은 '+SITE_CONFIG.icBlockRange.start+'~'+SITE_CONFIG.icBlockRange.end+' 시간대 예약이 불가합니다.');
+        return;
+      }
+    }
+  }
   const btn=document.getElementById('b-submitBtn');
   btn.disabled=true; btn.textContent='예약 중...';
   try {
@@ -1370,6 +1381,17 @@ window.submitChange = async function(){
     newBooths.push({program:prog,time,memo,docId});
   });
   if(!boothValid){alert('모든 부스의 프로그램과 시간을 선택해 주세요.');_isSubmitting=false;return;}
+  // ── IC 시간대 제한 검증 ──
+  if(editDept===INTERCOLLEGE_DEPT && SITE_CONFIG.icBlockRange){
+    const icS=toMin(SITE_CONFIG.icBlockRange.start), icE=toMin(SITE_CONFIG.icBlockRange.end);
+    for(const b of newBooths){
+      const bMin=toMin(b.time);
+      if(bMin>=icS && bMin<icE){
+        alert('['+b.program+'] 인터칼리지학부 학생은 '+SITE_CONFIG.icBlockRange.start+'~'+SITE_CONFIG.icBlockRange.end+' 시간대 예약이 불가합니다.');
+        _isSubmitting=false; return;
+      }
+    }
+  }
   if(!confirm('변경 내용을 저장하시겠습니까?\n기존 예약이 취소되고 새로 예약됩니다.')){_isSubmitting=false;return;}
   const btn=document.querySelector('#inlineEditPanel .btn-main');
   btn.disabled=true;btn.textContent='저장 중...';
