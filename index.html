@@ -583,7 +583,7 @@ window.onBoothICCheck = function(chk) {
 };
 
 // ─── 부스 슬롯 조회 (Firestore) ──────────────────────────────────
-async function getAvailableSlots(programName, excludeDocId=null) {
+async function getAvailableSlots(programName, excludeDocId=null, overrideDept=null) {
   const bookedTimes = new Set();
   const snap = await db.collection('boothReservations').where('program','==',programName).get();
   snap.forEach(d => {
@@ -596,7 +596,8 @@ async function getAvailableSlots(programName, excludeDocId=null) {
   const sessBlock = SITE_CONFIG.sessionBlockMap[programName] || [];
   const manualBlocked = new Set(SITE_CONFIG.blockedSlots[programName] || []);
   const deptEl = document.getElementById('b-dept');
-  const isIC = deptEl && deptEl.value.trim() === INTERCOLLEGE_DEPT;
+  const deptValue = overrideDept !== null ? overrideDept : (deptEl ? deptEl.value.trim() : '');
+  const isIC = deptValue === INTERCOLLEGE_DEPT;
   const icBlock = isIC ? SITE_CONFIG.icBlockRange : null;
   const icS = icBlock ? toMin(icBlock.start) : -1;
   const icE = icBlock ? toMin(icBlock.end)   : -1;
@@ -940,6 +941,16 @@ async function submitReservation(data) {
       throw new Error('라이프디자인센터 부스는 한양인터칼리지학부 재학생만 예약 가능합니다.');
   }
 
+  // IC 시간대 제한 (서버측 최종 검증)
+  if(data.dept===INTERCOLLEGE_DEPT && SITE_CONFIG.icBlockRange){
+    const icS=toMin(SITE_CONFIG.icBlockRange.start), icE=toMin(SITE_CONFIG.icBlockRange.end);
+    for(const item of data.reservations){
+      const bMin=toMin(item.time);
+      if(bMin>=icS && bMin<icE)
+        throw new Error('['+item.program+'] 인터칼리지학부 학생은 '+SITE_CONFIG.icBlockRange.start+'~'+SITE_CONFIG.icBlockRange.end+' 시간대 예약이 불가합니다.');
+    }
+  }
+
   // 규칙2: 기존 예약(부스/설명회) 존재 시 신규 제출 차단
   const bSnap = await db.collection('boothReservations').where('studentId','==',sid).get();
   const activeBooth = [];
@@ -1024,6 +1035,16 @@ async function changeReservation(data) {
   for(const b of newBooths){
     if(b.program==='라이프디자인센터'&&data.dept!==INTERCOLLEGE_DEPT)
       throw new Error('라이프디자인센터 부스는 한양인터칼리지학부 재학생만 예약 가능합니다.');
+  }
+
+  // ── IC 시간대 제한 (서버측 최종 검증) ──
+  if(data.dept===INTERCOLLEGE_DEPT && SITE_CONFIG.icBlockRange){
+    const icS=toMin(SITE_CONFIG.icBlockRange.start), icE=toMin(SITE_CONFIG.icBlockRange.end);
+    for(const b of newBooths){
+      const bMin=toMin(b.time);
+      if(bMin>=icS && bMin<icE)
+        throw new Error('['+b.program+'] 인터칼리지학부 학생은 '+SITE_CONFIG.icBlockRange.start+'~'+SITE_CONFIG.icBlockRange.end+' 시간대 예약이 불가합니다.');
+    }
   }
 
   // ── 규칙1: 동일 부스 중복 선택 ──
@@ -1245,6 +1266,8 @@ window.openEditView = function(sid,data) {
       for(const b of data.booths) await addEditBoothBlock(b.program,b.rawTime||b.time,b.docId,b.memo||'');
       // 전체 로드 후 블록 간 시간 충돌 필터링 (초기 렌더링 시 적용)
       const allBlocks=[...document.querySelectorAll('#editBoothBlocks .prog-block')];
+      const openEditDeptEl=document.getElementById('editDept');
+      const openEditDeptVal=openEditDeptEl?openEditDeptEl.value.trim():'';
       for(const block of allBlocks){
         const progSel=block.querySelector('.edit-prog-sel');
         const timeSel=block.querySelector('.edit-time-sel');
@@ -1252,7 +1275,7 @@ window.openEditView = function(sid,data) {
         const rawTime=timeSel.value;
         const docId=block.dataset.docId||null;
         try{
-          let slots=await getAvailableSlots(progSel.value,docId);
+          let slots=await getAvailableSlots(progSel.value,docId,openEditDeptVal);
           const otherTimes=[];
           allBlocks.forEach(ob=>{if(ob===block)return;const ots=ob.querySelector('.edit-time-sel');if(ots&&ots.value)otherTimes.push(ots.value);});
           if(otherTimes.length)slots=slots.filter(s=>!otherTimes.some(t=>timesOverlap(s.value,15,t,15)));
@@ -1298,7 +1321,9 @@ window.addEditBoothBlock = async function(prog,rawTime,docId,memo){
     const timeSel=div.querySelector('.edit-time-sel');
     timeSel.innerHTML='<option value="">불러오는 중...</option>';timeSel.disabled=true;
     try{
-      const slots=await getAvailableSlots(prog,docId);
+      const addEditDeptEl=document.getElementById('editDept');
+      const addEditDeptVal=addEditDeptEl?addEditDeptEl.value.trim():'';
+      const slots=await getAvailableSlots(prog,docId,addEditDeptVal);
       timeSel.innerHTML='<option value="">시간을 선택하세요</option>';
       if(rawTime&&!slots.find(s=>s.value===rawTime)) slots.unshift({value:rawTime,label:rawTime+' ~ '+addMinutes(rawTime,15)+' (현재 예약)'});
       slots.forEach(s=>{const opt=new Option(s.label,s.value);if(s.value===rawTime)opt.selected=true;timeSel.appendChild(opt);});
@@ -1317,8 +1342,10 @@ window.loadEditSlots = async function(sel){
   if(!prog){timeSel.innerHTML='<option>프로그램을 먼저 선택하세요</option>';timeSel.disabled=true;return;}
   timeSel.disabled=true;timeSel.innerHTML='<option>불러오는 중...</option>';
   const docId=block.dataset.docId||null;
+  const editDeptEl=document.getElementById('editDept');
+  const editDeptVal=editDeptEl?editDeptEl.value.trim():'';
   try{
-    let slots=await getAvailableSlots(prog,docId);
+    let slots=await getAvailableSlots(prog,docId,editDeptVal);
     // 다른 편집 블록에서 선택된 시간과 겹치는 슬롯 제외
     const otherTimes=[];
     document.querySelectorAll('#editBoothBlocks .prog-block').forEach(function(otherBlock){
@@ -1336,6 +1363,8 @@ window.loadEditSlots = async function(sel){
 window.refreshOtherEditBlockSlots = async function(changedTimeSel){
   const changedBlock=changedTimeSel.closest('.prog-block');
   const allBlocks=document.querySelectorAll('#editBoothBlocks .prog-block');
+  const editDeptEl=document.getElementById('editDept');
+  const editDeptVal=editDeptEl?editDeptEl.value.trim():'';
   for(const block of allBlocks){
     if(block===changedBlock) continue;
     const progSel=block.querySelector('.edit-prog-sel');
@@ -1344,7 +1373,7 @@ window.refreshOtherEditBlockSlots = async function(changedTimeSel){
     const currentVal=timeSel.value;
     const docId=block.dataset.docId||null;
     try{
-      let slots=await getAvailableSlots(progSel.value,docId);
+      let slots=await getAvailableSlots(progSel.value,docId,editDeptVal);
       const otherTimes=[];
       document.querySelectorAll('#editBoothBlocks .prog-block').forEach(function(otherBlock){
         if(otherBlock===block) return;

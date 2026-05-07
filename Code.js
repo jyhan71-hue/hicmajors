@@ -421,6 +421,17 @@ function doPost(e) {
       var sessions  = payload.sessions  || [];
       var booths    = payload.booths    || [];
 
+      // ── IC 시간대 제한 서버 검증 ──
+      var cfg = _getSettings();
+      if (dept === INTERCOLLEGE_DEPT && cfg.icBlockStart && cfg.icBlockEnd) {
+        var icS = toMin(cfg.icBlockStart), icE = toMin(cfg.icBlockEnd);
+        for (var ici = 0; ici < booths.length; ici++) {
+          var bMin = toMin(booths[ici].time || '');
+          if (bMin >= icS && bMin < icE)
+            throw new Error('[' + booths[ici].program + '] 인터칼리지학부 학생은 ' + cfg.icBlockStart + '~' + cfg.icBlockEnd + ' 시간대 예약이 불가합니다.');
+        }
+      }
+
       var sessSheet = _getOrCreateSheet(ss, 'SessionPreReg', ['이름','학번','학과','연락처','이메일','설명회명','등록일시']);
       var boothSheet = _getOrCreateSheet(ss, 'BoothReservations', ['이름','학번','학과','이메일','연락처','프로그램','시간','문의내용','서명','상태','코멘트','예약일시']);
 
