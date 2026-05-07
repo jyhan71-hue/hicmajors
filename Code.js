@@ -1968,6 +1968,50 @@ function getAdminDataForOffice(password, selectedProg) {
   return { programName:selectedProg, reservations:reservations };
 }
 
+function getAllBoothPreReservations(password) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();
+  var authorized = false;
+  for (var i = 1; i < admins.length; i++) {
+    if (admins[i][2].toString().trim() === '전체관리' && admins[i][3].toString().trim() === password.toString().trim()) { authorized = true; break; }
+  }
+  if (!authorized) throw new Error('권한이 없습니다.');
+  var cfg = _getSettings();
+  var programs = cfg.boothPrograms;
+  var byProg = {};
+  programs.forEach(function(p) { byProg[p] = []; });
+  var sheet = ss.getSheetByName('BoothReservations');
+  if (sheet && sheet.getLastRow() > 1) {
+    var rows = sheet.getDataRange().getValues();
+    for (var j = 1; j < rows.length; j++) {
+      var r = rows[j];
+      var prog   = r[5] ? r[5].toString().trim() : '';
+      var status = r[9] ? r[9].toString().trim() : '';
+      if (!prog || status === '취소' || status === '상담취소') continue;
+      if (byProg[prog] === undefined) continue;
+      var t = toTimeStr(r[6]);
+      byProg[prog].push({
+        name:   r[0] ? r[0].toString().trim() : '',
+        sid:    r[1] ? r[1].toString().trim() : '',
+        dept:   r[2] ? r[2].toString().trim() : '',
+        time:   t || '',
+        status: status
+      });
+    }
+  }
+  programs.forEach(function(p) {
+    byProg[p].sort(function(a, b) {
+      return (a.time < b.time ? -1 : a.time > b.time ? 1 : 0);
+    });
+  });
+  return {
+    programs:   programs,
+    byProg:     byProg,
+    boothStart: cfg.boothStart || '14:00',
+    boothEnd:   cfg.boothEnd   || '17:00'
+  };
+}
+
 function changeReservation(data) {
   var ss=SpreadsheetApp.getActiveSpreadsheet();
   var sid=data.studentId.toString().trim();

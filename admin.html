@@ -130,7 +130,7 @@
     .gift-badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.75rem;font-weight:700;}
     .gift-badge-ic{background:#EBF4FF;color:#2B6CB0;}
     .gift-badge-other{background:#F0F4F8;color:#5A6778;}
-    @media print{body>*:not(#signPrintArea){display:none !important;} #signPrintArea{display:block !important;position:fixed;inset:0;background:#fff;padding:12mm 10mm;box-sizing:border-box;}}
+    @media print{body>*:not(#signPrintArea){display:none !important;} #signPrintArea{display:block !important;position:fixed;inset:0;background:#fff;padding:12mm 10mm;box-sizing:border-box;} #signPrintArea.booth-print-mode{position:static !important;inset:auto !important;padding:10mm !important;}}
     #signPrintArea{display:none;}
     .sign-sheet{font-family:'Malgun Gothic','맑은 고딕','Pretendard',sans-serif;max-width:780px;margin:0 auto;}
     .sign-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
@@ -218,10 +218,11 @@
     </div>
     <!-- 부스 예약 -->
     <div id="off-pane-booth" style="display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;"><div class="dash-section-title" style="margin:0;">프로그램 선택</div><button class="dash-refresh" onclick="loadBoothStatus()">🔄 새로고침</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;"><div class="dash-section-title" style="margin:0;">프로그램 선택</div><div style="display:flex;gap:6px;align-items:center;"><button class="btn-outline" id="btnPrintAllBooth" onclick="printAllBoothProgs()" style="padding:6px 13px;font-size:.82rem;">🖨️ 전체 출력</button><button class="dash-refresh" onclick="loadBoothStatus()">🔄 새로고침</button></div></div>
       <div class="prog-grid" id="boothProgGrid" style="margin-bottom:16px;"></div>
       <div id="boothStatSection" style="display:none;">
-        <div id="boothStat" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;"></div>
+        <div id="boothStat" style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;"></div>
+        <div style="margin-bottom:12px;"><button class="btn-outline" onclick="printCurrentBoothProg()" style="padding:7px 14px;font-size:.82rem;">🖨️ 현재 프로그램 출력</button></div>
         <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.84rem;"><thead style="background:var(--navy);color:#fff;"><tr><th style="padding:9px 10px;width:36px;">번호</th><th style="padding:9px 10px;">시간</th><th style="padding:9px 10px;">이름</th><th style="padding:9px 10px;">학번</th><th style="padding:9px 10px;">학과</th><th style="padding:9px 10px;width:80px;">상태</th></tr></thead><tbody id="boothBody"></tbody></table></div>
         <p id="boothEmpty" style="text-align:center;color:#9AA5B4;padding:20px;display:none;">예약 내역이 없습니다.</p>
       </div>
@@ -379,7 +380,7 @@
 <div id="toast"></div>
 
 <script>
-var _prog,_pw,_slotData=[],_giftData=[],_currentOffProg='',_currentStatus=null,_currentBoothProg='';
+var _prog,_pw,_slotData=[],_giftData=[],_currentOffProg='',_currentStatus=null,_currentBoothProg='',_boothCurrentList=[];
 var _SITE_CFG = <?!= getSettingsData() ?>;
 var FALLBACK   = _SITE_CFG.boothPrograms;
 var SESS_LIST  = _SITE_CFG.sessions.map(function(s){ return s.name; });
@@ -540,7 +541,7 @@ function _doSessionPdf(data){
 function buildBoothProgChips(){document.getElementById('boothProgGrid').innerHTML=ALL_PROGS.map(function(p){return'<div class="prog-chip" onclick="selectBoothProg(this.dataset.prog)" data-prog="'+ea(p)+'" id="bchip-'+p.replace(/\//g,'-')+'"><div style="font-weight:700;">'+eh(p)+'</div></div>';}).join('');}
 function selectBoothProg(p){_currentBoothProg=p;document.querySelectorAll('#boothProgGrid .prog-chip').forEach(function(el){el.classList.remove('active');});var c=document.getElementById('bchip-'+p.replace(/\//g,'-'));if(c)c.classList.add('active');loadBoothStatus();}
 function loadBoothStatus(){if(!_currentBoothProg){alert('프로그램을 선택하세요.');return;}document.getElementById('boothStatSection').style.display='block';document.getElementById('boothBody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:#9AA5B4;">불러오는 중...</td></tr>';document.getElementById('boothStat').innerHTML='';google.script.run.withSuccessHandler(renderBoothStatus).withFailureHandler(function(e){alert(e.message);}).getAdminDataForOffice(_pw,_currentBoothProg);}
-function renderBoothStatus(data){var list=data.reservations||[],t=list.length,dn=list.filter(function(r){return r.status==='상담완료';}).length,cn=list.filter(function(r){return r.status==='상담취소';}).length,w=t-dn-cn;document.getElementById('boothStat').innerHTML='<div class="stat-box"><div class="num">'+t+'</div><div class="lbl">전체 예약</div></div><div class="stat-box"><div class="num" style="color:#2B6CB0;">'+w+'</div><div class="lbl">대기</div></div><div class="stat-box"><div class="num" style="color:#276749;">'+dn+'</div><div class="lbl">상담완료</div></div><div class="stat-box"><div class="num" style="color:#C53030;">'+cn+'</div><div class="lbl">상담취소</div></div>';var tb=document.getElementById('boothBody'),em=document.getElementById('boothEmpty');if(!list.length){tb.innerHTML='';em.style.display='block';return;}em.style.display='none';tb.innerHTML=list.map(function(item,i){var sc=item.status==='상담완료'?'#276749':item.status==='상담취소'?'#C53030':'#2B6CB0';var sb=item.status==='상담완료'?'#E6FFED':item.status==='상담취소'?'#FFF5F5':'#EBF4FF';return'<tr><td style="text-align:center;color:#888;">'+(i+1)+'</td><td style="font-weight:700;white-space:nowrap;">'+eh(item.time)+'</td><td style="font-weight:600;">'+eh(item.name)+'</td><td style="font-size:.79rem;color:#7A8899;">'+eh(String(item.id))+'</td><td>'+eh(item.dept)+'</td><td style="text-align:center;"><span style="background:'+sb+';color:'+sc+';border-radius:99px;padding:2px 10px;font-size:.77rem;font-weight:700;">'+eh(item.status)+'</span></td></tr>';}).join('');}
+function renderBoothStatus(data){_boothCurrentList=data.reservations||[];var list=_boothCurrentList,t=list.length,dn=list.filter(function(r){return r.status==='상담완료';}).length,cn=list.filter(function(r){return r.status==='상담취소';}).length,w=t-dn-cn;document.getElementById('boothStat').innerHTML='<div class="stat-box"><div class="num">'+t+'</div><div class="lbl">전체 예약</div></div><div class="stat-box"><div class="num" style="color:#2B6CB0;">'+w+'</div><div class="lbl">대기</div></div><div class="stat-box"><div class="num" style="color:#276749;">'+dn+'</div><div class="lbl">상담완료</div></div><div class="stat-box"><div class="num" style="color:#C53030;">'+cn+'</div><div class="lbl">상담취소</div></div>';var tb=document.getElementById('boothBody'),em=document.getElementById('boothEmpty');if(!list.length){tb.innerHTML='';em.style.display='block';return;}em.style.display='none';tb.innerHTML=list.map(function(item,i){var sc=item.status==='상담완료'?'#276749':item.status==='상담취소'?'#C53030':'#2B6CB0';var sb=item.status==='상담완료'?'#E6FFED':item.status==='상담취소'?'#FFF5F5':'#EBF4FF';return'<tr><td style="text-align:center;color:#888;">'+(i+1)+'</td><td style="font-weight:700;white-space:nowrap;">'+eh(item.time)+'</td><td style="font-weight:600;">'+eh(item.name)+'</td><td style="font-size:.79rem;color:#7A8899;">'+eh(String(item.id))+'</td><td>'+eh(item.dept)+'</td><td style="text-align:center;"><span style="background:'+sb+';color:'+sc+';border-radius:99px;padding:2px 10px;font-size:.77rem;font-weight:700;">'+eh(item.status)+'</span></td></tr>';}).join('');}
 function loadPreReservationStats(){
   document.getElementById('preResSummary').innerHTML='<div style="text-align:center;padding:16px;color:#9AA5B4;font-size:.83rem;">불러오는 중...</div>';
   google.script.run
@@ -1078,6 +1079,101 @@ function generateGiftPdf(mode){
         +'<table class="sign-table"><thead><tr>'+hc+'</tr></thead><tbody>'+rows2+'</tbody></table>'
       +'</div>';
   }
+  _waitPrint();
+}
+// ── 부스 사전예약 출력 ──────────────────────────
+function printCurrentBoothProg() {
+  if (!_currentBoothProg) { alert('프로그램을 먼저 선택하세요.'); return; }
+  var start = _SITE_CFG.boothStart || '14:00';
+  var end   = _SITE_CFG.boothEnd   || '17:00';
+  _renderBoothPrint([{ prog: _currentBoothProg, list: _boothCurrentList }], start, end);
+}
+function printAllBoothProgs() {
+  var btn = document.getElementById('btnPrintAllBooth');
+  if (btn) { btn.disabled = true; btn.textContent = '불러오는 중...'; }
+  google.script.run
+    .withSuccessHandler(function(d) {
+      if (btn) { btn.disabled = false; btn.textContent = '🖨️ 전체 출력'; }
+      var progData = (d.programs || []).map(function(p) {
+        return { prog: p, list: d.byProg[p] || [] };
+      });
+      _renderBoothPrint(progData, d.boothStart, d.boothEnd);
+    })
+    .withFailureHandler(function(e) {
+      if (btn) { btn.disabled = false; btn.textContent = '🖨️ 전체 출력'; }
+      alert('오류: ' + e.message);
+    })
+    .getAllBoothPreReservations(_pw);
+}
+function _toMinPrint(t) { var p=(t||'00:00').split(':'); return parseInt(p[0]||0)*60+parseInt(p[1]||0); }
+function _renderBoothPrint(progDataList, boothStart, boothEnd) {
+  var logo = 'https://drive.google.com/thumbnail?id=1gAd8LC2fRzr7reuiJV2FHSQCbqbz5DoR&sz=w200';
+  var printDate = new Date().toLocaleString('ko-KR');
+  var sM = _toMinPrint(boothStart || '14:00');
+  var eM = _toMinPrint(boothEnd   || '17:00');
+  var html = progDataList.map(function(pd, pi) {
+    var prog = pd.prog;
+    var list = pd.list || [];
+    var rm = {};
+    list.forEach(function(r) {
+      var t = (r.time || '').substring(0, 5);
+      if (t) rm[t] = r;
+    });
+    var rows = '', no = 1;
+    for (var m = sM; m < eM; m += 15) {
+      var t  = String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+      var te = String(Math.floor((m+15)/60)).padStart(2,'0') + ':' + String((m+15)%60).padStart(2,'0');
+      var r  = rm[t];
+      if (r) {
+        var rBg = no%2===0 ? 'background:#F8F8F8 !important;' : '';
+        rows += '<tr style="'+rBg+'">'
+          + '<td style="text-align:center;width:24px;">'+no+'</td>'
+          + '<td style="text-align:center;width:108px;font-weight:700;">'+t+'~'+te+'</td>'
+          + '<td style="text-align:left;width:68px;font-weight:700;">'+eh(r.name)+'</td>'
+          + '<td style="text-align:center;width:94px;">'+eh(r.sid||r.id||'')+'</td>'
+          + '<td style="text-align:left;">'+eh(r.dept)+'</td>'
+          + '<td style="text-align:center;width:36px;font-size:13px;">□</td>'
+          + '</tr>';
+        no++;
+      } else {
+        rows += '<tr style="color:#BBBBBB;">'
+          + '<td style="text-align:center;">—</td>'
+          + '<td style="text-align:center;">'+t+'~'+te+'</td>'
+          + '<td colspan="3" style="font-style:italic;font-size:9px;">예약 없음</td>'
+          + '<td style="text-align:center;font-size:13px;">□</td>'
+          + '</tr>';
+      }
+    }
+    return '<div class="sign-sheet" style="'+(pi>0?'page-break-before:always;':'')+'">'
+      +'<div class="sign-header">'
+        +'<div class="sign-header-left">'
+          +'<div style="font-size:9px;color:#7A8899;letter-spacing:.1em;margin-bottom:3px;">HANYANG YK INTERCOLLEGE</div>'
+          +'<div class="sign-title">2026 융합전공 소개행사 부스 사전예약 명단</div>'
+          +'<div style="font-size:10px;color:#7A8899;margin-top:2px;">프로그램: '+eh(prog)+'</div>'
+        +'</div>'
+        +'<img src="'+logo+'" class="sign-header-logo" alt="로고">'
+      +'</div>'
+      +'<div class="sign-meta">'
+        +'일시: '+_SITE_CFG.eventDate+' &nbsp;|&nbsp; 장소: '+_SITE_CFG.eventPlace+'<br>'
+        +'총 사전예약: '+list.length+'건 &nbsp;|&nbsp; 출력: '+printDate
+      +'</div>'
+      +'<table class="sign-table"><thead><tr>'
+        +'<th style="width:24px;">No.</th>'
+        +'<th style="width:108px;">예약시간</th>'
+        +'<th style="text-align:left;width:68px;">성명</th>'
+        +'<th style="width:94px;">학번</th>'
+        +'<th style="text-align:left;">학과</th>'
+        +'<th style="width:36px;">확인</th>'
+      +'</tr></thead>'
+      +'<tbody>'+rows+'</tbody></table>'
+    +'</div>';
+  }).join('');
+  var pa = document.getElementById('signPrintArea');
+  pa.innerHTML = html;
+  pa.classList.add('booth-print-mode');
+  window.addEventListener('afterprint', function() {
+    pa.classList.remove('booth-print-mode');
+  }, { once: true });
   _waitPrint();
 }
 function _waitPrint(){var pa=document.getElementById('signPrintArea'),imgs=Array.from(pa.querySelectorAll('img'));if(!imgs.length){window.print();return;}var mw=8000,st=Date.now();function tp(){var ld=imgs.filter(function(img){return img.complete;}).length;if(ld>=imgs.length||Date.now()-st>=mw){window.print();}else{setTimeout(tp,150);}}if(imgs.every(function(img){return img.complete;})){window.print();}else{setTimeout(tp,150);}}
