@@ -576,6 +576,10 @@ window.onBoothICCheck = function(chk) {
   if (chk.checked) { deptEl.value=INTERCOLLEGE_DEPT; deptEl.readOnly=true; deptEl.style.background='#F0F4F8'; deptEl.style.color='#5A6778'; }
   else if (!hasLDC) { deptEl.value=''; deptEl.readOnly=false; deptEl.style.background=''; deptEl.style.color=''; if(noticeEl)noticeEl.style.display='none'; deptEl.focus(); }
   checkPersonalInfo('b');
+  // 이미 선택된 프로그램 슬롯을 학과 변경에 맞게 재조회
+  document.querySelectorAll('.prog-sel').forEach(function(s){
+    if(s.value) window.onProgChange(s);
+  });
 };
 
 // ─── 부스 슬롯 조회 (Firestore) ──────────────────────────────────

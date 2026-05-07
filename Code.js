@@ -388,6 +388,7 @@ function doPost(e) {
         });
       }
       // ── 인터칼리지학부 시간대 제한 검증 ──
+      var cfg = _getSettings();
       if (dept === INTERCOLLEGE_DEPT && cfg.icBlockStart && cfg.icBlockEnd) {
         var icS = toMin(cfg.icBlockStart), icE = toMin(cfg.icBlockEnd);
         booths.forEach(function(b) {
