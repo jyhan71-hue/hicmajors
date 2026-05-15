@@ -1968,6 +1968,32 @@ function getAdminDataForOffice(password, selectedProg) {
   return { programName:selectedProg, reservations:reservations };
 }
 
+function getAllCheckedInStudents(password) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();
+  var authorized = false;
+  for (var i = 1; i < admins.length; i++) {
+    if (admins[i][2].toString().trim() === '전체관리' && admins[i][3].toString().trim() === password.toString().trim()) { authorized = true; break; }
+  }
+  if (!authorized) throw new Error('권한이 없습니다.');
+  var sheet = ss.getSheetByName('CheckIns');
+  if (!sheet || sheet.getLastRow() <= 1) return [];
+  var rows = sheet.getDataRange().getValues();
+  var seen = {}, result = [];
+  for (var j = 1; j < rows.length; j++) {
+    var sid = rows[j][1] ? rows[j][1].toString().trim() : '';
+    if (!sid || seen[sid]) continue;
+    seen[sid] = true;
+    result.push({
+      name: rows[j][2] ? rows[j][2].toString().trim() : '',
+      sid:  sid,
+      dept: rows[j][3] ? rows[j][3].toString().trim() : ''
+    });
+  }
+  result.sort(function(a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
+  return result;
+}
+
 function getAllBoothPreReservations(password) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var admins = ss.getSheetByName('AdminUsers').getDataRange().getValues();

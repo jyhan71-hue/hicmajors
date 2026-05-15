@@ -207,7 +207,10 @@
     </div>
     <!-- 설명회 체크인 -->
     <div id="off-pane-sign">
-      <p style="font-size:.83rem;color:#7A8899;margin-bottom:16px;">설명회를 선택하면 참석 현황과 서명 여부를 확인하고 PDF를 저장할 수 있습니다.</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <p style="font-size:.83rem;color:#7A8899;margin:0;">설명회를 선택하면 참석 현황과 서명 여부를 확인하고 PDF를 저장할 수 있습니다.</p>
+        <button class="btn-outline" id="btnPrintAllCheckedIn" onclick="printAllCheckedIn()" style="padding:6px 13px;font-size:.82rem;flex-shrink:0;">🖨️ 전체 체크인 명단 출력</button>
+      </div>
       <div class="prog-grid" id="officeProgGrid"></div>
       <div id="attendeeSection" style="display:none;">
         <div id="officeStat" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;"></div>
@@ -1080,6 +1083,58 @@ function generateGiftPdf(mode){
       +'</div>';
   }
   _waitPrint();
+}
+// ── 설명회 체크인 전체 명단 출력 ────────────────
+function printAllCheckedIn() {
+  var btn = document.getElementById('btnPrintAllCheckedIn');
+  if (btn) { btn.disabled = true; btn.textContent = '불러오는 중...'; }
+  google.script.run
+    .withSuccessHandler(function(list) {
+      if (btn) { btn.disabled = false; btn.textContent = '🖨️ 전체 체크인 명단 출력'; }
+      if (!list || !list.length) { alert('체크인 기록이 없습니다.'); return; }
+      var logo = 'https://drive.google.com/thumbnail?id=1gAd8LC2fRzr7reuiJV2FHSQCbqbz5DoR&sz=w200';
+      var rows = list.map(function(r, i) {
+        var bg = i%2===1 ? 'background:#F8F8F8 !important;' : '';
+        return '<tr style="'+bg+'">'
+          + '<td class="td-no">'+(i+1)+'</td>'
+          + '<td class="td-name">'+eh(r.name)+'</td>'
+          + '<td class="td-id">'+eh(r.sid)+'</td>'
+          + '<td class="td-dept">'+eh(r.dept)+'</td>'
+          + '<td class="td-sig"><div style="height:36px;"></div></td>'
+          + '</tr>';
+      }).join('');
+      var pa = document.getElementById('signPrintArea');
+      pa.innerHTML =
+        '<div class="sign-sheet">'
+          +'<div class="sign-header">'
+            +'<div class="sign-header-left">'
+              +'<div style="font-size:9px;color:#7A8899;letter-spacing:.1em;margin-bottom:3px;">HANYANG YK INTERCOLLEGE</div>'
+              +'<div class="sign-title">2026 융합전공 소개행사 설명회 체크인 명단</div>'
+              +'<div style="font-size:10px;color:#7A8899;margin-top:2px;">학번 중복 제거 전체 참석자</div>'
+            +'</div>'
+            +'<img src="'+logo+'" class="sign-header-logo" alt="로고">'
+          +'</div>'
+          +'<div class="sign-meta">'
+            +'일시: '+_SITE_CFG.eventDate+' &nbsp;|&nbsp; 장소: '+_SITE_CFG.eventPlace+'<br>'
+            +'총 '+list.length+'명 &nbsp;|&nbsp; 출력: '+new Date().toLocaleString("ko-KR")
+          +'</div>'
+          +'<table class="sign-table"><thead><tr>'
+            +'<th class="td-no">No.</th>'
+            +'<th style="text-align:left;">이름</th>'
+            +'<th>학번</th>'
+            +'<th style="text-align:left;">학과</th>'
+            +'<th style="width:150px;text-align:center;">서명</th>'
+          +'</tr></thead><tbody>'+rows+'</tbody></table>'
+        +'</div>';
+      pa.classList.add('booth-print-mode');
+      window.addEventListener('afterprint', function() { pa.classList.remove('booth-print-mode'); }, { once: true });
+      _waitPrint();
+    })
+    .withFailureHandler(function(e) {
+      if (btn) { btn.disabled = false; btn.textContent = '🖨️ 전체 체크인 명단 출력'; }
+      alert('오류: ' + e.message);
+    })
+    .getAllCheckedInStudents(_pw);
 }
 // ── 부스 사전예약 출력 ──────────────────────────
 function printCurrentBoothProg() {
