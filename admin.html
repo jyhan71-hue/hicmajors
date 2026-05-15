@@ -1100,7 +1100,7 @@ function printAllCheckedIn() {
           + '<td class="td-name">'+eh(r.name)+'</td>'
           + '<td class="td-id">'+eh(r.sid)+'</td>'
           + '<td class="td-dept">'+eh(r.dept)+'</td>'
-          + '<td class="td-sig"><div style="height:36px;"></div></td>'
+          + '<td style="text-align:center;width:110px;">'+fmtTime(r.checkedAt)+'</td>'
           + '</tr>';
       }).join('');
       var pa = document.getElementById('signPrintArea');

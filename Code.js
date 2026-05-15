@@ -1985,9 +1985,10 @@ function getAllCheckedInStudents(password) {
     if (!sid || seen[sid]) continue;
     seen[sid] = true;
     result.push({
-      name: rows[j][2] ? rows[j][2].toString().trim() : '',
-      sid:  sid,
-      dept: rows[j][3] ? rows[j][3].toString().trim() : ''
+      name:      rows[j][2] ? rows[j][2].toString().trim() : '',
+      sid:       sid,
+      dept:      rows[j][3] ? rows[j][3].toString().trim() : '',
+      checkedAt: rows[j][0] ? rows[j][0].toString() : ''
     });
   }
   result.sort(function(a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
