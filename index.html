@@ -352,6 +352,7 @@ let SITE_CONFIG = {
   sessionCapacity: 30,
   sessionTimes: {},
   boothSlotRange: { start: '14:00', end: '17:00' },
+  boothSlotCapacity: 1,
   sessionBlockMap: {
     '미래반도체공학':        ['09:30','09:45'],
     '혁신공학경영':          ['10:00','10:15'],
@@ -447,6 +448,7 @@ async function init() {
     SITE_CONFIG.sessionCapacity = cfg.sessionCapacity || 30;
     SITE_CONFIG.sessionTimes    = cfg.sessionTimes || {};
     if (cfg.boothSlotRange) SITE_CONFIG.boothSlotRange = cfg.boothSlotRange;
+    SITE_CONFIG.boothSlotCapacity = cfg.boothSlotCapacity || 1;
     SITE_CONFIG.blockedSlots    = cfg.blockedSlots || {};
     SITE_CONFIG.icBlockRange    = cfg.icBlockRange || null;
     _sessionCounts              = cfg.sessionCounts || {};
@@ -584,15 +586,17 @@ window.onBoothICCheck = function(chk) {
 
 // ─── 부스 슬롯 조회 (Firestore) ──────────────────────────────────
 async function getAvailableSlots(programName, excludeDocId=null, overrideDept=null) {
-  const bookedTimes = new Set();
+  const bookedCounts = new Map();
   const snap = await db.collection('boothReservations').where('program','==',programName).get();
   snap.forEach(d => {
     if (d.id === excludeDocId) return;
     const st = d.data().status || '';
     if (st !== '' && st !== '취소' && st !== '상담취소' && st !== '상담완료') {
-      bookedTimes.add(d.data().time);
+      const t = d.data().time;
+      bookedCounts.set(t, (bookedCounts.get(t) || 0) + 1);
     }
   });
+  const cap = SITE_CONFIG.boothSlotCapacity || 1;
   const sessBlock = SITE_CONFIG.sessionBlockMap[programName] || [];
   const manualBlocked = new Set(SITE_CONFIG.blockedSlots[programName] || []);
   const deptEl = document.getElementById('b-dept');
@@ -606,7 +610,7 @@ async function getAvailableSlots(programName, excludeDocId=null, overrideDept=nu
   const endM = toMin(SITE_CONFIG.boothSlotRange.end);
   while (m < endM) {
     const t = String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
-    if (!sessBlock.includes(t) && !bookedTimes.has(t) && !manualBlocked.has(t) && !(icBlock && m >= icS && m < icE)) {
+    if (!sessBlock.includes(t) && (bookedCounts.get(t)||0) < cap && !manualBlocked.has(t) && !(icBlock && m >= icS && m < icE)) {
       slots.push({ value: t, label: t+' ~ '+addMinutes(t,15) });
     }
     m += 15;
@@ -969,7 +973,7 @@ async function submitReservation(data) {
     const slotSnap = await db.collection('boothReservations').where('program','==',prog).where('time','==',time).get();
     let taken=0;
     slotSnap.forEach(d=>{ const st=d.data().status||''; if(st!==''&&st!=='취소'&&st!=='상담취소'&&st!=='상담완료') taken++; });
-    if(taken>0) throw new Error(`[${prog}] ${time} 시간은 방금 마감되었습니다.`);
+    if(taken>=(SITE_CONFIG.boothSlotCapacity||1)) throw new Error(`[${prog}] ${time} 시간은 방금 마감되었습니다.`);
   }
 
   // 이번에 선택한 부스들끼리 시간 겹침 체크
@@ -1082,7 +1086,7 @@ async function changeReservation(data) {
       const st=d.data().status||'';
       if(st!==''&&st!=='취소'&&st!=='상담취소'&&st!=='상담완료') taken++;
     });
-    if(taken>0) throw new Error(`[${b.program}] ${b.time} 시간은 이미 마감되었습니다.`);
+    if(taken>=(SITE_CONFIG.boothSlotCapacity||1)) throw new Error(`[${b.program}] ${b.time} 시간은 이미 마감되었습니다.`);
   }
 
   // ── 검증 통과 후 기존 삭제 ──
