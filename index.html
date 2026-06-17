@@ -611,7 +611,9 @@ async function getAvailableSlots(programName, excludeDocId=null, overrideDept=nu
   while (m < endM) {
     const t = String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
     if (!sessBlock.includes(t) && (bookedCounts.get(t)||0) < cap && !manualBlocked.has(t) && !(icBlock && m >= icS && m < icE)) {
-      slots.push({ value: t, label: t+' ~ '+addMinutes(t,15) });
+      const remaining = cap - (bookedCounts.get(t) || 0);
+      const label = cap > 1 ? t+' ~ '+addMinutes(t,15)+' (잔여 '+remaining+'명)' : t+' ~ '+addMinutes(t,15);
+      slots.push({ value: t, label });
     }
     m += 15;
   }
